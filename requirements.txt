@@ -1,0 +1,30 @@
+# LangChain 生态
+langchain-openai>=0.3.0
+langchain-experimental>=0.3.0
+langchain-anthropic>=0.3.0
+langgraph>=0.4.0
+
+# 数据处理
+pandas>=2.0.0
+pytz>=2024.1
+numpy>=1.24.0
+
+# A股数据源（免费，核心依赖）
+akshare>=1.10.0
+
+# 向量记忆（轻量配置）
+chromadb>=0.5.0
+
+# 命令行界面
+chainlit>=2.0.0
+rich>=13.0.0
+questionary>=2.0.0
+
+# 工具
+python-dotenv>=1.0.0
+requests>=2.31.0
+tqdm>=4.66.0
+
+# 可选：数据源
+yfinance>=0.2.0
+alpha_vantage>=1.0.0

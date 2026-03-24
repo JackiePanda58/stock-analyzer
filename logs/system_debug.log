@@ -1,0 +1,332 @@
+2026-03-24 00:39:56,129 [INFO] [app.py:16] - === Web UI 服务启动 ===
+2026-03-24 00:39:56,418 [INFO] [app.py:25] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 00:39:58,066 [INFO] [app.py:31] - 新用户建立了 Web 访问连接。
+2026-03-24 00:41:32,241 [INFO] [app.py:31] - 新用户建立了 Web 访问连接。
+2026-03-24 00:42:14,903 [INFO] [app.py:43] - 👉 收到分析请求，目标代码: 170800
+2026-03-24 00:42:14,904 [INFO] [app.py:56] - [170800] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 00:47:05,655 [INFO] [app.py:61] - [170800] ✅ 分析流水线顺利完成，耗时: 291秒
+2026-03-24 00:52:18,215 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 00:52:18,500 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 00:52:19,618 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 00:53:15,354 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 00:53:40,142 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 170800
+2026-03-24 00:53:40,144 [INFO] [app.py:71] - [170800] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 00:57:41,444 [INFO] [app.py:76] - [170800] ✅ 分析流水线顺利完成，耗时: 241秒
+2026-03-24 01:02:51,670 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 01:02:51,952 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 01:02:56,073 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 01:06:02,589 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 01:06:28,048 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 170800
+2026-03-24 01:06:28,050 [INFO] [app.py:71] - [170800] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 18:15:02,070 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 18:15:02,378 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 18:15:54,388 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 18:16:42,427 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 18:16:47,640 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 170800
+2026-03-24 18:16:47,641 [INFO] [app.py:71] - [170800] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 18:17:58,462 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 18:18:47,165 [ERROR] [app.py:82] - [170800] ❌ 分析过程发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/app.py", line 73, in main
+    result, _ = await asyncio.to_thread(ta.propagate, symbol, date)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/futures.py", line 287, in __await__
+    yield self  # This tells Task to wait for completion.
+    ^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/tasks.py", line 385, in __wakeup
+    future.result()
+  File "/usr/lib/python3.12/asyncio/futures.py", line 203, in result
+    raise self._exception.with_traceback(self._exception_tb)
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/graph/trading_graph.py", line 213, in propagate
+    final_state = self.graph.invoke(init_agent_state, **args)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 3292, in invoke
+    for chunk in self.stream(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 2725, in stream
+    for _ in runner.tick(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_runner.py", line 167, in tick
+    run_with_retry(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_retry.py", line 96, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 656, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 400, in invoke
+    ret = self.func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 813, in _func
+    outputs = list(
+              ^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/runnables/config.py", line 579, in _wrapped_fn
+    return contexts.pop().run(fn, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 1024, in _run_one
+    return self._execute_tool_sync(tool_request, input_type, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 973, in _execute_tool_sync
+    content = _handle_tool_error(e, flag=self._handle_tool_errors)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 430, in _handle_tool_error
+    content = flag(e)  # type: ignore [assignment, call-arg]
+              ^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 387, in _default_handle_tool_errors
+    raise e
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 930, in _execute_tool_sync
+    response = tool.invoke(call_args, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 642, in invoke
+    return self.run(tool_input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 1001, in run
+    raise error_to_raise
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 967, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/structured.py", line 97, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/agents/utils/fundamental_data_tools.py", line 39, in get_balance_sheet
+    return route_to_vendor("get_balance_sheet", ticker, freq, curr_date)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/interface.py", line 176, in route_to_vendor
+    return impl_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/akshare_stock.py", line 350, in get_china_balance_sheet
+    sys_logger.error(f"【底层数据抓取异常】{e}\n{traceback.format_exc()}")
+                                            ^
+UnboundLocalError: cannot access local variable 'e' where it is not associated with a value
+During task with name 'tools_fundamentals' and id '6d7241c4-2688-6bec-6f1e-8d3887ba77b6'
+
+2026-03-24 18:19:53,378 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 18:22:43,478 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 19:47:36,895 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 19:47:47,518 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 19:54:24,287 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 19:54:30,530 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 19:54:57,425 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
+2026-03-24 19:54:57,427 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 19:57:38,452 [ERROR] [app.py:82] - [513180] ❌ 分析过程发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/app.py", line 73, in main
+    result, _ = await asyncio.to_thread(ta.propagate, symbol, date)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/futures.py", line 287, in __await__
+    yield self  # This tells Task to wait for completion.
+    ^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/tasks.py", line 385, in __wakeup
+    future.result()
+  File "/usr/lib/python3.12/asyncio/futures.py", line 203, in result
+    raise self._exception.with_traceback(self._exception_tb)
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/graph/trading_graph.py", line 213, in propagate
+    final_state = self.graph.invoke(init_agent_state, **args)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 3292, in invoke
+    for chunk in self.stream(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 2725, in stream
+    for _ in runner.tick(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_runner.py", line 167, in tick
+    run_with_retry(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_retry.py", line 96, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 656, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 400, in invoke
+    ret = self.func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 813, in _func
+    outputs = list(
+              ^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/runnables/config.py", line 579, in _wrapped_fn
+    return contexts.pop().run(fn, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 1024, in _run_one
+    return self._execute_tool_sync(tool_request, input_type, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 973, in _execute_tool_sync
+    content = _handle_tool_error(e, flag=self._handle_tool_errors)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 430, in _handle_tool_error
+    content = flag(e)  # type: ignore [assignment, call-arg]
+              ^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 387, in _default_handle_tool_errors
+    raise e
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 930, in _execute_tool_sync
+    response = tool.invoke(call_args, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 642, in invoke
+    return self.run(tool_input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 1001, in run
+    raise error_to_raise
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 967, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/structured.py", line 97, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/agents/utils/fundamental_data_tools.py", line 39, in get_balance_sheet
+    return route_to_vendor("get_balance_sheet", ticker, freq, curr_date)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/interface.py", line 176, in route_to_vendor
+    return impl_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/akshare_stock.py", line 350, in get_china_balance_sheet
+    sys_logger.error(f"【底层数据抓取异常】{e}\n{traceback.format_exc()}")
+                                            ^
+UnboundLocalError: cannot access local variable 'e' where it is not associated with a value
+During task with name 'tools_fundamentals' and id '293a4f44-7f3c-6e3f-f1d5-d19c7b76e08c'
+
+2026-03-24 20:44:27,969 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 20:44:55,723 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
+2026-03-24 20:44:55,724 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 20:48:21,460 [ERROR] [app.py:82] - [513180] ❌ 分析过程发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/app.py", line 73, in main
+    result, _ = await asyncio.to_thread(ta.propagate, symbol, date)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/futures.py", line 287, in __await__
+    yield self  # This tells Task to wait for completion.
+    ^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/tasks.py", line 385, in __wakeup
+    future.result()
+  File "/usr/lib/python3.12/asyncio/futures.py", line 203, in result
+    raise self._exception.with_traceback(self._exception_tb)
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/graph/trading_graph.py", line 213, in propagate
+    final_state = self.graph.invoke(init_agent_state, **args)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 3292, in invoke
+    for chunk in self.stream(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/main.py", line 2725, in stream
+    for _ in runner.tick(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_runner.py", line 167, in tick
+    run_with_retry(
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/pregel/_retry.py", line 96, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 656, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/_internal/_runnable.py", line 400, in invoke
+    ret = self.func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 813, in _func
+    outputs = list(
+              ^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/runnables/config.py", line 579, in _wrapped_fn
+    return contexts.pop().run(fn, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 1024, in _run_one
+    return self._execute_tool_sync(tool_request, input_type, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 973, in _execute_tool_sync
+    content = _handle_tool_error(e, flag=self._handle_tool_errors)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 430, in _handle_tool_error
+    content = flag(e)  # type: ignore [assignment, call-arg]
+              ^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 387, in _default_handle_tool_errors
+    raise e
+  File "/usr/local/lib/python3.12/dist-packages/langgraph/prebuilt/tool_node.py", line 930, in _execute_tool_sync
+    response = tool.invoke(call_args, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 642, in invoke
+    return self.run(tool_input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 1001, in run
+    raise error_to_raise
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 967, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/structured.py", line 97, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/agents/utils/fundamental_data_tools.py", line 39, in get_balance_sheet
+    return route_to_vendor("get_balance_sheet", ticker, freq, curr_date)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/interface.py", line 176, in route_to_vendor
+    return impl_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/tradingagents/dataflows/akshare_stock.py", line 350, in get_china_balance_sheet
+    sys_logger.error(f"【底层数据抓取异常】{e}\n{traceback.format_exc()}")
+                                            ^
+UnboundLocalError: cannot access local variable 'e' where it is not associated with a value
+During task with name 'tools_fundamentals' and id 'e6b8c3ca-725a-b1e5-85f2-6a7c38e48a91'
+
+2026-03-24 20:57:34,745 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 20:57:35,040 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 20:57:39,143 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 20:58:22,250 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 20:58:28,468 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 20:59:57,998 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
+2026-03-24 20:59:58,000 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 21:05:09,381 [INFO] [app.py:76] - [513180] ✅ 分析流水线顺利完成，耗时: 311秒
+2026-03-24 21:27:27,077 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 21:27:27,368 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 21:27:28,948 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 21:36:49,745 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 21:37:04,207 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
+2026-03-24 21:37:04,209 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 21:43:18,934 [INFO] [app.py:76] - [513180] ✅ 分析流水线顺利完成，耗时: 375秒

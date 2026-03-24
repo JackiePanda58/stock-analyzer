@@ -1,0 +1,93 @@
+import time
+import json
+
+
+def create_risk_manager(llm, memory):
+    def risk_manager_node(state) -> dict:
+
+        company_name = state["company_of_interest"]
+
+        history = state["risk_debate_state"]["history"]
+        risk_debate_state = state["risk_debate_state"]
+        market_research_report = state["market_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+        sentiment_report = state["sentiment_report"]
+        trader_plan = state["investment_plan"]
+
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        past_memories = memory.get_memories(curr_situation, n_matches=2)
+
+        past_memory_str = ""
+        for i, rec in enumerate(past_memories, 1):
+            past_memory_str += rec["recommendation"] + "\n\n"
+
+        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Aggressive, Neutral, and Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+
+Guidelines for Decision-Making:
+1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.
+2. **Provide Rationale**: Support your recommendation with direct quotes and counterarguments from the debate.
+3. **Refine the Trader's Plan**: Start with the trader's original plan, **{trader_plan}**, and adjust it based on the analysts' insights.
+4. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments and improve the decision you are making now to make sure you don't make a wrong BUY/SELL/HOLD call that loses money.
+
+Deliverables:
+- A clear and actionable recommendation: Buy, Sell, or Hold.
+- Detailed reasoning anchored in the debate and past reflections.
+
+---
+
+**Analysts Debate History:**  
+{history}
+
+---
+
+Focus on actionable insights and continuous improvement. Build on past lessons, critically evaluate all perspectives, and ensure each decision advances better outcomes.
+
+【排版与输出格式强制要求】
+无论标的是个股还是ETF，你必须使用以下 Markdown 结构输出最终研报。请使用清晰的标题、加粗和列表，拒绝大段密集文本：
+
+# 📊 [标的名称 (代码)] 深度分析报告
+**分析日期**：[YYYY-MM-DD]
+
+## 1. 核心投资结论
+* **最终交易建议**：[买入 / 持有 / 卖出]
+* **一句话逻辑**：[高度凝练的百字核心逻辑]
+
+## 2. 关键数据速览
+* **技术面信号**：[例如：RSI 超卖 / MACD 金叉等]
+* **基本面/流动性状况**：[股票写财务亮点，ETF写流动性或成分股状态]
+* **宏观与新闻催化**：[近期最核心的一条利好/利空]
+
+## 3. 多维深度解析
+### 📈 技术与资金面
+[分点详细陈述技术指标与量价关系...]
+
+### 🏢 核心基本面 / 宏观逻辑
+[分点详细陈述盈利能力、估值水平或宏观政策环境...]
+
+### ⚠️ 风险提示与操作策略
+* **核心风险点**：[最需要警惕的下行风险]
+* **操作建议**：[仓位建议及具体的止盈/止损位参考]
+
+"""
+        response = llm.invoke(prompt)
+
+        new_risk_debate_state = {
+            "judge_decision": response.content,
+            "history": risk_debate_state["history"],
+            "aggressive_history": risk_debate_state["aggressive_history"],
+            "conservative_history": risk_debate_state["conservative_history"],
+            "neutral_history": risk_debate_state["neutral_history"],
+            "latest_speaker": "Judge",
+            "current_aggressive_response": risk_debate_state["current_aggressive_response"],
+            "current_conservative_response": risk_debate_state["current_conservative_response"],
+            "current_neutral_response": risk_debate_state["current_neutral_response"],
+            "count": risk_debate_state["count"],
+        }
+
+        return {
+            "risk_debate_state": new_risk_debate_state,
+            "final_trade_decision": response.content,
+        }
+
+    return risk_manager_node

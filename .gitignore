@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+*.egg
+*.zip
+*.tar.gz
+.env
+logs/*.log
+eval_results/*/TradingAgentsStrategy_logs/full_states_log_*.json
+reports/*.txt
+reports/*.md
+cache/
+.DS_Store
+.vscode/
+.idea/

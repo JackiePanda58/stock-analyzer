@@ -1,0 +1,50 @@
+2026-03-24 21:27:27,077 [INFO] [app.py:17] - === Web UI 服务启动 ===
+2026-03-24 21:27:27 - INFO - StockAnalyzer - === Web UI 服务启动 ===
+2026-03-24 21:27:27,368 [INFO] [app.py:26] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 21:27:27 - INFO - StockAnalyzer - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 21:27:27 - INFO - chainlit - Your app is available at http://0.0.0.0:62878
+2026-03-24 21:27:28,948 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 21:27:28 - INFO - StockAnalyzer - 新用户建立了 Web 访问连接。
+2026-03-24 21:36:49 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.
+2026-03-24 21:36:49,745 [INFO] [app.py:32] - 新用户建立了 Web 访问连接。
+2026-03-24 21:36:49 - INFO - StockAnalyzer - 新用户建立了 Web 访问连接。
+2026-03-24 21:37:04,207 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
+2026-03-24 21:37:04 - INFO - StockAnalyzer - 👉 收到分析请求，目标代码: 513180
+2026-03-24 21:37:04,209 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 21:37:04 - INFO - StockAnalyzer - [513180] 🚀 开始执行 propagate 分析流水线...
+2026-03-24 21:37:06 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+2026-03-24 21:37:28 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+2026-03-24 21:38:58 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:39:01 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:39:37 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:39:40 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:39:44 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:40:16 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:40:56 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:41:34 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:41:57 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:42:44 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:43:17 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:43:18 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 21:43:18,934 [INFO] [app.py:76] - [513180] ✅ 分析流水线顺利完成，耗时: 375秒
+2026-03-24 21:43:18 - INFO - StockAnalyzer - [513180] ✅ 分析流水线顺利完成，耗时: 375秒
+Invalid transport for session Q6v2HxcGZ1IfkKe1AAAC (further occurrences of this error will be logged with level INFO)
+2026-03-24 21:46:15 - ERROR - engineio.server - Invalid transport for session Q6v2HxcGZ1IfkKe1AAAC (further occurrences of this error will be logged with level INFO)
