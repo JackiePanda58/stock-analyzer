@@ -5,6 +5,9 @@ from datetime import datetime
 import sys
 import traceback
 import os
+import glob
+import markdown
+import pdfkit
 
 sys.path.insert(0, '/root/stock-analyzer')
 from dotenv import load_dotenv
@@ -29,13 +32,12 @@ except Exception as e:
 
 @cl.on_chat_start
 async def start():
-    sys_logger.info("新用户建立了 Web 访问连接。")
     welcome_msg = """
 👋 **欢迎使用极速 A股/ETF 分析引擎！**
 
-本系统由 MiniMax M2.7 驱动，已全面兼容个股及全市场 ETF。
-👉 **请输入 6 位纯数字代码**（例如：`600519` 或 `588000`）开始分析。
-💡 **输入 `导出日志`**，可随时下载最新的系统排查日志。
+👉 **请输入 6 位纯数字代码** 开始分析。
+💡 **输入 `导出日志`**，下载系统排查日志。
+📚 **输入 `历史报告`** 查看并下载过往的 PDF 研报归档。
 """
     await cl.Message(content=welcome_msg).send()
 
@@ -43,27 +45,39 @@ async def start():
 async def main(message: cl.Message):
     text = message.content.strip()
 
-    # --- 新增：日志一键导出逻辑 ---
+    # 1. 导出日志指令
     if text == "导出日志":
         log_path = "/root/stock-analyzer/logs/system_debug.log"
         if os.path.exists(log_path):
-            elements = [cl.File(name="system_debug.log", path=log_path, display="inline", mime="text/plain")]
-            await cl.Message(content="📥 **系统诊断日志已备好，请点击下方附件下载：**", elements=elements).send()
+            await cl.Message(
+                content="📥 **日志已备好：**",
+                elements=[cl.File(name="system_debug.log", path=log_path, display="inline", mime="text/plain")]
+            ).send()
         else:
-            await cl.Message(content="⚠️ 暂未找到日志文件，可能系统尚未生成。").send()
+            await cl.Message(content="⚠️ 日志文件不存在。").send()
         return
-    # --------------------------------
 
+    # 2. 历史报告归档指令
+    if text == "历史报告":
+        pdf_files = sorted(glob.glob("/root/stock-analyzer/reports/*.pdf"), reverse=True)
+        if not pdf_files:
+            await cl.Message(content="📭 目前还没有生成过历史研报。").send()
+            return
+        elements = [cl.File(name=os.path.basename(f), path=f, display="inline") for f in pdf_files[:10]]
+        await cl.Message(
+            content=f"📁 **为您找到最近的 {len(elements)} 份历史研报，请点击下方附件下载：**",
+            elements=elements
+        ).send()
+        return
+
+    # 3. 股票分析流程
     symbol = text
-    sys_logger.info(f"👉 收到分析请求，目标代码: {symbol}")
-
     if not symbol.isdigit() or len(symbol) != 6:
-        sys_logger.warning(f"用户输入了无效代码: {symbol}")
-        await cl.Message(content="⚠️ **格式错误**：请输入正确的 6 位纯数字代码（如 `510300`）。").send()
+        await cl.Message(content="⚠️ **格式错误**：请输入 6 位纯数字代码（如 `510300`）。").send()
         return
 
     date = datetime.now().strftime("%Y-%m-%d")
-    msg = cl.Message(content=f"⏳ 正在拉起多智能体流水线，目标标的：**{symbol}**\n\n*深度分析通常需要 3-5 分钟，请不要关闭当前页面，喝口水稍作等待...*")
+    msg = cl.Message(content=f"⏳ 正在深度分析 **{symbol}**，请稍候（约 3-5 分钟）...")
     await msg.send()
 
     try:
@@ -75,11 +89,46 @@ async def main(message: cl.Message):
 
         sys_logger.info(f"[{symbol}] ✅ 分析流水线顺利完成，耗时: {elapsed:.0f}秒")
         final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告，原始输出:\n" + str(result))
-        msg.content = f"✅ **分析完成！(耗时: {elapsed:.0f}秒)**\n\n---\n\n" + final_report
+
+        # 4. 自动生成 PDF
+        report_dir = "/root/stock-analyzer/reports"
+        os.makedirs(report_dir, exist_ok=True)
+        pdf_path = f"{report_dir}/{symbol}_{date.replace('-','')}.pdf"
+        elements = []
+
+        try:
+            html_content = markdown.markdown(final_report, extensions=['tables'])
+            styled_html = f"""
+            <html><head><meta charset='utf-8'><style>
+            body {{ font-family: 'WenQuanYi Zen Hei', 'Microsoft YaHei', sans-serif; padding: 40px; line-height: 1.8; color: #333; }}
+            h1, h2, h3 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }}
+            table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+            th {{ background-color: #3498db; color: white; font-weight: bold; }}
+            tr:nth-child(even) {{ background-color: #f9f9f9; }}
+            .buy {{ color: #e74c3c; font-weight: bold; }}
+            .sell {{ color: #27ae60; font-weight: bold; }}
+            </style></head><body>{html_content}</body></html>
+            """
+            pdfkit.from_string(styled_html, pdf_path, options={
+                'encoding': "UTF-8",
+                'margin-top': '20mm',
+                'margin-bottom': '20mm',
+                'page-size': 'A4',
+                'enable-local-file-access': ''
+            })
+            elements = [cl.File(name=f"{symbol}_深度研报.pdf", path=pdf_path, display="inline")]
+            sys_logger.info(f"[{symbol}] ✅ PDF 生成成功: {pdf_path}")
+        except Exception as pdf_err:
+            sys_logger.error(f"[{symbol}] PDF生成失败:\n{traceback.format_exc()}")
+            elements = []
+
+        msg.content = f"✅ **分析完成！（耗时: {elapsed:.0f}秒）**\n\n---\n\n" + final_report
+        msg.elements = elements
         await msg.update()
 
     except Exception as e:
         error_details = traceback.format_exc()
         sys_logger.error(f"[{symbol}] ❌ 分析过程发生灾难性中断:\n{error_details}")
-        msg.content = f"❌ **分析发生异常中断**，系统已记录错误。请回复 `导出日志` 获取错误详情发给技术专家。\n```text\n{str(e)}\n```"
+        msg.content = f"❌ **分析发生异常中断**，系统已记录错误。请回复 `导出日志` 获取错误详情。\n```text\n{str(e)}\n```"
         await msg.update()
