@@ -1,0 +1,45 @@
+2026-03-24 00:26:38 - INFO - chainlit - Your app is available at http://0.0.0.0:62878
+2026-03-24 00:29:03 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.
+2026-03-24 00:29:03 - INFO - chainlit - Missing custom logo. Falling back to default logo.
+2026-03-24 00:29:43 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+2026-03-24 00:29:46 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+2026-03-24 00:29:50 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+2026-03-24 00:29:57 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:30:00 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:30:03 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:30:30 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:30:35 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+2026-03-24 00:30:50 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+login success!
+logout success!
+login success!
+logout success!
+login success!
+logout success!
+2026-03-24 00:31:02 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:31:41 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:31:54 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:32:07 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:32:24 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:32:51 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:32:53 - INFO - httpx - HTTP Request: POST https://coding.dashscope.aliyuncs.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-24 00:33:33 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.
+2026-03-24 00:33:33 - INFO - chainlit - Missing custom logo. Falling back to default logo.
+2026-03-24 00:36:53 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.
+2026-03-24 00:36:54 - INFO - chainlit - Missing custom logo. Falling back to default logo.
+2026-03-24 00:38:18 - INFO - chainlit - Missing custom logo. Falling back to default logo.
+2026-03-24 00:38:34 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.
+2026-03-24 00:38:38 - INFO - chainlit - Missing custom logo. Falling back to default logo.
+2026-03-24 00:39:09 - WARNING - chainlit - Translated markdown file for zh-CN not found. Defaulting to chainlit.md.

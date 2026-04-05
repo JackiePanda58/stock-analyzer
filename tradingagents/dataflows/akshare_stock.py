@@ -132,7 +132,7 @@ def get_china_stock_indicators(
         start_dt = curr_dt - relativedelta(days=max(look_back_days + 120, 200))
         fetch_start = start_dt.strftime("%Y-%m-%d")
         fetch_end = (curr_dt + relativedelta(days=7)).strftime("%Y-%m-%d")
-    except Exception:
+    except Exception as e:
         fetch_start = curr_date
         fetch_end = curr_date
 

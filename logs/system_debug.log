@@ -330,3 +330,242 @@ During task with name 'tools_fundamentals' and id 'e6b8c3ca-725a-b1e5-85f2-6a7c3
 2026-03-24 21:37:04,207 [INFO] [app.py:58] - 👉 收到分析请求，目标代码: 513180
 2026-03-24 21:37:04,209 [INFO] [app.py:71] - [513180] 🚀 开始执行 propagate 分析流水线...
 2026-03-24 21:43:18,934 [INFO] [app.py:76] - [513180] ✅ 分析流水线顺利完成，耗时: 375秒
+2026-03-24 22:21:28,609 [INFO] [app.py:20] - === Web UI 服务启动 ===
+2026-03-24 22:21:29,084 [INFO] [app.py:29] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 22:35:10,178 [INFO] [api_server.py:70] - === FastAPI 接口服务启动 ===
+2026-03-24 22:46:50,295 [INFO] [app.py:20] - === Web UI 服务启动 ===
+2026-03-24 22:46:50,610 [INFO] [app.py:29] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 22:47:58,770 [INFO] [app.py:20] - === Web UI 服务启动 ===
+2026-03-24 22:47:59,065 [INFO] [app.py:29] - ✅ TradingAgentsGraph 多智能体引擎初始化成功
+2026-03-24 23:05:42,089 [INFO] [app.py:21] - === Web UI 服务启动 ===
+2026-03-24 23:05:42,094 [INFO] [app.py:28] - ✅ Redis 缓存大脑连接成功！
+2026-03-25 00:11:32,253 [INFO] [app.py:21] - === Web UI 服务启动 ===
+2026-03-25 00:11:32,258 [INFO] [app.py:28] - ✅ Redis 缓存大脑连接成功！
+2026-03-25 20:06:49,961 [INFO] [api_server.py:111] - [API] 收到分析请求: 600519 @ 2026-03-25
+2026-03-25 20:13:44,801 [INFO] [api_server.py:121] - [API] 600519 分析完成
+2026-03-25 20:14:14,805 [INFO] [api_server.py:111] - [API] 收到分析请求: 513180 @ 2026-03-25
+2026-03-25 20:19:01,325 [INFO] [api_server.py:121] - [API] 513180 分析完成
+2026-03-25 20:19:31,330 [INFO] [api_server.py:111] - [API] 收到分析请求: 588000 @ 2026-03-25
+2026-03-25 20:24:56,437 [INFO] [api_server.py:121] - [API] 588000 分析完成
+2026-03-25 21:20:16,393 [INFO] [api_server.py:72] - === FastAPI 接口服务关闭 ===
+2026-03-25 21:20:47,627 [INFO] [api_server.py:21] - === FastAPI 后端服务启动 ===
+2026-03-25 21:20:47,629 [INFO] [api_server.py:28] - ✅ API: Redis 缓存大脑连接成功！
+2026-03-25 21:43:36,293 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-25 21:43:36,294 [INFO] [api_server.py:60] - [API] ⚡ [命中缓存] 513180 报告已存在，极速返回！
+2026-03-25 21:43:41,616 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-25 21:43:41,617 [INFO] [api_server.py:60] - [API] ⚡ [命中缓存] 513180 报告已存在，极速返回！
+2026-03-25 23:22:15,232 [INFO] [app.py:102] - ⚡ [命中缓存] 513180 今日研报已存在，毫秒级返回！
+2026-03-25 23:49:11,029 [INFO] [app.py:21] - === Web UI 服务启动 ===
+2026-03-25 23:49:11,034 [INFO] [app.py:28] - ✅ Redis 缓存大脑连接成功！
+2026-03-25 23:53:09,833 [INFO] [app.py:21] - === Web UI 服务启动 ===
+2026-03-25 23:53:09,838 [INFO] [app.py:28] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 10:50:16,261 [INFO] [app.py:21] - === Web UI 服务启动 ===
+2026-03-26 10:50:16,265 [INFO] [app.py:28] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 11:13:33,409 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 11:13:33,414 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 11:22:46,982 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 11:22:46,990 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 11:28:23,993 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 11:28:23,999 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 11:38:18,261 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 11:38:18,266 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 11:43:45,018 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 11:43:45,023 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 14:00:01,738 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 512400
+2026-03-26 14:00:01,741 [ERROR] [api_server.py:102] - [API] [512400] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'llm_provider'
+
+2026-03-26 14:00:31,744 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-26 14:00:31,745 [INFO] [api_server.py:60] - [API] ⚡ [命中缓存] 513180 报告已存在，极速返回！
+2026-03-26 16:07:43,545 [INFO] [api_server.py:21] - === FastAPI 后端服务启动 ===
+2026-03-26 16:07:43,547 [INFO] [api_server.py:28] - ✅ API: Redis 缓存大脑连接成功！
+2026-03-26 16:12:07,321 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 16:12:07,326 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-26 16:16:41,847 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-03-26 16:16:41,852 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-03-27 14:00:01,940 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 512400
+2026-03-27 14:00:01,941 [ERROR] [api_server.py:101] - [API] [512400] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-03-27 14:00:31,944 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-27 14:00:31,945 [ERROR] [api_server.py:101] - [API] [513180] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-03-30 14:00:02,846 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 512400
+2026-03-30 14:00:02,853 [ERROR] [api_server.py:101] - [API] [512400] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-03-30 14:00:32,910 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-30 14:00:32,910 [ERROR] [api_server.py:101] - [API] [513180] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-03-31 14:00:02,195 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 512400
+2026-03-31 14:00:02,196 [ERROR] [api_server.py:101] - [API] [512400] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-03-31 14:00:32,200 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-03-31 14:00:32,201 [ERROR] [api_server.py:101] - [API] [513180] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-04-01 14:00:01,749 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 512400
+2026-04-01 14:00:01,751 [ERROR] [api_server.py:101] - [API] [512400] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-04-01 14:00:31,755 [INFO] [api_server.py:52] - [API] 👉 收到分析请求，目标代码: 513180
+2026-04-01 14:00:31,755 [ERROR] [api_server.py:101] - [API] [513180] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 74, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-04-01 20:43:29,980 [INFO] [api_server.py:32] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-01 20:43:29,981 [INFO] [api_server.py:39] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-01 20:43:54,868 [INFO] [api_server.py:86] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-01 20:43:54,888 [INFO] [api_server.py:105] - [API] 👉 收到分析请求，目标代码: 000001 | 用户: admin
+2026-04-01 20:43:54,890 [ERROR] [api_server.py:154] - [API] [000001] ❌ 分析发生灾难性中断:
+Traceback (most recent call last):
+  File "/root/stock-analyzer/api_server.py", line 127, in analyze_stock
+    local_ta = TradingAgentsGraph(
+               ^^^^^^^^^^^^^^^^^^^
+TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'deep_think_llm'
+
+2026-04-01 20:43:54,898 [WARNING] [api_server.py:88] - ❌ [登录失败] 用户名或密码错误: admin
+2026-04-01 20:49:12,669 [INFO] [api_server.py:32] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-01 20:49:12,670 [INFO] [api_server.py:39] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-01 20:49:33,599 [INFO] [api_server.py:86] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-01 20:49:33,628 [INFO] [api_server.py:105] - [API] 👉 收到分析请求，目标代码: 000001 | 用户: admin
+2026-04-01 20:56:15,450 [INFO] [api_server.py:132] - [API] [000001] ✅ 分析顺利完成，耗时: 402秒
+2026-04-01 21:03:15,490 [INFO] [api_server.py:32] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-01 21:03:15,490 [INFO] [api_server.py:39] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-01 21:03:56,410 [INFO] [api_server.py:86] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-01 21:03:56,440 [INFO] [api_server.py:105] - [API] 👉 收到分析请求，目标代码: 000001 | 用户: admin
+2026-04-01 21:03:56,442 [INFO] [api_server.py:113] - [API] ⚡ [命中缓存] 000001 报告已存在，极速返回！
+2026-04-01 21:34:47,227 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-01 21:34:47,227 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-01 21:35:32,518 [INFO] [api_server.py:134] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-01 21:35:32,548 [INFO] [api_server.py:162] - [API] 👉 收到分析请求，目标代码: 000001 | 日期: 2026-04-01 | 用户: admin
+2026-04-01 21:35:32,549 [INFO] [api_server.py:170] - [API] ⚡ [命中缓存] 000001 报告已存在，极速返回！
+2026-04-01 21:35:32,577 [INFO] [api_server.py:162] - [API] 👉 收到分析请求，目标代码: 600519 | 日期:  | 用户: admin
+2026-04-01 21:38:58,246 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-01 21:38:58,247 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-01 21:39:39,169 [INFO] [api_server.py:133] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-01 21:39:39,196 [INFO] [api_server.py:161] - [API] 👉 收到分析请求，目标代码: 000001 | 日期: 2026-04-01 | 用户: admin
+2026-04-01 21:39:39,196 [INFO] [api_server.py:169] - [API] ⚡ [命中缓存] 000001 报告已存在，极速返回！
+2026-04-01 21:46:21,226 [INFO] [api_server.py:193] - [API] [600519] ✅ 分析顺利完成，耗时: 649秒
+2026-04-02 14:00:02,566 [INFO] [api_server.py:133] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 14:00:02,570 [INFO] [api_server.py:161] - [API] 👉 收到分析请求，目标代码: 512400 | 日期: 2026-04-02 | 用户: admin
+2026-04-02 14:10:32,669 [INFO] [api_server.py:161] - [API] 👉 收到分析请求，目标代码: 513180 | 日期: 2026-04-02 | 用户: admin
+2026-04-02 14:24:08,021 [INFO] [api_server.py:192] - [API] [512400] ✅ 分析顺利完成，耗时: 1445秒
+2026-04-02 14:36:45,620 [INFO] [api_server.py:192] - [API] [513180] ✅ 分析顺利完成，耗时: 1573秒
+2026-04-02 15:25:16,165 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 15:25:16,166 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 15:26:41,935 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:26:59,525 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:27:08,509 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:27:32,529 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:27:51,604 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:28:54,937 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:29:39,985 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:30:47,222 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 15:30:47,223 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 15:31:09,155 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:31:21,489 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:31:51,745 [INFO] [api_server.py:139] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:33:16,686 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 15:33:16,686 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 15:33:22,317 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:34:17,131 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:34:55,919 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:35:55,943 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 15:35:55,943 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 15:35:59,779 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:36:43,641 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:38:24,274 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:40:45,326 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:45:36,351 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 15:45:36,351 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 15:45:42,316 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:45:48,802 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 15:45:55,783 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 16:06:18,769 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:06:18,770 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:06:30,188 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 16:15:09,873 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:15:09,873 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:15:43,003 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-02 16:19:12,949 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:19:12,950 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:20:56,262 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:20:56,262 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:22:08,343 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:22:08,344 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:24:37,312 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:24:37,312 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:25:31,762 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:25:31,763 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:40:06,454 [INFO] [<stdin>:23] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:40:37,119 [INFO] [<stdin>:23] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:41:11,485 [INFO] [<stdin>:23] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:41:44,856 [INFO] [<stdin>:23] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 16:42:11,898 [INFO] [<stdin>:18] - === FastAPI 后端服务启动 ===
+2026-04-02 16:55:17,501 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 16:55:17,502 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:25:55,273 [INFO] [testapp4.py:24] - === Starting ===
+2026-04-02 17:27:28,117 [INFO] [testapp4.py:24] - === Starting ===
+2026-04-02 17:27:35,418 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:27:35,418 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:28:01,181 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:28:01,183 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:29:08,193 [INFO] [api_server_8081.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:29:08,194 [INFO] [api_server_8081.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:35:54,435 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:35:54,436 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:36:22,342 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:36:22,343 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:38:16,537 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:38:16,538 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:39:12,903 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:39:12,903 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:44:17,193 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:44:17,193 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-02 17:46:49,920 [INFO] [testapp4.py:24] - === Starting ===
+2026-04-02 17:49:30,047 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-02 17:49:30,047 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-03 14:00:02,053 [INFO] [api_server.py:191] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-03 14:00:02,058 [INFO] [api_server.py:219] - [API] 👉 收到分析请求，目标代码: 512400 | 日期: 2026-04-03 | 用户: admin
+2026-04-03 14:06:20,795 [INFO] [api_server.py:250] - [API] [512400] ✅ 分析顺利完成，耗时: 379秒
+2026-04-03 14:06:50,823 [INFO] [api_server.py:219] - [API] 👉 收到分析请求，目标代码: 513180 | 日期: 2026-04-03 | 用户: admin
+2026-04-03 14:13:01,018 [INFO] [api_server.py:250] - [API] [513180] ✅ 分析顺利完成，耗时: 370秒
