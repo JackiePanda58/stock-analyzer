@@ -231,8 +231,8 @@
             :name="moduleName"
           >
             <div class="module-content">
-              <div v-if="typeof content === 'string'" class="markdown-content">
-                <div v-html="renderMarkdown(content)"></div>
+              <div v-if="content.content && typeof content.content === 'string'" class="markdown-content">
+                <div v-html="renderMarkdown(content.content)"></div>
               </div>
               <div v-else class="json-content">
                 <pre>{{ JSON.stringify(content, null, 2) }}</pre>
@@ -753,7 +753,7 @@ const formatAnalysts = (analysts: string[]) => {
     'technical': '技术分析师'
   }
 
-  return analysts.map(analyst => analystNameMap[analyst] || analyst).join('、')
+  return (analysts || []).map(analyst => analystNameMap[analyst] || analyst).join('、')
 }
 
 // 获取模型的详细描述（从后端配置中获取）

@@ -1,0 +1,2000 @@
+    return {
+      ...item,
+      valid: !missing
+    }
+  })
+}
+
+// 生命周期
+onMounted(() => {
+  handleValidate()
+})
+</script>
+
+<style scoped lang="scss">
+.config-validator {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--el-text-color-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .validator-content {
+    .validation-summary {
+      margin-bottom: 24px;
+    }
+
+    .config-section {
+      margin-bottom: 24px;
+
+      h4 {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .config-items {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .config-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--el-border-color-light);
+        background: var(--el-fill-color-blank);
+        transition: all 0.3s;
+
+        &.is-valid {
+          border-color: var(--el-color-success-light-5);
+          background: var(--el-color-success-light-9);
+        }
+
+        &.is-invalid {
+          border-color: var(--el-color-danger-light-5);
+          background: var(--el-color-danger-light-9);
+        }
+
+        &.is-warning {
+          border-color: var(--el-color-warning-light-5);
+          background: var(--el-color-warning-light-9);
+        }
+
+        &.is-disabled {
+          border-color: var(--el-border-color-lighter);
+          background: var(--el-fill-color-lighter);
+          opacity: 0.7;
+        }
+
+        .item-icon {
+          flex-shrink: 0;
+          font-size: 20px;
+        }
+
+        .item-content {
+          flex: 1;
+
+          .item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+            margin-bottom: 4px;
+          }
+
+          .item-description {
+            font-size: 13px;
+            color: var(--el-text-color-regular);
+            margin-bottom: 4px;
+          }
+
+          .item-error {
+            font-size: 12px;
+            color: var(--el-color-danger);
+            margin-top: 4px;
+          }
+
+          .item-help {
+            font-size: 12px;
+            color: var(--el-color-warning);
+            margin-top: 4px;
+          }
+        }
+
+        .item-status {
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .mongodb-subsection {
+      margin-bottom: 20px;
+
+      h5 {
+        margin: 0 0 12px 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--el-text-color-secondary);
+        padding-left: 8px;
+        border-left: 3px solid var(--el-color-primary);
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .mongodb-warnings {
+      margin-top: 16px;
+
+      .warning-item {
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .warnings-section {
+      margin-bottom: 24px;
+
+      h4 {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .warning-item {
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .help-section {
+      .help-content {
+        h5 {
+          margin: 16px 0 8px 0;
+          font-size: 14px;
+          color: var(--el-text-color-primary);
+
+          &:first-child {
+            margin-top: 0;
+          }
+        }
+
+        p {
+          margin: 8px 0;
+          font-size: 13px;
+          color: var(--el-text-color-regular);
+          line-height: 1.6;
+        }
+
+        code {
+          padding: 2px 6px;
+          background: var(--el-fill-color-light);
+          border-radius: 4px;
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+        }
+
+        ol, ul {
+          margin: 8px 0;
+          padding-left: 24px;
+
+          li {
+            margin: 4px 0;
+            font-size: 13px;
+            color: var(--el-text-color-regular);
+            line-height: 1.6;
+          }
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+
+==================== frontend/src/components/Layout/HeaderActions.vue ====================
+<template>
+  <div class="header-actions">
+    <!-- 主题切换 -->
+    <el-tooltip content="切换主题" placement="bottom">
+      <el-button type="text" @click="toggleTheme" class="action-btn">
+        <el-icon>
+          <Sunny v-if="appStore.isDarkTheme" />
+          <Moon v-else />
+        </el-icon>
+      </el-button>
+    </el-tooltip>
+
+    <!-- 全屏切换 -->
+    <el-tooltip content="全屏" placement="bottom">
+      <el-button type="text" @click="toggleFullscreen" class="action-btn">
+        <el-icon><FullScreen /></el-icon>
+      </el-button>
+    </el-tooltip>
+
+    <!-- 通知 -->
+    <el-tooltip content="通知" placement="bottom">
+      <el-badge :value="unreadCount" :hidden="unreadCount === 0">
+        <el-button type="text" @click="openDrawer" class="action-btn">
+          <el-icon><Bell /></el-icon>
+        </el-button>
+      </el-badge>
+    </el-tooltip>
+
+    <!-- 帮助 -->
+    <el-tooltip content="帮助" placement="bottom">
+      <el-button type="text" @click="showHelp" class="action-btn">
+        <el-icon><QuestionFilled /></el-icon>
+      </el-button>
+    </el-tooltip>
+
+    <!-- 通知抽屉（方案B） -->
+    <el-drawer v-model="drawerVisible" direction="rtl" size="360px" :with-header="true" title="消息中心">
+      <div class="notif-toolbar">
+        <el-segmented v-model="filter" :options="[{label: '全部', value: 'all'}, {label: '未读', value: 'unread'}]" size="small" />
+        <el-button size="small" text type="primary" @click="onMarkAllRead" :disabled="unreadCount===0">全部已读</el-button>
+      </div>
+      <el-scrollbar max-height="calc(100vh - 160px)">
+        <el-empty v-if="items.length===0" description="暂无通知" />
+        <div v-else class="notif-list">
+          <div v-for="n in items" :key="n.id" class="notif-item" :class="{unread: n.status==='unread'}">
+            <div class="row">
+              <el-tag :type="tagType(n.type)" size="small">{{ typeLabel(n.type) }}</el-tag>
+              <span class="time">{{ toLocal(n.created_at) }}</span>
+            </div>
+            <div class="title" @click="go(n)">{{ n.title }}</div>
+            <div class="content" v-if="n.content">{{ n.content }}</div>
+            <div class="ops">
+              <el-button size="small" text type="primary" @click="go(n)" :disabled="!n.link">查看</el-button>
+              <el-button size="small" text @click="onMarkRead(n)" v-if="n.status==='unread'">标记已读</el-button>
+            </div>
+          </div>
+        </div>
+      </el-scrollbar>
+    </el-drawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useAppStore } from '@/stores/app'
+import { useNotificationStore } from '@/stores/notifications'
+import { useAuthStore } from '@/stores/auth'
+import { storeToRefs } from 'pinia'
+import {
+  Sunny,
+  Moon,
+  FullScreen,
+  Bell,
+  QuestionFilled
+} from '@element-plus/icons-vue'
+
+const appStore = useAppStore()
+const authStore = useAuthStore()
+const notifStore = useNotificationStore()
+const { unreadCount, items } = storeToRefs(notifStore)
+const drawerVisible = ref(false)
+const filter = ref<'all' | 'unread'>('all')
+let timerCount: any = null
+let timerList: any = null
+
+const toggleTheme = () => { appStore.toggleTheme() }
+const toggleFullscreen = () => {
+  if (document.fullscreenElement) document.exitFullscreen()
+  else document.documentElement.requestFullscreen()
+}
+
+function openDrawer() {
+  drawerVisible.value = true
+  notifStore.loadList(filter.value)
+}
+function onMarkRead(n: any) { notifStore.markRead(n.id) }
+function onMarkAllRead() { notifStore.markAllRead() }
+function typeLabel(t: string) { return t === 'analysis' ? '分析' : t === 'alert' ? '预警' : '系统' }
+function tagType(t: string) { return t === 'analysis' ? 'success' : t === 'alert' ? 'warning' : 'info' }
+function toLocal(iso: string) { try { return new Date(iso).toLocaleString() } catch { return iso } }
+function go(n: any) { if (n.link) window.open(n.link, '_blank') }
+
+onMounted(() => {
+  notifStore.refreshUnreadCount()
+  // 🔥 建立 WebSocket 连接（优先），失败自动降级到 SSE
+  notifStore.connect()
+
+  timerCount = setInterval(() => notifStore.refreshUnreadCount(), 30000)
+  watch(drawerVisible, (v) => {
+    if (v) {
+      notifStore.loadList(filter.value)
+      timerList = setInterval(() => notifStore.loadList(filter.value), 60000)
+    } else if (timerList) {
+      clearInterval(timerList)
+      timerList = null
+    }
+  }, { immediate: true })
+  watch(filter, () => { if (drawerVisible.value) notifStore.loadList(filter.value) })
+
+  // token 变化时重连
+  watch(() => authStore.token, () => {
+    notifStore.connect()
+  })
+})
+
+onUnmounted(() => {
+  if (timerCount) clearInterval(timerCount)
+  if (timerList) clearInterval(timerList)
+  // 🔥 断开所有连接（WebSocket 和 SSE）
+  notifStore.disconnect()
+})
+
+function showHelp() {
+  window.open('https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw', '_blank')
+}
+</script>
+
+<style lang="scss" scoped>
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .el-icon { font-size: 18px; }
+  }
+}
+
+/* 通知抽屉样式 */
+.notif-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.notif-list { display: flex; flex-direction: column; gap: 12px; }
+.notif-item { padding: 10px 8px; border-radius: 8px; border: 1px solid var(--el-border-color-lighter); }
+.notif-item.unread { background: var(--el-fill-color-light); }
+.notif-item .row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px; }
+.notif-item .title { font-weight: 600; cursor: pointer; margin-bottom: 4px; }
+.notif-item .title:hover { text-decoration: underline; }
+.notif-item .content { font-size: 12px; color: var(--el-text-color-regular); }
+.notif-item .ops { display: flex; gap: 8px; margin-top: 6px; }
+</style>
+
+
+==================== frontend/src/components/Layout/SidebarMenu.vue ====================
+<template>
+  <el-menu
+    :default-active="activeMenu"
+    :collapse="appStore.sidebarCollapsed"
+    :unique-opened="true"
+    router
+    class="sidebar-menu"
+  >
+    <el-menu-item index="/dashboard">
+      <el-icon><Odometer /></el-icon>
+      <template #title>仪表板</template>
+    </el-menu-item>
+
+    <el-menu-item index="/learning">
+      <el-icon><Reading /></el-icon>
+      <template #title>学习中心</template>
+    </el-menu-item>
+
+    <el-sub-menu index="/analysis">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>股票分析</span>
+      </template>
+      <el-menu-item index="/analysis/single">单股分析</el-menu-item>
+      <el-menu-item index="/analysis/batch">批量分析</el-menu-item>
+      <!-- 新增：将分析报告作为股票分析的子菜单 -->
+      <el-menu-item index="/reports">分析报告</el-menu-item>
+    </el-sub-menu>
+
+    <el-menu-item index="/tasks">
+      <el-icon><List /></el-icon>
+      <template #title>任务中心</template>
+    </el-menu-item>
+
+    <el-menu-item index="/screening">
+      <el-icon><Search /></el-icon>
+      <template #title>股票筛选</template>
+    </el-menu-item>
+
+    <el-menu-item index="/favorites">
+      <el-icon><Star /></el-icon>
+      <template #title>我的自选股</template>
+    </el-menu-item>
+
+    <el-menu-item index="/paper">
+      <el-icon><CreditCard /></el-icon>
+      <template #title>模拟交易</template>
+    </el-menu-item>
+
+
+    <!-- 分析报告已移至“股票分析”子菜单，保留注释便于追踪 -->
+    <!--
+    <el-menu-item index="/reports">
+      <el-icon><Document /></el-icon>
+      <template #title>分析报告</template>
+    </el-menu-item>
+    -->
+
+    <el-sub-menu index="/settings">
+      <template #title>
+        <el-icon><Setting /></el-icon>
+        <span>设置</span>
+      </template>
+
+      <!-- 个人设置 -->
+      <el-sub-menu index="/settings-personal">
+        <template #title>个人设置</template>
+        <el-menu-item index="/settings">通用设置</el-menu-item>
+        <el-menu-item index="/settings?tab=appearance">外观设置</el-menu-item>
+        <el-menu-item index="/settings?tab=analysis">分析偏好</el-menu-item>
+        <el-menu-item index="/settings?tab=notifications">通知设置</el-menu-item>
+        <el-menu-item index="/settings?tab=security">安全设置</el-menu-item>
+      </el-sub-menu>
+
+      <!-- 系统配置 -->
+      <el-sub-menu index="/settings-config">
+        <template #title>系统配置</template>
+        <el-menu-item index="/settings/config">配置管理</el-menu-item>
+        <el-menu-item index="/settings/cache">缓存管理</el-menu-item>
+      </el-sub-menu>
+
+      <!-- 系统管理 -->
+      <el-sub-menu index="/settings-admin">
+        <template #title>系统管理</template>
+        <el-menu-item index="/settings/database">数据库管理</el-menu-item>
+        <el-menu-item index="/settings/logs">操作日志</el-menu-item>
+        <el-menu-item index="/settings/system-logs">系统日志</el-menu-item>
+        <el-menu-item index="/settings/sync">多数据源同步</el-menu-item>
+        <el-menu-item index="/settings/scheduler">定时任务</el-menu-item>
+        <el-menu-item index="/settings/usage">使用统计</el-menu-item>
+      </el-sub-menu>
+    </el-sub-menu>
+
+    <el-menu-item index="/about">
+      <el-icon><InfoFilled /></el-icon>
+      <template #title>关于</template>
+    </el-menu-item>
+  </el-menu>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAppStore } from '@/stores/app'
+import {
+  Odometer,
+  Reading,
+  TrendCharts,
+  Search,
+  Star,
+  List,
+  /* Document 移除：不再使用顶级分析报告菜单图标 */
+  Setting,
+  InfoFilled,
+  CreditCard
+} from '@element-plus/icons-vue'
+
+const route = useRoute()
+const appStore = useAppStore()
+
+const activeMenu = computed(() => route.path)
+</script>
+
+<style lang="scss" scoped>
+.sidebar-menu {
+  border: none;
+  height: 100%;
+
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    height: 48px;
+    line-height: 48px;
+  }
+
+  :deep(.el-menu-item.is-active) {
+    background-color: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+}
+</style>
+
+
+==================== frontend/src/components/Layout/AppFooter.vue ====================
+<template>
+  <div class="app-footer">
+    <div class="footer-content">
+      <div class="copyright">
+        <span>© 2025 TradingAgents-CN v1.0.0-preview</span>
+        <span class="rights">All rights reserved.</span>
+      </div>
+      <div class="disclaimer-text">
+        TradingAgents-CN 是一个 AI 多智能体股票分析辅助工具，不具备证券投资咨询资质。平台中的所有分析结果、评分、参考意见均由 AI 基于历史数据自动生成，仅供学习、研究与技术交流使用，不构成任何投资建议或决策依据。股票投资存在市场风险、流动性风险、政策风险等多种风险，可能导致本金损失。用户应基于自身风险承受能力独立决策，使用本工具产生的任何投资行为及其后果由用户自行承担。市场有风险，投资需谨慎。
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+// Footer组件逻辑
+</script>
+
+<style lang="scss" scoped>
+.app-footer {
+  .footer-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    color: var(--el-text-color-regular);
+    font-size: 14px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  .rights {
+    margin-left: 4px;
+  }
+
+  .disclaimer-text {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+    max-width: 1100px;
+  }
+}
+</style>
+
+
+
+==================== frontend/src/components/Layout/UserProfile.vue ====================
+<template>
+  <div class="user-profile" :class="{ collapsed: appStore.sidebarCollapsed }">
+    <el-dropdown trigger="click" @command="handleCommand">
+      <div class="profile-info">
+        <el-avatar :size="32" :src="userAvatar">
+          <el-icon><User /></el-icon>
+        </el-avatar>
+        <div v-if="!appStore.sidebarCollapsed" class="user-info">
+          <div class="username">{{ userDisplayName }}</div>
+          <div class="user-role">{{ userRole }}</div>
+        </div>
+      </div>
+      
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="settings">
+            <el-icon><Setting /></el-icon>
+            设置
+          </el-dropdown-item>
+          <el-dropdown-item divided command="logout">
+            <el-icon><SwitchButton /></el-icon>
+            退出登录
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
+import { User, Setting, SwitchButton } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const appStore = useAppStore()
+const authStore = useAuthStore()
+
+// 用户头像：优先使用用户设置的头像，否则返回 undefined 使用 el-avatar 的默认图标
+const userAvatar = computed(() => authStore.user?.avatar || undefined)
+const userDisplayName = computed(() => authStore.user?.username || '未登录')
+const userRole = computed(() => {
+  if (!authStore.user) return '未登录'
+  return '用户'
+})
+
+const handleCommand = async (command: string) => {
+  switch (command) {
+    case 'settings':
+      router.push('/settings')
+      break
+    case 'logout':
+      await authStore.logout()
+      ElMessage.success('已退出登录')
+      router.push('/login')
+      break
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.user-profile {
+  padding: 12px;
+
+  &.collapsed {
+    padding: 8px;
+    text-align: center;
+  }
+
+  .profile-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: var(--el-fill-color-lighter);
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+
+      .username {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .user-role {
+        font-size: 12px;
+        color: var(--el-text-color-placeholder);
+      }
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/components/Layout/Breadcrumb.vue ====================
+<template>
+  <el-breadcrumb separator="/" class="breadcrumb">
+    <el-breadcrumb-item
+      v-for="item in breadcrumbList"
+      :key="item.path"
+      :to="item.path"
+    >
+      {{ item.title }}
+    </el-breadcrumb-item>
+  </el-breadcrumb>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const breadcrumbList = computed(() => {
+  const matched = route.matched.filter(item => item.meta && item.meta.title)
+  
+  const breadcrumbs = matched.map(item => ({
+    path: item.path,
+    title: item.meta.title as string
+  }))
+
+  return breadcrumbs
+})
+</script>
+
+<style lang="scss" scoped>
+.breadcrumb {
+  font-size: 14px;
+}
+</style>
+
+
+==================== frontend/src/components/Dev/DevPanel.vue ====================
+<template>
+  <div class="dev-panel">
+    <!-- 开发环境调试面板 -->
+  </div>
+</template>
+
+<script setup lang="ts">
+// 开发环境调试面板逻辑
+</script>
+
+<style lang="scss" scoped>
+.dev-panel {
+  // 样式
+}
+</style>
+
+
+==================== frontend/src/components/Global/GlobalConfirm.vue ====================
+<template>
+  <div class="global-confirm">
+    <!-- 全局确认对话框组件 -->
+  </div>
+</template>
+
+<script setup lang="ts">
+// 全局确认对话框组件逻辑
+</script>
+
+<style lang="scss" scoped>
+.global-confirm {
+  // 样式
+}
+</style>
+
+
+==================== frontend/src/components/Global/GlobalNotification.vue ====================
+<template>
+  <div class="global-notification">
+    <!-- 全局通知组件 -->
+  </div>
+</template>
+
+<script setup lang="ts">
+// 全局通知组件逻辑
+</script>
+
+<style lang="scss" scoped>
+.global-notification {
+  // 样式
+}
+</style>
+
+
+==================== frontend/src/components/Global/TaskResultDialog.vue ====================
+<template>
+  <el-dialog v-model="visible" title="任务结果" width="60%">
+    <div v-if="result">
+      <h4>建议</h4>
+      <div class="markdown-content" v-html="renderMarkdown(result.recommendation || '无')"></div>
+      <h4 style="margin-top: 16px;">摘要</h4>
+      <div class="markdown-content" v-html="renderMarkdown(result.summary || '无')"></div>
+    </div>
+    <template #footer>
+      <el-button @click="emit('close')">关闭</el-button>
+      <el-button type="primary" @click="emit('view-report')">查看报告详情</el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { marked } from 'marked'
+
+const props = defineProps<{ modelValue: boolean; result: any }>()
+const emit = defineEmits(['update:modelValue','close','view-report'])
+
+const visible = computed({
+  get: () => props.modelValue,
+  set: (v: boolean) => emit('update:modelValue', v)
+})
+
+marked.setOptions({ breaks: true, gfm: true })
+const renderMarkdown = (s: string) => { try { return marked.parse(s||'') as string } catch { return s } }
+</script>
+
+
+
+==================== frontend/src/components/Global/TaskReportDialog.vue ====================
+<template>
+  <el-dialog v-model="visible" title="报告详情" width="70%">
+    <template v-if="sections && sections.length > 0">
+      <el-tabs v-model="active">
+        <el-tab-pane v-for="(sec, idx) in sections" :key="sec.key || idx" :label="sec.title" :name="String(idx)">
+          <div v-if="typeof sec.content === 'string'" class="markdown-content" v-html="renderMarkdown(sec.content)"></div>
+          <div v-else class="json-content"><pre>{{ JSON.stringify(sec.content, null, 2) }}</pre></div>
+        </el-tab-pane>
+      </el-tabs>
+    </template>
+    <template v-else>
+      <el-empty description="暂无内容" />
+    </template>
+    <template #footer>
+      <el-button @click="emit('close')">关闭</el-button>
+    </template>
+  </el-dialog>
+</template>
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { marked } from 'marked'
+const props = defineProps<{ modelValue: boolean; sections: Array<{ key?: string; title: string; content: any }> }>()
+const emit = defineEmits(['update:modelValue','close'])
+const visible = computed({ get: () => props.modelValue, set: (v: boolean) => emit('update:modelValue', v) })
+const active = ref('0')
+marked.setOptions({ breaks: true, gfm: true })
+const renderMarkdown = (s: string) => { try { return marked.parse(s||'') as string } catch { return s } }
+</script>
+
+
+
+==================== frontend/src/components/Global/MarketSelector.vue ====================
+<template>
+  <el-select
+    v-model="selectedMarket"
+    :placeholder="placeholder"
+    :size="size"
+    :clearable="clearable"
+    :disabled="disabled"
+    @change="handleChange"
+    class="market-selector"
+  >
+    <el-option
+      v-for="market in markets"
+      :key="market.code"
+      :label="market.label"
+      :value="market.code"
+    >
+      <span class="market-option">
+        <span class="market-flag">{{ market.flag }}</span>
+        <span class="market-name">{{ market.label }}</span>
+      </span>
+    </el-option>
+  </el-select>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+
+interface Market {
+  code: string
+  label: string
+  flag: string
+}
+
+interface Props {
+  modelValue?: string
+  placeholder?: string
+  size?: 'large' | 'default' | 'small'
+  clearable?: boolean
+  disabled?: boolean
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: string): void
+  (e: 'change', value: string): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: 'CN',
+  placeholder: '选择市场',
+  size: 'default',
+  clearable: false,
+  disabled: false
+})
+
+const emit = defineEmits<Emits>()
+
+const markets: Market[] = [
+  { code: 'CN', label: 'A股', flag: '🇨🇳' },
+  { code: 'HK', label: '港股', flag: '🇭🇰' },
+  { code: 'US', label: '美股', flag: '🇺🇸' }
+]
+
+const selectedMarket = ref(props.modelValue)
+
+watch(() => props.modelValue, (newValue) => {
+  selectedMarket.value = newValue
+})
+
+const handleChange = (value: string) => {
+  emit('update:modelValue', value)
+  emit('change', value)
+}
+</script>
+
+<style scoped lang="scss">
+.market-selector {
+  min-width: 120px;
+}
+
+.market-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.market-flag {
+  font-size: 18px;
+}
+
+.market-name {
+  font-size: 14px;
+}
+</style>
+
+
+
+==================== frontend/src/components/Global/MultiMarketStockSearch.vue ====================
+<template>
+  <div class="multi-market-stock-search">
+    <div class="search-header">
+      <MarketSelector
+        v-model="selectedMarket"
+        size="default"
+        @change="handleMarketChange"
+      />
+      <el-input
+        v-model="searchQuery"
+        :placeholder="getPlaceholder()"
+        clearable
+        @input="handleSearch"
+        @clear="handleClear"
+        class="search-input"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
+
+    <div v-if="loading" class="search-loading">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>搜索中...</span>
+    </div>
+
+    <div v-else-if="searchResults.length > 0" class="search-results">
+      <div
+        v-for="stock in searchResults"
+        :key="`${stock.market}-${stock.code}`"
+        class="result-item"
+        @click="handleSelectStock(stock)"
+      >
+        <div class="stock-info">
+          <div class="stock-code-name">
+            <span class="stock-code">{{ formatStockCode(stock) }}</span>
+            <span class="stock-name">{{ stock.name }}</span>
+            <span v-if="stock.name_en" class="stock-name-en">{{ stock.name_en }}</span>
+          </div>
+          <div class="stock-meta">
+            <el-tag size="small" type="info">{{ getMarketLabel(stock.market) }}</el-tag>
+            <el-tag v-if="stock.industry" size="small">{{ stock.industry }}</el-tag>
+            <span v-if="stock.pe" class="stock-pe">PE: {{ stock.pe.toFixed(2) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="searchQuery && !loading" class="no-results">
+      <el-empty description="未找到相关股票" :image-size="80" />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { Search, Loading } from '@element-plus/icons-vue'
+import { searchStocks, type StockInfo } from '@/api/multiMarket'
+import { ElMessage } from 'element-plus'
+import MarketSelector from './MarketSelector.vue'
+
+interface Emits {
+  (e: 'select', stock: StockInfo): void
+}
+
+const emit = defineEmits<Emits>()
+
+const selectedMarket = ref('CN')
+const searchQuery = ref('')
+const searchResults = ref<StockInfo[]>([])
+const loading = ref(false)
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const getPlaceholder = () => {
+  const placeholders: Record<string, string> = {
+    CN: '输入股票代码或名称（如：000001 或 平安银行）',
+    HK: '输入股票代码或名称（如：00700 或 腾讯）',
+    US: '输入股票代码或名称（如：AAPL 或 Apple）'
+  }
+  return placeholders[selectedMarket.value] || '输入股票代码或名称'
+}
+
+const getMarketLabel = (market: string) => {
+  const labels: Record<string, string> = {
+    CN: 'A股',
+    HK: '港股',
+    US: '美股'
+  }
+  return labels[market] || market
+}
+
+const formatStockCode = (stock: StockInfo) => {
+  if (stock.market === 'HK') {
+    // 港股代码格式化为5位（如：00700）
+    return stock.code.padStart(5, '0')
+  }
+  return stock.code
+}
+
+const handleMarketChange = () => {
+  // 切换市场时清空搜索结果
+  searchResults.value = []
+  searchQuery.value = ''
+}
+
+const handleSearch = () => {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+  }
+
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    return
+  }
+
+  // 防抖：500ms后执行搜索
+  searchTimer = setTimeout(async () => {
+    await performSearch()
+  }, 500)
+}
+
+const performSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    return
+  }
+
+  loading.value = true
+  try {
+    const response = await searchStocks(selectedMarket.value, searchQuery.value.trim(), 20)
+    searchResults.value = response.data?.stocks || []
+  } catch (error: any) {
+    console.error('搜索失败:', error)
+    ElMessage.error(error.message || '搜索失败')
+    searchResults.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleClear = () => {
+  searchResults.value = []
+}
+
+const handleSelectStock = (stock: StockInfo) => {
+  emit('select', stock)
+  // 清空搜索
+  searchQuery.value = ''
+  searchResults.value = []
+}
+</script>
+
+<style scoped lang="scss">
+.multi-market-stock-search {
+  width: 100%;
+}
+
+.search-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: var(--el-text-color-secondary);
+}
+
+.search-results {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+}
+
+.result-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  transition: background-color 0.2s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: var(--el-fill-color-light);
+  }
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stock-code-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stock-code {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.stock-name {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+}
+
+.stock-name-en {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.stock-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stock-pe {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.no-results {
+  padding: 20px;
+  text-align: center;
+}
+</style>
+
+
+
+==================== frontend/src/components/Sync/DataSourceStatus.vue ====================
+<template>
+  <div class="data-source-status">
+    <el-card class="status-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon class="header-icon"><Connection /></el-icon>
+          <span class="header-title">数据源状态</span>
+          <el-button 
+            type="primary" 
+            size="small" 
+            :loading="refreshing"
+            @click="refreshStatus"
+          >
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+        </div>
+      </template>
+
+      <div v-loading="loading" class="status-content">
+        <div v-if="error" class="error-message">
+          <el-alert
+            :title="error"
+            type="error"
+            :closable="false"
+            show-icon
+          />
+        </div>
+
+        <div v-else-if="dataSources.length > 0" class="sources-list">
+          <div 
+            v-for="source in dataSources" 
+            :key="source.name"
+            class="source-item"
+            :class="{ 'available': source.available, 'unavailable': !source.available }"
+          >
+            <div class="source-header">
+              <div class="source-info">
+                <el-tag 
+                  :type="source.available ? 'success' : 'danger'"
+                  size="small"
+                  class="status-tag"
+                >
+                  {{ source.available ? '可用' : '不可用' }}
+                </el-tag>
+                <span class="source-name">{{ source.name.toUpperCase() }}</span>
+                <el-tag size="small" type="info" class="priority-tag">
+                  优先级: {{ source.priority }}
+                </el-tag>
+              </div>
+              <div class="source-actions">
+                <el-button
+                  size="small"
+                  type="primary"
+                  link
+                  @click="testSingleSource(source.name)"
+                  :loading="testingSource === source.name"
+                >
+                  <el-icon><Operation /></el-icon>
+                  测试
+                </el-button>
+              </div>
+            </div>
+            <div class="source-description">
+              {{ source.description }}
+            </div>
+            
+            <!-- 测试结果展示 -->
+            <div v-if="testResults[source.name]" class="test-results">
+              <el-divider content-position="left">
+                <span class="divider-text">最后测试结果</span>
+              </el-divider>
+              <div class="test-result-message">
+                <el-alert
+                  :title="testResults[source.name].message"
+                  :type="testResults[source.name].available ? 'success' : 'error'"
+                  :closable="false"
+                  show-icon
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <el-empty description="暂无数据源信息" />
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Connection, Refresh, Operation } from '@element-plus/icons-vue'
+import { getDataSourcesStatus, testDataSources, type DataSourceStatus, type DataSourceTestResult } from '@/api/sync'
+import { testApiConnection } from '@/api/request'
+
+// 响应式数据
+const loading = ref(false)
+const refreshing = ref(false)
+const error = ref('')
+const dataSources = ref<DataSourceStatus[]>([])
+const testResults = ref<Record<string, DataSourceTestResult>>({})
+const testingSource = ref('')
+
+// 获取数据源状态
+const fetchDataSourcesStatus = async () => {
+  try {
+    console.log('🔍 [DataSourceStatus] 开始获取数据源状态')
+    loading.value = true
+    error.value = ''
+
+    // 先测试API连接
+    console.log('🔍 [DataSourceStatus] 先测试API连接')
+    const connectionOk = await testApiConnection()
+    console.log('🔍 [DataSourceStatus] API连接测试结果:', connectionOk)
+
+    if (!connectionOk) {
+      console.error('🔍 [DataSourceStatus] API连接测试失败，停止后续操作')
+      error.value = '无法连接到后端服务，请确保后端服务正在 http://localhost:8000 运行'
+      return
+    }
+
+    console.log('🔍 [DataSourceStatus] API连接测试成功，继续获取数据源状态')
+
+    console.log('🔍 [DataSourceStatus] API连接正常，调用 getDataSourcesStatus')
+    const response = await getDataSourcesStatus()
+    console.log('🔍 [DataSourceStatus] API响应:', response)
+
+    if (response.success) {
+      console.log('🔍 [DataSourceStatus] API调用成功，数据源数量:', response.data?.length || 0)
+      console.log('🔍 [DataSourceStatus] 数据源详情:', response.data)
+      dataSources.value = response.data.sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
+      console.log('🔍 [DataSourceStatus] 排序后的数据源:', dataSources.value)
+    } else {
+      console.error('🔍 [DataSourceStatus] API调用失败')
+      console.error('🔍 [DataSourceStatus] 完整响应对象:', response)
+      console.error('🔍 [DataSourceStatus] 响应success字段:', response.success)
+      console.error('🔍 [DataSourceStatus] 响应message字段:', response.message)
+      console.error('🔍 [DataSourceStatus] 响应data字段:', response.data)
+      console.error('🔍 [DataSourceStatus] 响应的所有属性:', Object.keys(response))
+      error.value = response.message || '获取数据源状态失败'
+    }
+  } catch (err: any) {
+    console.error('🔍 [DataSourceStatus] 捕获异常:', err)
+    console.error('🔍 [DataSourceStatus] 异常类型:', err.constructor.name)
+    console.error('🔍 [DataSourceStatus] 异常消息:', err.message)
+    console.error('🔍 [DataSourceStatus] 异常堆栈:', err.stack)
+
+    // 检查是否是网络错误
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      console.error('🔍 [DataSourceStatus] 这是一个网络连接错误')
+      error.value = '网络连接失败，请检查服务器是否正常运行'
+    } else if (err.message.includes('HTTP')) {
+      console.error('🔍 [DataSourceStatus] 这是一个HTTP状态错误')
+      error.value = `服务器错误: ${err.message}`
+    } else {
+      console.error('🔍 [DataSourceStatus] 这是一个其他类型的错误')
+      error.value = err.message || '网络请求失败'
+    }
+  } finally {
+    loading.value = false
+    console.log('🔍 [DataSourceStatus] 获取数据源状态完成')
+  }
+}
+
+// 刷新状态
+const refreshStatus = async () => {
+  refreshing.value = true
+  await fetchDataSourcesStatus()
+  refreshing.value = false
+  ElMessage.success('数据源状态已刷新')
+}
+
+// 测试单个数据源
+const testSingleSource = async (sourceName: string) => {
+  try {
+    testingSource.value = sourceName
+    ElMessage.info(`正在测试 ${sourceName.toUpperCase()}，请稍候...`)
+
+    // 传递数据源名称，只测试该数据源
+    const response = await testDataSources(sourceName)
+    if (response.success) {
+      const results = response.data.test_results
+      const sourceResult = results.find(r => r.name === sourceName)
+      if (sourceResult) {
+        testResults.value[sourceName] = sourceResult
+        if (sourceResult.available) {
+          ElMessage.success(`✅ ${sourceName.toUpperCase()} 连接成功`)
+        } else {
+          ElMessage.warning(`⚠️ ${sourceName.toUpperCase()} 连接失败: ${sourceResult.message}`)
+        }
+      }
+    } else {
+      ElMessage.error(`测试失败: ${response.message}`)
+    }
+  } catch (err: any) {
+    console.error('测试数据源失败:', err)
+    if (err.code === 'ECONNABORTED') {
+      ElMessage.error(`测试超时: ${sourceName.toUpperCase()} 测试时间过长，请稍后重试`)
+    } else {
+      ElMessage.error(`测试失败: ${err.message}`)
+    }
+  } finally {
+    testingSource.value = ''
+  }
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchDataSourcesStatus()
+})
+</script>
+
+<style scoped lang="scss">
+.data-source-status {
+  .status-card {
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .header-icon {
+        margin-right: 8px;
+        color: var(--el-color-primary);
+      }
+      
+      .header-title {
+        font-weight: 600;
+        flex: 1;
+      }
+    }
+  }
+
+  .status-content {
+    min-height: 200px;
+  }
+
+  .sources-list {
+    .source-item {
+      padding: 16px;
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+
+      &.available {
+        border-color: var(--el-color-success-light-7);
+        background-color: var(--el-color-success-light-9);
+      }
+
+      &.unavailable {
+        border-color: var(--el-color-danger-light-7);
+        background-color: var(--el-color-danger-light-9);
+      }
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .source-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+
+        .source-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .source-name {
+            font-weight: 600;
+            font-size: 16px;
+          }
+        }
+      }
+
+      .source-description {
+        color: var(--el-text-color-regular);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .test-results {
+        margin-top: 16px;
+
+        .divider-text {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+        }
+
+        .test-items {
+          .test-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+
+            .success-icon {
+              color: var(--el-color-success);
+            }
+
+            .error-icon {
+              color: var(--el-color-danger);
+            }
+
+            .test-name {
+              font-weight: 500;
+              min-width: 80px;
+            }
+
+            .test-message {
+              color: var(--el-text-color-regular);
+              flex: 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .error-message {
+    margin-bottom: 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+}
+</style>
+
+
+==================== frontend/src/components/Sync/SyncHistory.vue ====================
+<template>
+  <div class="sync-history">
+    <el-card class="history-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon class="header-icon"><Clock /></el-icon>
+          <span class="header-title">同步历史</span>
+          <el-button
+            type="primary"
+            size="small"
+            :loading="loading"
+            @click="refreshHistory"
+          >
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+        </div>
+      </template>
+
+      <div v-loading="loading" class="history-content">
+        <div v-if="error" class="error-message">
+          <el-alert
+            :title="error"
+            type="error"
+            :closable="false"
+            show-icon
+          />
+        </div>
+
+        <div v-else-if="historyList.length > 0" class="history-list">
+          <el-timeline>
+            <el-timeline-item
+              v-for="(item, index) in historyList"
+              :key="index"
+              :timestamp="formatTime(item.finished_at || item.started_at)"
+              :type="getTimelineType(item.status)"
+              :icon="getTimelineIcon(item.status)"
+              placement="top"
+            >
+              <div class="history-item">
+                <div class="item-header">
+                  <el-tag 
+                    :type="getStatusType(item.status)"
+                    size="small"
+                    class="status-tag"
+                  >
+                    {{ getStatusText(item.status) }}
+                  </el-tag>
+                  <span class="job-name">{{ item.job }}</span>
+                </div>
+                
+                <div class="item-stats">
+                  <div class="stats-row">
+                    <span class="stat-item">总数: {{ item.total }}</span>
+                    <span class="stat-item success">新增: {{ item.inserted }}</span>
+                    <span class="stat-item primary">更新: {{ item.updated }}</span>
+                    <span class="stat-item danger">错误: {{ item.errors }}</span>
+                  </div>
+                  
+                  <div v-if="item.data_sources_used?.length" class="sources-row">
+                    <span class="sources-label">数据源:</span>
+                    <el-tag 
+                      v-for="source in item.data_sources_used" 
+                      :key="source"
+                      size="small"
+                      type="info"
+                      class="source-tag"
+                    >
+                      {{ source }}
+                    </el-tag>
+                  </div>
+                  
+                  <div v-if="item.last_trade_date" class="trade-date-row">
+                    <span class="trade-date-label">交易日期:</span>
+                    <span class="trade-date-value">{{ item.last_trade_date }}</span>
+                  </div>
+                </div>
+                
+                <div v-if="item.message" class="item-message">
+                  <el-alert
+                    :title="item.message"
+                    :type="item.status === 'failed' ? 'error' : 'warning'"
+                    :closable="false"
+                    size="small"
+                  />
+                </div>
+                
+                <div class="item-duration">
+                  <span class="duration-text">
+                    {{ getDuration(item.started_at, item.finished_at) }}
+                  </span>
+                </div>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+          
+          <!-- 加载更多 -->
+          <div v-if="hasMore" class="load-more">
+            <el-button 
+              type="primary" 
+              link 
+              :loading="loadingMore"
+              @click="loadMore"
+            >
+              加载更多
+            </el-button>
+          </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <el-empty description="暂无同步历史" />
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Clock, Refresh, SuccessFilled, CircleCloseFilled, Warning } from '@element-plus/icons-vue'
+import { getSyncHistory, type SyncStatus } from '@/api/sync'
+
+// 响应式数据
+const loading = ref(false)
+const loadingMore = ref(false)
+const error = ref('')
+const historyList = ref<SyncStatus[]>([])
+const hasMore = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+// 获取同步历史
+const fetchHistory = async (page = 1) => {
+  try {
+    if (page === 1) {
+      loading.value = true
+      historyList.value = []
+      currentPage.value = 1
+    } else {
+      loadingMore.value = true
+    }
+
+    error.value = ''
+
+    console.log(`📚 获取同步历史，页码: ${page}`)
+
+    // 调用真实的历史记录API
+    const response = await getSyncHistory({
+      page,
+      page_size: pageSize.value
+    })
+
+    if (response.success) {
+      const { records, total, has_more } = response.data
+
+      console.log(`📊 获取到 ${records.length} 条历史记录，总数: ${total}`)
+
+      if (page === 1) {
+        historyList.value = records
+      } else {
+        historyList.value.push(...records)
+      }
+
+      hasMore.value = has_more
+
+      // 如果没有历史记录，显示空状态
+      if (records.length === 0 && page === 1) {
+        console.log('📝 暂无同步历史记录')
+      }
+    } else {
+      throw new Error(response.message || '获取历史记录失败')
+    }
+  } catch (err: any) {
+    console.error('获取同步历史失败:', err)
+    error.value = err.message || '网络请求失败'
+
+    // 如果是第一页加载失败，显示错误信息
+    if (page === 1) {
+      ElMessage.error(`获取同步历史失败: ${err.message}`)
+    }
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+  }
+}
+
+// 加载更多
+const loadMore = async () => {
+  currentPage.value++
+  await fetchHistory(currentPage.value)
+}
+
+// 刷新历史记录
+const refreshHistory = async () => {
+  console.log('🔄 手动刷新同步历史')
+  await fetchHistory(1)
+  ElMessage.success('同步历史已刷新')
+}
+
+// 获取状态类型
+const getStatusType = (status: string) => {
+  const typeMap: Record<string, string> = {
+    idle: 'info',
+    running: 'warning',
+    success: 'success',
+    success_with_errors: 'warning',
+    failed: 'danger',
+    never_run: 'info'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status: string) => {
+  const textMap: Record<string, string> = {
+    idle: '空闲',
+    running: '运行中',
+    success: '成功',
+    success_with_errors: '部分成功',
+    failed: '失败',
+    never_run: '未运行'
+  }
+  return textMap[status] || '未知'
+}
+
+// 获取时间线类型
+const getTimelineType = (status: string) => {
+  const typeMap: Record<string, string> = {
+    success: 'success',
+    success_with_errors: 'warning',
+    failed: 'danger',
+    running: 'primary'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取时间线图标
+const getTimelineIcon = (status: string) => {
+  const iconMap: Record<string, any> = {
+    success: SuccessFilled,
+    success_with_errors: Warning,
+    failed: CircleCloseFilled,
+    running: Clock
+  }
+  return iconMap[status] || Clock
+}
+
+// 格式化时间
+const formatTime = (timeStr?: string) => {
+  if (!timeStr) return ''
+  
+  const date = new Date(timeStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  // 如果是今天
+  if (diff < 24 * 60 * 60 * 1000) {
+    return date.toLocaleTimeString('zh-CN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  }
+  
+  // 如果是昨天或更早
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 计算持续时间
+const getDuration = (startTime?: string, endTime?: string) => {
+  if (!startTime || !endTime) return ''
+  
+  const start = new Date(startTime)
+  const end = new Date(endTime)
+  const duration = end.getTime() - start.getTime()
+  
+  if (duration < 1000) {
+    return `${duration}ms`
+  } else if (duration < 60000) {
+    return `${Math.round(duration / 1000)}s`
+  } else {
+    const minutes = Math.floor(duration / 60000)
+    const seconds = Math.round((duration % 60000) / 1000)
+    return `${minutes}m ${seconds}s`
+  }
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchHistory()
+})
+</script>
+
+<style scoped lang="scss">
+.sync-history {
+  .history-card {
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .header-icon {
+        margin-right: 8px;
+        color: var(--el-color-primary);
+      }
+      
+      .header-title {
+        font-weight: 600;
+        flex: 1;
+      }
+    }
+  }
+
+  .history-content {
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .history-list {
+    .history-item {
+      .item-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        
+        .job-name {
+          font-weight: 500;
+          color: var(--el-text-color-regular);
+        }
+      }
+      
+      .item-stats {
+        margin-bottom: 8px;
+        
+        .stats-row {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 4px;
+          
+          .stat-item {
+            font-size: 12px;
+            
+            &.success { color: var(--el-color-success); }
+            &.primary { color: var(--el-color-primary); }
+            &.danger { color: var(--el-color-danger); }
+          }
+        }
+        
+        .sources-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+          
+          .sources-label {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+          }
+          
+          .source-tag {
+            font-size: 10px;
+          }
+        }
+        
+        .trade-date-row {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          
+          .trade-date-label {
+            margin-right: 4px;
+          }
+        }
+      }
+      
+      .item-message {
+        margin-bottom: 8px;
+      }
+      
+      .item-duration {
+        .duration-text {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+        }
+      }
+    }
+    
+    .load-more {
+      text-align: center;
+      padding: 16px 0;
+    }
+  }
+
+  .error-message {
+    margin-bottom: 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+}
+
+// 自定义时间线样式
+:deep(.el-timeline-item__timestamp) {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.el-timeline-item__wrapper) {
+  padding-left: 28px;
+}
+
+:deep(.el-timeline-item__tail) {
+  border-left: 2px solid var(--el-border-color-lighter);
+}
+</style>
+
+
+==================== frontend/src/components/Sync/SyncRecommendations.vue ====================
+<template>
+  <div class="sync-recommendations">
+    <el-card class="recommendations-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon class="header-icon"><Promotion /></el-icon>
+          <span class="header-title">使用建议</span>
+          <el-button 
+            type="primary" 
+            size="small" 
+            :loading="loading"
+            @click="fetchRecommendations"
+          >
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+        </div>
+      </template>
+
+      <div v-loading="loading" class="recommendations-content">
+        <div v-if="error" class="error-message">
+          <el-alert
+            :title="error"
+            type="error"
+            :closable="false"
+            show-icon
+          />
+        </div>
+
+        <div v-else-if="recommendations" class="recommendations-sections">
+          <!-- 推荐主数据源 -->
+          <div v-if="recommendations.primary_source" class="primary-source-section">
+            <h4 class="section-title">
+              <el-icon class="title-icon"><Star /></el-icon>
+              推荐主数据源
+            </h4>
+            <div class="primary-source-card">
+              <div class="source-info">
+                <el-tag type="success" size="large" class="source-tag">
+                  {{ recommendations.primary_source.name.toUpperCase() }}

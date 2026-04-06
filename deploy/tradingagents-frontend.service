@@ -1,0 +1,17 @@
+[Unit]
+Description=TradingAgents-CN Vue3 Frontend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/stock-analyzer/frontend
+ExecStart=/usr/bin/npm run dev
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/stock-analyzer/logs/frontend.log
+StandardError=append:/root/stock-analyzer/logs/frontend.log
+Environment="NODE_OPTIONS=--max-old-space-size=512"
+
+[Install]
+WantedBy=multi-user.target

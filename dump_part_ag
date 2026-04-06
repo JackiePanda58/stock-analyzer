@@ -1,0 +1,2000 @@
+
+/**
+ * 获取使用统计
+ */
+export function getUsageStatistics(params?: {
+  days?: number
+  provider?: string
+  model_name?: string
+}): Promise<ApiResponse<UsageStatistics>> {
+  return ApiClient.get<UsageStatistics>(
+    '/api/usage/statistics',
+    params
+  )
+}
+
+/**
+ * 按供应商统计成本
+ */
+export function getCostByProvider(days: number = 7) {
+  return request({
+    url: '/api/usage/cost/by-provider',
+    method: 'get',
+    params: { days }
+  })
+}
+
+/**
+ * 按模型统计成本
+ */
+export function getCostByModel(days: number = 7) {
+  return request({
+    url: '/api/usage/cost/by-model',
+    method: 'get',
+    params: { days }
+  })
+}
+
+/**
+ * 每日成本统计
+ */
+export function getDailyCost(days: number = 7) {
+  return request({
+    url: '/api/usage/cost/daily',
+    method: 'get',
+    params: { days }
+  })
+}
+
+/**
+ * 删除旧记录
+ */
+export function deleteOldRecords(days: number = 90) {
+  return request({
+    url: '/api/usage/records/old',
+    method: 'delete',
+    params: { days }
+  })
+}
+
+
+
+==================== frontend/src/api/database.ts ====================
+/**
+ * 数据库管理API
+ */
+
+import { ApiClient } from './request'
+
+// 数据库状态接口
+export interface DatabaseStatus {
+  mongodb: {
+    connected: boolean
+    host: string
+    port: number
+    database: string
+    version?: string
+    uptime?: number
+    connections?: any
+    memory?: any
+    connected_at?: string
+    error?: string
+  }
+  redis: {
+    connected: boolean
+    host: string
+    port: number
+    database: number
+    version?: string
+    uptime?: number
+    memory_used?: number
+    memory_peak?: number
+    connected_clients?: number
+    total_commands?: number
+    error?: string
+  }
+}
+
+// 数据库统计接口
+export interface DatabaseStats {
+  total_collections: number
+  total_documents: number
+  total_size: number
+  collections: Array<{
+    name: string
+    documents: number
+    size: number
+    storage_size: number
+    indexes: number
+    index_size: number
+  }>
+}
+
+// 备份信息接口
+export interface BackupInfo {
+  id: string
+  name: string
+  filename: string
+  size: number
+  collections: string[]
+  created_at: string
+  created_by?: string
+}
+
+// 连接测试结果接口
+export interface ConnectionTestResult {
+  mongodb: {
+    success: boolean
+    response_time_ms?: number
+    message: string
+    error?: string
+  }
+  redis: {
+    success: boolean
+    response_time_ms?: number
+    message: string
+    error?: string
+  }
+  overall: boolean
+}
+
+// 数据库管理API
+export const databaseApi = {
+  // 获取数据库状态
+  async getStatus(): Promise<DatabaseStatus> {
+    const response = await ApiClient.get<DatabaseStatus>('/api/system/database/status')
+    return response.data
+  },
+
+  // 获取数据库统计
+  async getStats(): Promise<DatabaseStats> {
+    const response = await ApiClient.get<DatabaseStats>('/api/system/database/stats')
+    return response.data
+  },
+
+  // 测试数据库连接
+  testConnections(): Promise<{ success: boolean; message: string; data: ConnectionTestResult }> {
+    return ApiClient.post('/api/system/database/test')
+  },
+
+  // 创建备份
+  createBackup(data: {
+    name: string
+    collections?: string[]
+  }): Promise<{ success: boolean; message: string; data: BackupInfo }> {
+    return ApiClient.post('/api/system/database/backup', data)
+  },
+
+  // 获取备份列表
+  getBackups(): Promise<{ success: boolean; data: BackupInfo[] }> {
+    return ApiClient.get('/api/system/database/backups')
+  },
+
+  // 删除备份
+  deleteBackup(backupId: string): Promise<{ success: boolean; message: string }> {
+    return ApiClient.delete(`/api/system/database/backups/${backupId}`)
+  },
+
+  // 导入数据
+  importData(
+    file: File,
+    options: {
+      collection: string
+      format?: string
+      overwrite?: boolean
+    }
+  ): Promise<{ success: boolean; message: string; data: any }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // 🔥 使用 URL 参数传递 collection, format, overwrite
+    // FastAPI 的 File 参数和其他参数混用时，其他参数需要通过 Query 传递
+    const params = new URLSearchParams({
+      collection: options.collection,
+      format: options.format || 'json',
+      overwrite: String(options.overwrite || false)
+    })
+
+    console.log('📤 导入数据请求:', {
+      filename: file.name,
+      size: file.size,
+      collection: options.collection,
+      format: options.format,
+      overwrite: options.overwrite
+    })
+
+    return ApiClient.post(`/api/system/database/import?${params.toString()}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 导出数据
+  exportData(options: {
+    collections?: string[]
+    format?: string
+    sanitize?: boolean  // 是否脱敏（清空敏感字段，用于演示系统）
+  }): Promise<Blob> {
+    return ApiClient.post('/api/system/database/export', options, {
+      responseType: 'blob'
+    })
+  },
+
+  // 清理旧数据
+  cleanupOldData(days: number = 30): Promise<{
+    success: boolean
+    message: string
+    data: {
+      deleted_count: number
+      cleaned_collections: string[]
+      cutoff_date: string
+    }
+  }> {
+    return ApiClient.post(`/api/system/database/cleanup?days=${days}`)
+  },
+
+  // 清理过期分析结果
+  cleanupAnalysisResults(days: number = 30): Promise<{
+    success: boolean
+    message: string
+    data: {
+      deleted_count: number
+      cleaned_collections: string[]
+      cutoff_date: string
+    }
+  }> {
+    return ApiClient.post(`/api/system/database/cleanup/analysis?days=${days}`)
+  },
+
+  // 清理操作日志
+  cleanupOperationLogs(days: number = 90): Promise<{
+    success: boolean
+    message: string
+    data: {
+      deleted_count: number
+      cleaned_collections: string[]
+      cutoff_date: string
+    }
+  }> {
+    return ApiClient.post(`/api/system/database/cleanup/logs?days=${days}`)
+  }
+}
+
+// 工具函数
+export const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+export const formatDateTime = (dateTime: string): string => {
+  return new Date(dateTime).toLocaleString('zh-CN')
+}
+
+export const formatUptime = (seconds: number): string => {
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  
+  if (days > 0) {
+    return `${days}天 ${hours}小时 ${minutes}分钟`
+  } else if (hours > 0) {
+    return `${hours}小时 ${minutes}分钟`
+  } else {
+    return `${minutes}分钟`
+  }
+}
+
+
+==================== frontend/src/api/logs.ts ====================
+/**
+ * 日志管理 API
+ */
+
+import { ApiClient } from './request'
+
+export interface LogFileInfo {
+  name: string
+  path: string
+  size: number
+  size_mb: number
+  modified_at: string
+  type: 'error' | 'webapi' | 'worker' | 'access' | 'other'
+}
+
+export interface LogContentResponse {
+  filename: string
+  lines: string[]
+  stats: {
+    total_lines: number
+    filtered_lines: number
+    error_count: number
+    warning_count: number
+    info_count: number
+    debug_count: number
+  }
+}
+
+export interface LogStatistics {
+  total_files: number
+  total_size_mb: number
+  error_files: number
+  recent_errors: string[]
+  log_types: Record<string, number>
+}
+
+export interface LogReadRequest {
+  filename: string
+  lines?: number
+  level?: 'ERROR' | 'WARNING' | 'INFO' | 'DEBUG'
+  keyword?: string
+  start_time?: string
+  end_time?: string
+}
+
+export interface LogExportRequest {
+  filenames?: string[]
+  level?: 'ERROR' | 'WARNING' | 'INFO' | 'DEBUG'
+  start_time?: string
+  end_time?: string
+  format?: 'zip' | 'txt'
+}
+
+export const LogsApi = {
+  /**
+   * 获取日志文件列表
+   */
+  listLogFiles(): Promise<LogFileInfo[]> {
+    return ApiClient.get('/api/system/system-logs/files')
+  },
+
+  /**
+   * 读取日志文件内容
+   */
+  readLogFile(request: LogReadRequest): Promise<LogContentResponse> {
+    return ApiClient.post('/api/system/system-logs/read', request)
+  },
+
+  /**
+   * 导出日志文件
+   */
+  async exportLogs(request: LogExportRequest): Promise<Blob> {
+    const response = await ApiClient.post('/api/system/system-logs/export', request, {
+      responseType: 'blob'
+    })
+    return response as unknown as Blob
+  },
+
+  /**
+   * 获取日志统计信息
+   */
+  getStatistics(days: number = 7): Promise<LogStatistics> {
+    return ApiClient.get('/api/system/system-logs/statistics', { params: { days } })
+  },
+
+  /**
+   * 删除日志文件
+   */
+  deleteLogFile(filename: string): Promise<{ success: boolean; message: string }> {
+    return ApiClient.delete(`/api/system/system-logs/files/${filename}`)
+  }
+}
+
+
+
+==================== frontend/src/components/ModelConfig.vue ====================
+<template>
+  <div class="model-config-component">
+    <!-- AI模型配置 -->
+    <div class="config-section">
+      <h4 class="config-title">🤖 AI模型配置</h4>
+      <div class="model-config">
+        <div class="model-item">
+          <div class="model-label">
+            <span>快速分析模型</span>
+            <el-tooltip content="用于市场分析、新闻分析、基本面分析等" placement="top">
+              <el-icon class="help-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <el-select v-model="localQuickModel" size="small" style="width: 100%" filterable @change="onQuickModelChange">
+            <el-option
+              v-for="model in availableModels"
+              :key="`quick-${model.provider}/${model.model_name}`"
+              :label="model.model_display_name || model.model_name"
+              :value="model.model_name"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <!-- 能力等级徽章 -->
+                  <el-tag
+                    v-if="model.capability_level"
+                    :type="getCapabilityTagType(model.capability_level)"
+                    size="small"
+                    effect="plain"
+                  >
+                    {{ getCapabilityText(model.capability_level) }}
+                  </el-tag>
+                  <!-- 角色标签 -->
+                  <el-tag
+                    v-if="isQuickAnalysisRole(model.suitable_roles)"
+                    type="success"
+                    size="small"
+                    effect="plain"
+                  >
+                    ⚡快速
+                  </el-tag>
+                  <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
+                </div>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+
+        <div class="model-item">
+          <div class="model-label">
+            <span>深度决策模型</span>
+            <el-tooltip content="用于研究管理者综合决策、风险管理者最终评估" placement="top">
+              <el-icon class="help-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <el-select v-model="localDeepModel" size="small" style="width: 100%" filterable @change="onDeepModelChange">
+            <el-option
+              v-for="model in availableModels"
+              :key="`deep-${model.provider}/${model.model_name}`"
+              :label="model.model_display_name || model.model_name"
+              :value="model.model_name"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <!-- 能力等级徽章 -->
+                  <el-tag
+                    v-if="model.capability_level"
+                    :type="getCapabilityTagType(model.capability_level)"
+                    size="small"
+                    effect="plain"
+                  >
+                    {{ getCapabilityText(model.capability_level) }}
+                  </el-tag>
+                  <!-- 角色标签 -->
+                  <el-tag
+                    v-if="isDeepAnalysisRole(model.suitable_roles)"
+                    type="warning"
+                    size="small"
+                    effect="plain"
+                  >
+                    🧠深度
+                  </el-tag>
+                  <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
+                </div>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+      </div>
+
+      <!-- 🆕 模型推荐提示 -->
+      <el-alert
+        v-if="modelRecommendation"
+        :title="modelRecommendation.title"
+        :type="modelRecommendation.type"
+        :closable="false"
+        style="margin-top: 12px;"
+      >
+        <template #default>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+            <div style="font-size: 13px; line-height: 1.8; flex: 1; white-space: pre-line;">
+              {{ modelRecommendation.message }}
+            </div>
+            <el-button
+              v-if="modelRecommendation.quickModel && modelRecommendation.deepModel"
+              type="primary"
+              size="small"
+              @click="applyRecommendedModels"
+              style="flex-shrink: 0;"
+            >
+              应用推荐
+            </el-button>
+          </div>
+        </template>
+      </el-alert>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { InfoFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { recommendModels } from '@/api/modelCapabilities'
+
+// Props
+interface Props {
+  quickAnalysisModel: string
+  deepAnalysisModel: string
+  availableModels: any[]
+  analysisDepth: string | number  // 支持字符串（如"标准"）或数字（如3）
+}
+
+const props = defineProps<Props>()
+
+// Emits
+const emit = defineEmits<{
+  'update:quickAnalysisModel': [value: string]
+  'update:deepAnalysisModel': [value: string]
+}>()
+
+// Local state
+const localQuickModel = ref(props.quickAnalysisModel)
+const localDeepModel = ref(props.deepAnalysisModel)
+
+// 模型推荐提示
+const modelRecommendation = ref<{
+  title: string
+  message: string
+  type: 'success' | 'warning' | 'info' | 'error'
+  quickModel?: string
+  deepModel?: string
+} | null>(null)
+
+// Watch props changes
+watch(() => props.quickAnalysisModel, (newVal) => {
+  localQuickModel.value = newVal
+})
+
+watch(() => props.deepAnalysisModel, (newVal) => {
+  localDeepModel.value = newVal
+})
+
+// Emit changes
+const onQuickModelChange = (value: string) => {
+  emit('update:quickAnalysisModel', value)
+}
+
+const onDeepModelChange = (value: string) => {
+  emit('update:deepAnalysisModel', value)
+}
+
+/**
+ * 获取能力等级文本
+ */
+const getCapabilityText = (level: number): string => {
+  const texts: Record<number, string> = {
+    1: '⚡基础',
+    2: '📊标准',
+    3: '🎯高级',
+    4: '🔥专业',
+    5: '👑旗舰'
+  }
+  return texts[level] || '📊标准'
+}
+
+/**
+ * 获取能力等级标签类型
+ */
+const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {
+  if (level >= 4) return 'danger'
+  if (level >= 3) return 'warning'
+  if (level >= 2) return 'success'
+  return 'info'
+}
+
+/**
+ * 判断是否适合快速分析
+ */
+const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
+  if (!roles || !Array.isArray(roles)) return false
+  return roles.includes('quick_analysis') || roles.includes('both')
+}
+
+/**
+ * 判断是否适合深度分析
+ */
+const isDeepAnalysisRole = (roles: string[] | undefined): boolean => {
+  if (!roles || !Array.isArray(roles)) return false
+  return roles.includes('deep_analysis') || roles.includes('both')
+}
+
+/**
+ * 检查模型适配性并提供推荐
+ */
+const checkModelSuitability = async () => {
+  // 将分析深度转换为标准格式
+  let depthName: string
+  if (typeof props.analysisDepth === 'number') {
+    const depthNames: Record<number, string> = {
+      1: '快速',
+      2: '基础',
+      3: '标准',
+      4: '深度',
+      5: '全面'
+    }
+    depthName = depthNames[props.analysisDepth] || '标准'
+  } else {
+    depthName = props.analysisDepth
+  }
+
+  try {
+    // 获取推荐模型
+    const recommendRes = await recommendModels(depthName)
+    const responseData = recommendRes?.data?.data
+
+    if (responseData) {
+      const quickModel = responseData.quick_model || '未知'
+      const deepModel = responseData.deep_model || '未知'
+
+      // 获取模型的显示名称
+      const quickModelInfo = props.availableModels.find(m => m.model_name === quickModel)
+      const deepModelInfo = props.availableModels.find(m => m.model_name === deepModel)
+
+      const quickDisplayName = quickModelInfo?.model_display_name || quickModel
+      const deepDisplayName = deepModelInfo?.model_display_name || deepModel
+
+      // 获取推荐理由
+      const reason = responseData.reason || ''
+
+      // 构建推荐说明
+      const depthDescriptions: Record<string, string> = {
+        '快速': '快速浏览，获取基本信息',
+        '基础': '基础分析，了解主要指标',
+        '标准': '标准分析，全面评估股票',
+        '深度': '深度研究，挖掘投资机会',
+        '全面': '全面分析，专业投资决策'
+      }
+
+      const message = `${depthDescriptions[depthName] || '标准分析'}\n\n推荐模型配置：\n• 快速模型：${quickDisplayName}\n• 深度模型：${deepDisplayName}\n\n${reason}`
+
+      modelRecommendation.value = {
+        title: '💡 模型推荐',
+        message,
+        type: 'info',
+        quickModel,
+        deepModel
+      }
+    } else {
+      // 如果没有推荐数据，显示通用说明
+      const generalDescriptions: Record<string, string> = {
+        '快速': '快速分析：使用基础模型即可，注重速度和成本',
+        '基础': '基础分析：快速模型用基础级，深度模型用标准级',
+        '标准': '标准分析：快速模型用基础级，深度模型用标准级以上',
+        '深度': '深度分析：快速模型用标准级，深度模型用高级以上，需要推理能力',
+        '全面': '全面分析：快速模型用标准级，深度模型用专业级以上，强推理能力'
+      }
+
+      modelRecommendation.value = {
+        title: '💡 模型推荐',
+        message: generalDescriptions[depthName] || generalDescriptions['标准'],
+        type: 'info'
+      }
+    }
+  } catch (error) {
+    console.error('获取模型推荐失败:', error)
+  }
+}
+
+/**
+ * 应用推荐的模型配置
+ */
+const applyRecommendedModels = () => {
+  if (modelRecommendation.value?.quickModel && modelRecommendation.value?.deepModel) {
+    localQuickModel.value = modelRecommendation.value.quickModel
+    localDeepModel.value = modelRecommendation.value.deepModel
+    
+    emit('update:quickAnalysisModel', modelRecommendation.value.quickModel)
+    emit('update:deepAnalysisModel', modelRecommendation.value.deepModel)
+
+    // 清除推荐提示
+    modelRecommendation.value = null
+
+    ElMessage.success('已应用推荐的模型配置')
+  }
+}
+
+// 监听分析深度变化
+watch(() => props.analysisDepth, () => {
+  checkModelSuitability()
+})
+
+// 监听模型选择变化
+watch([localQuickModel, localDeepModel], () => {
+  checkModelSuitability()
+})
+
+// 初始化
+onMounted(() => {
+  checkModelSuitability()
+})
+</script>
+
+<style lang="scss" scoped>
+.model-config-component {
+  .config-section {
+    margin-bottom: 24px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .config-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a202c;
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .model-config {
+      .model-item {
+        margin-bottom: 16px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .model-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          font-size: 13px;
+          color: #374151;
+
+          .help-icon {
+            color: #9ca3af;
+            cursor: help;
+          }
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+
+==================== frontend/src/components/NetworkStatus.vue ====================
+<template>
+  <div class="network-status" v-if="showStatus">
+    <el-alert
+      v-if="!appStore.isOnline"
+      title="网络连接已断开"
+      type="warning"
+      :closable="false"
+      show-icon
+    >
+      <template #default>
+        <span>请检查您的网络连接</span>
+      </template>
+    </el-alert>
+    
+    <el-alert
+      v-else-if="!appStore.apiConnected"
+      title="后端服务连接失败"
+      type="error"
+      :closable="false"
+      show-icon
+    >
+      <template #default>
+        <span>无法连接到后端服务，请检查服务是否正常运行</span>
+        <el-button 
+          type="primary" 
+          size="small" 
+          @click="retryConnection"
+          :loading="retrying"
+          style="margin-left: 10px;"
+        >
+          重试连接
+        </el-button>
+      </template>
+    </el-alert>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useAppStore } from '@/stores/app'
+
+const appStore = useAppStore()
+const retrying = ref(false)
+
+// 只在有网络问题时显示状态
+const showStatus = computed(() => {
+  return !appStore.isOnline || !appStore.apiConnected
+})
+
+// 重试连接
+const retryConnection = async () => {
+  retrying.value = true
+  try {
+    await appStore.checkApiConnection()
+    if (appStore.apiConnected) {
+      console.log('✅ API连接恢复')
+    }
+  } catch (error) {
+    console.error('❌ 重试连接失败:', error)
+  } finally {
+    retrying.value = false
+  }
+}
+
+// 定期检查API连接状态
+let checkInterval: number | null = null
+
+onMounted(() => {
+  // 每30秒检查一次API连接状态
+  checkInterval = window.setInterval(() => {
+    if (appStore.isOnline && !appStore.apiConnected) {
+      appStore.checkApiConnection()
+    }
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (checkInterval) {
+    clearInterval(checkInterval)
+  }
+})
+</script>
+
+<style scoped>
+.network-status {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 400px;
+}
+
+.network-status :deep(.el-alert) {
+  margin-bottom: 10px;
+}
+
+.network-status :deep(.el-alert__content) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+</style>
+
+
+==================== frontend/src/components/DeepModelSelector.vue ====================
+<template>
+  <el-select
+    v-model="localValue"
+    :style="{ width }"
+    :size="size"
+    filterable
+    :placeholder="placeholder"
+    @change="onChange"
+  >
+    <el-option
+      v-for="model in availableModels"
+      :key="model.model_name"
+      :label="model.model_display_name || model.model_name"
+      :value="model.model_name"
+    >
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span style="flex:1;">{{ model.model_display_name || model.model_name }}</span>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <el-tag
+            v-if="model.capability_level"
+            :type="getCapabilityTagType(model.capability_level)"
+            size="small"
+            effect="plain"
+          >
+            {{ getCapabilityText(model.capability_level) }}
+          </el-tag>
+          <el-tag
+            v-if="type === 'deep' ? isDeepAnalysisRole(model.suitable_roles) : isQuickAnalysisRole(model.suitable_roles)"
+            :type="type === 'deep' ? 'warning' : 'success'"
+            size="small"
+            effect="plain"
+          >
+            {{ type === 'deep' ? '🧠深度' : '⚡快速' }}
+          </el-tag>
+          <span style="font-size:12px;color:#909399;">{{ model.provider }}</span>
+        </div>
+      </div>
+    </el-option>
+  </el-select>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+
+interface Props {
+  modelValue: string
+  availableModels: any[]
+  placeholder?: string
+  type?: 'quick' | 'deep'
+  size?: 'large' | 'default' | 'small'
+  width?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: '选择模型',
+  type: 'deep',
+  size: 'default',
+  width: '100%'
+})
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>()
+
+const localValue = ref(props.modelValue)
+
+watch(() => props.modelValue, (val) => { localValue.value = val })
+
+const onChange = (val: string) => {
+  emit('update:modelValue', val)
+}
+
+const getCapabilityText = (level: number): string => {
+  const texts: Record<number, string> = {
+    1: '⚡基础',
+    2: '📊标准',
+    3: '🎯高级',
+    4: '🔥专业',
+    5: '👑旗舰'
+  }
+  return texts[level] || '📊标准'
+}
+
+const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {
+  if (level >= 4) return 'danger'
+  if (level >= 3) return 'warning'
+  if (level >= 2) return 'success'
+  return 'info'
+}
+
+const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
+  if (!roles || !Array.isArray(roles)) return false
+  return roles.includes('quick_analysis') || roles.includes('both')
+}
+
+const isDeepAnalysisRole = (roles: string[] | undefined): boolean => {
+  if (!roles || !Array.isArray(roles)) return false
+  return roles.includes('deep_analysis') || roles.includes('both')
+}
+</script>
+
+==================== frontend/src/components/index.ts ====================
+import type { App } from 'vue'
+import MarketSelector from './Global/MarketSelector.vue'
+import MultiMarketStockSearch from './Global/MultiMarketStockSearch.vue'
+
+// 全局组件注册
+export function setupGlobalComponents(app: App) {
+  // 注册多市场相关组件
+  app.component('MarketSelector', MarketSelector)
+  app.component('MultiMarketStockSearch', MultiMarketStockSearch)
+}
+
+export default setupGlobalComponents
+
+
+==================== frontend/src/components/ConfigWizard.vue ====================
+<template>
+  <el-dialog
+    v-model="visible"
+    title="配置向导"
+    width="800px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    :show-close="currentStep > 0"
+  >
+    <div class="config-wizard">
+      <!-- 步骤指示器 -->
+      <el-steps :active="currentStep" align-center finish-status="success">
+        <el-step title="欢迎" icon="el-icon-star-on" />
+        <el-step title="数据库配置" icon="el-icon-coin" />
+        <el-step title="大模型配置" icon="el-icon-cpu" />
+        <el-step title="数据源配置" icon="el-icon-data-board" />
+        <el-step title="完成" icon="el-icon-circle-check" />
+      </el-steps>
+
+      <!-- 步骤内容 -->
+      <div class="wizard-content">
+        <!-- 步骤 0: 欢迎 -->
+        <div v-if="currentStep === 0" class="step-content welcome-step">
+          <div class="welcome-icon">
+            <el-icon :size="80" color="#409EFF"><Setting /></el-icon>
+          </div>
+          <h2>欢迎使用 TradingAgents-CN</h2>
+          <p class="welcome-text">
+            让我们通过几个简单的步骤来配置您的系统。
+            这将帮助您快速开始使用股票分析功能。
+          </p>
+          <el-alert
+            title="提示"
+            type="info"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div>您可以随时在"配置管理"页面修改这些设置。</div>
+              <div>如果您已经配置过系统，可以跳过此向导。</div>
+            </template>
+          </el-alert>
+        </div>
+
+        <!-- 步骤 1: 数据库配置 -->
+        <div v-if="currentStep === 1" class="step-content">
+          <h3>数据库配置</h3>
+          <p class="step-description">
+            系统需要连接到 MongoDB 和 Redis 数据库。
+          </p>
+
+          <el-form :model="wizardData" label-width="120px">
+            <el-divider content-position="left">MongoDB 配置</el-divider>
+            <el-form-item label="主机地址">
+              <el-input
+                v-model="wizardData.mongodb.host"
+                placeholder="localhost"
+              />
+            </el-form-item>
+            <el-form-item label="端口">
+              <el-input
+                v-model="wizardData.mongodb.port"
+                placeholder="27017"
+                type="number"
+              />
+            </el-form-item>
+            <el-form-item label="数据库名">
+              <el-input
+                v-model="wizardData.mongodb.database"
+                placeholder="tradingagents"
+              />
+            </el-form-item>
+
+            <el-divider content-position="left">Redis 配置</el-divider>
+            <el-form-item label="主机地址">
+              <el-input
+                v-model="wizardData.redis.host"
+                placeholder="localhost"
+              />
+            </el-form-item>
+            <el-form-item label="端口">
+              <el-input
+                v-model="wizardData.redis.port"
+                placeholder="6379"
+                type="number"
+              />
+            </el-form-item>
+          </el-form>
+
+          <el-alert
+            title="注意"
+            type="warning"
+            :closable="false"
+            show-icon
+            description="数据库配置需要在 .env 文件中设置，此处仅用于验证连接。"
+          />
+        </div>
+
+        <!-- 步骤 2: 大模型配置 -->
+        <div v-if="currentStep === 2" class="step-content">
+          <h3>大模型配置</h3>
+          <p class="step-description">
+            至少配置一个大模型 API 密钥，用于 AI 分析功能。
+          </p>
+
+          <el-form :model="wizardData" label-width="120px">
+            <el-form-item label="选择大模型">
+              <el-select
+                v-model="wizardData.llm.provider"
+                placeholder="请选择大模型提供商"
+                @change="handleProviderChange"
+              >
+                <el-option label="DeepSeek（推荐，性价比高）" value="deepseek" />
+                <el-option label="通义千问（推荐，国产稳定）" value="dashscope" />
+                <el-option label="OpenAI" value="openai" />
+                <el-option label="Google Gemini" value="google" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item v-if="wizardData.llm.provider" label="API 密钥">
+              <el-input
+                v-model="wizardData.llm.apiKey"
+                type="password"
+                placeholder="请输入 API 密钥"
+                show-password
+              />
+            </el-form-item>
+
+            <el-form-item v-if="wizardData.llm.provider" label="模型名称">
+              <el-select
+                v-model="wizardData.llm.modelName"
+                placeholder="请选择模型"
+              >
+                <template v-for="model in availableModels" :key="model.value">
+                  <el-option
+                    :label="model.label"
+                    :value="model.value"
+                  />
+                </template>
+              </el-select>
+            </el-form-item>
+          </el-form>
+
+          <el-alert
+            v-if="wizardData.llm.provider"
+            :title="`如何获取 ${getProviderName(wizardData.llm.provider)} API 密钥？`"
+            type="info"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div>
+                <div style="margin-bottom: 8px;">{{ getProviderHelp(wizardData.llm.provider) }}</div>
+                <div>
+                  <el-link
+                    :href="getProviderUrl(wizardData.llm.provider)"
+                    type="primary"
+                    target="_blank"
+                  >
+                    前往获取 →
+                  </el-link>
+                </div>
+              </div>
+            </template>
+          </el-alert>
+        </div>
+
+        <!-- 步骤 3: 数据源配置 -->
+        <div v-if="currentStep === 3" class="step-content">
+          <h3>数据源配置</h3>
+          <p class="step-description">
+            选择股票数据源，用于获取行情数据和基本信息。
+          </p>
+
+          <el-form :model="wizardData" label-width="120px">
+            <el-form-item label="默认数据源">
+              <el-select
+                v-model="datasourceType"
+                placeholder="请选择数据源"
+              >
+                <el-option label="AKShare（推荐，免费无需密钥）" value="akshare" />
+                <el-option label="Tushare（专业A股数据）" value="tushare" />
+                <el-option label="FinnHub（美股数据）" value="finnhub" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item
+              v-if="datasourceType === 'tushare'"
+              label="Tushare Token"
+            >
+              <el-input
+                v-model="datasourceToken"
+                placeholder="请输入 Tushare Token"
+              />
+            </el-form-item>
+
+            <el-form-item
+              v-if="datasourceType === 'finnhub'"
+              label="FinnHub API Key"
+            >
+              <el-input
+                v-model="datasourceApiKey"
+                placeholder="请输入 FinnHub API Key"
+              />
+            </el-form-item>
+          </el-form>
+
+          <el-alert
+            v-if="datasourceType === 'akshare'"
+            title="AKShare 无需配置"
+            type="success"
+            :closable="false"
+            show-icon
+            description="AKShare 是免费的数据源，无需 API 密钥即可使用。"
+          />
+
+          <el-alert
+            v-if="datasourceType === 'tushare'"
+            title="如何获取 Tushare Token？"
+            type="info"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div>
+                <div>1. 访问 Tushare 官网注册账号</div>
+                <div>2. 邮箱验证后登录</div>
+                <div>3. 在个人中心获取 Token</div>
+                <div style="margin-top: 8px;">
+                  <el-link
+                    href="https://tushare.pro/register?reg=tacn"
+                    type="primary"
+                    target="_blank"
+                  >
+                    前往注册 →
+                  </el-link>
+                </div>
+              </div>
+            </template>
+          </el-alert>
+        </div>
+
+        <!-- 步骤 4: 完成 -->
+        <div v-if="currentStep === 4" class="step-content complete-step">
+          <div class="complete-icon">
+            <el-icon :size="80" color="#67C23A"><CircleCheck /></el-icon>
+          </div>
+          <h2>配置完成！</h2>
+          <p class="complete-text">
+            恭喜！您已经完成了基本配置。现在可以开始使用系统了。
+          </p>
+
+          <div class="config-summary">
+            <h4>配置摘要</h4>
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="数据库">
+                MongoDB: {{ wizardData.mongodb.host }}:{{ wizardData.mongodb.port }}
+              </el-descriptions-item>
+              <el-descriptions-item label="大模型">
+                {{ getProviderName(wizardData.llm.provider) }} - {{ wizardData.llm.modelName }}
+              </el-descriptions-item>
+              <el-descriptions-item label="数据源">
+                {{ getDataSourceName(datasourceType) }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <el-alert
+            title="下一步"
+            type="success"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div>
+                <div>• 访问"仪表盘"查看系统概览</div>
+                <div>• 访问"单股分析"开始分析股票</div>
+                <div>• 访问"配置管理"调整详细设置</div>
+              </div>
+            </template>
+          </el-alert>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部按钮（必须是 el-dialog 的直接子元素） -->
+    <template #footer>
+      <div class="wizard-footer">
+        <el-button
+          v-if="currentStep > 0 && currentStep < 4"
+          @click="handlePrevious"
+        >
+          上一步
+        </el-button>
+        <el-button
+          v-if="currentStep === 0"
+          @click="handleSkip"
+        >
+          跳过向导
+        </el-button>
+        <el-button
+          v-if="currentStep < 4"
+          type="primary"
+          @click="handleNext"
+          :loading="saving"
+        >
+          {{ currentStep === 0 ? '开始配置' : '下一步' }}
+        </el-button>
+        <el-button
+          v-if="currentStep === 4"
+          type="primary"
+          @click="handleComplete"
+        >
+          完成
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Setting, CircleCheck } from '@element-plus/icons-vue'
+
+// 类型定义
+interface DataSourceConfig {
+  type: string
+  token: string
+  apiKey: string
+}
+
+interface WizardData {
+  mongodb: {
+    host: string
+    port: number
+    database: string
+  }
+  redis: {
+    host: string
+    port: number
+  }
+  llm: {
+    provider: string
+    apiKey: string
+    modelName: string
+  }
+  datasource: DataSourceConfig
+}
+
+// Props
+interface Props {
+  modelValue: boolean
+}
+
+const props = defineProps<Props>()
+
+// Emits
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'complete', data: WizardData): void
+}>()
+
+// 响应式数据
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
+const currentStep = ref(0)
+const saving = ref(false)
+
+const wizardData = ref<WizardData>({
+  mongodb: {
+    host: 'localhost',
+    port: 27017,
+    database: 'tradingagents'
+  },
+  redis: {
+    host: 'localhost',
+    port: 6379
+  },
+  llm: {
+    provider: '',
+    apiKey: '',
+    modelName: ''
+  },
+  datasource: {
+    type: 'akshare',
+    token: '',
+    apiKey: ''
+  }
+})
+
+// 可用模型列表
+const availableModels = computed(() => {
+  const provider = wizardData.value.llm.provider
+  const models: Record<string, Array<{ label: string; value: string }>> = {
+    deepseek: [
+      { label: 'deepseek-chat', value: 'deepseek-chat' },
+      { label: 'deepseek-coder', value: 'deepseek-coder' }
+    ],
+    dashscope: [
+      { label: 'qwen-turbo', value: 'qwen-turbo' },
+      { label: 'qwen-plus', value: 'qwen-plus' },
+      { label: 'qwen-max', value: 'qwen-max' }
+    ],
+    openai: [
+      { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
+      { label: 'gpt-4', value: 'gpt-4' },
+      { label: 'gpt-4-turbo', value: 'gpt-4-turbo' }
+    ],
+    google: [
+      { label: 'gemini-pro', value: 'gemini-pro' },
+      { label: 'gemini-2.5-pro', value: 'gemini-2.5-pro' }
+    ]
+  }
+  return models[provider] || []
+})
+
+// 数据源相关的计算属性，用于双向绑定
+const datasourceType = computed({
+  get: () => wizardData.value.datasource.type,
+  set: (value: string) => {
+    wizardData.value.datasource.type = value
+  }
+})
+
+const datasourceToken = computed({
+  get: () => wizardData.value.datasource.token,
+  set: (value: string) => {
+    wizardData.value.datasource.token = value
+  }
+})
+
+const datasourceApiKey = computed({
+  get: () => wizardData.value.datasource.apiKey,
+  set: (value: string) => {
+    wizardData.value.datasource.apiKey = value
+  }
+})
+
+// 方法
+const handleProviderChange = () => {
+  wizardData.value.llm.modelName = ''
+  if (availableModels.value.length > 0) {
+    wizardData.value.llm.modelName = availableModels.value[0].value
+  }
+}
+
+const getProviderName = (provider: string) => {
+  const names: Record<string, string> = {
+    deepseek: 'DeepSeek',
+    dashscope: '通义千问',
+    openai: 'OpenAI',
+    google: 'Google Gemini'
+  }
+  return names[provider] || provider
+}
+
+const getProviderHelp = (provider: string) => {
+  const helps: Record<string, string> = {
+    deepseek: '注册 DeepSeek 账号，在控制台创建 API Key',
+    dashscope: '注册阿里云账号，开通百炼服务，获取 API 密钥',
+    openai: '注册 OpenAI 账号，在 API Keys 页面创建密钥',
+    google: '注册 Google Cloud 账号，启用 Gemini API'
+  }
+  return helps[provider] || ''
+}
+
+const getProviderUrl = (provider: string) => {
+  const urls: Record<string, string> = {
+    deepseek: 'https://platform.deepseek.com/',
+    dashscope: 'https://dashscope.aliyun.com/',
+    openai: 'https://platform.openai.com/',
+    google: 'https://ai.google.dev/'
+  }
+  return urls[provider] || ''
+}
+
+const getDataSourceName = (type: string) => {
+  const names: Record<string, string> = {
+    akshare: 'AKShare',
+    tushare: 'Tushare',
+    finnhub: 'FinnHub'
+  }
+  return names[type] || type
+}
+
+const handleNext = async () => {
+  // 验证当前步骤
+  if (currentStep.value === 2 && !wizardData.value.llm.provider) {
+    ElMessage.warning('请选择大模型提供商')
+    return
+  }
+
+  if (currentStep.value === 2 && !wizardData.value.llm.apiKey) {
+    ElMessage.warning('请输入 API 密钥')
+    return
+  }
+
+  currentStep.value++
+}
+
+const handlePrevious = () => {
+  currentStep.value--
+}
+
+const handleSkip = () => {
+  visible.value = false
+}
+
+const handleComplete = () => {
+  emit('complete', wizardData.value)
+  visible.value = false
+  ElMessage.success('配置向导完成！')
+}
+</script>
+
+<style scoped lang="scss">
+.config-wizard {
+  .wizard-content {
+    margin: 30px 0;
+    min-height: 400px;
+
+    .step-content {
+      h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: var(--el-text-color-primary);
+      }
+
+      .step-description {
+        margin: 0 0 24px 0;
+        color: var(--el-text-color-regular);
+      }
+
+      &.welcome-step {
+        text-align: center;
+        padding: 40px 20px;
+
+        .welcome-icon {
+          margin-bottom: 24px;
+        }
+
+        h2 {
+          margin: 0 0 16px 0;
+          font-size: 24px;
+          color: var(--el-text-color-primary);
+        }
+
+        .welcome-text {
+          margin: 0 0 32px 0;
+          font-size: 16px;
+          color: var(--el-text-color-regular);
+          line-height: 1.6;
+        }
+      }
+
+      &.complete-step {
+        text-align: center;
+        padding: 40px 20px;
+
+        .complete-icon {
+          margin-bottom: 24px;
+        }
+
+        h2 {
+          margin: 0 0 16px 0;
+          font-size: 24px;
+          color: var(--el-text-color-primary);
+        }
+
+        .complete-text {
+          margin: 0 0 32px 0;
+          font-size: 16px;
+          color: var(--el-text-color-regular);
+        }
+
+        .config-summary {
+          margin-bottom: 24px;
+          text-align: left;
+
+          h4 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: var(--el-text-color-primary);
+          }
+        }
+      }
+    }
+  }
+
+  .wizard-footer {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+</style>
+
+==================== frontend/src/components/ConfigValidator.vue ====================
+<template>
+  <div class="config-validator">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <h3>
+            <el-icon><CircleCheck /></el-icon>
+            配置验证
+          </h3>
+          <el-button
+            type="primary"
+            size="small"
+            @click="handleValidate"
+            :loading="validating"
+          >
+            <el-icon><Refresh /></el-icon>
+            重新验证
+          </el-button>
+        </div>
+      </template>
+
+      <div v-loading="validating" class="validator-content">
+        <!-- 验证结果摘要 -->
+        <div v-if="validationResult" class="validation-summary">
+          <!-- 必需配置错误（红色） -->
+          <el-alert
+            v-if="!validationResult.success"
+            title="配置验证失败"
+            type="error"
+            :closable="false"
+            show-icon
+          >
+            <p v-if="envValidation?.missing_required?.length">
+              缺少 {{ envValidation.missing_required.length }} 个必需配置
+            </p>
+            <p v-if="envValidation?.invalid_configs?.length">
+              {{ envValidation.invalid_configs.length }} 个配置无效
+            </p>
+          </el-alert>
+
+          <!-- 推荐配置警告（黄色） -->
+          <el-alert
+            v-else-if="hasRecommendedWarnings"
+            title="配置验证通过（有推荐配置未设置）"
+            type="warning"
+            :closable="false"
+            show-icon
+          >
+            <p v-if="envValidation?.missing_recommended?.length">
+              缺少 {{ envValidation.missing_recommended.length }} 个推荐配置
+            </p>
+            <p v-if="mongodbValidation?.warnings?.length">
+              {{ mongodbValidation.warnings.length }} 个 MongoDB 配置警告
+            </p>
+          </el-alert>
+
+          <!-- 所有配置正常（绿色） -->
+          <el-alert
+            v-else
+            title="配置验证通过"
+            type="success"
+            :closable="false"
+            show-icon
+          >
+            <p>所有配置已正确设置</p>
+          </el-alert>
+        </div>
+
+        <!-- 必需配置 -->
+        <div class="config-section">
+          <h4>
+            <el-icon><Star /></el-icon>
+            必需配置
+          </h4>
+          <div class="config-items">
+            <div
+              v-for="item in requiredConfigs"
+              :key="item.key"
+              class="config-item"
+              :class="{ 'is-valid': item.valid, 'is-invalid': !item.valid }"
+            >
+              <div class="item-icon">
+                <el-icon v-if="item.valid" color="#67C23A"><CircleCheck /></el-icon>
+                <el-icon v-else color="#F56C6C"><CircleClose /></el-icon>
+              </div>
+              <div class="item-content">
+                <div class="item-name">{{ item.name }}</div>
+                <div class="item-description">{{ item.description }}</div>
+                <div v-if="!item.valid && item.error" class="item-error">
+                  {{ item.error }}
+                </div>
+              </div>
+              <div class="item-status">
+                <el-tag :type="item.valid ? 'success' : 'danger'" size="small">
+                  {{ item.valid ? '已配置' : '未配置' }}
+                </el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 推荐配置 -->
+        <div class="config-section">
+          <h4>
+            <el-icon><Warning /></el-icon>
+            推荐配置
+          </h4>
+          <div class="config-items">
+            <div
+              v-for="item in recommendedConfigs"
+              :key="item.key"
+              class="config-item"
+              :class="{ 'is-valid': item.valid, 'is-warning': !item.valid }"
+            >
+              <div class="item-icon">
+                <el-icon v-if="item.valid" color="#67C23A"><CircleCheck /></el-icon>
+                <el-icon v-else color="#E6A23C"><Warning /></el-icon>
+              </div>
+              <div class="item-content">
+                <div class="item-name">{{ item.name }}</div>
+                <div class="item-description">{{ item.description }}</div>
+                <div v-if="!item.valid && item.help" class="item-help">
+                  {{ item.help }}
+                </div>
+              </div>
+              <div class="item-status">
+                <el-tag :type="item.valid ? 'success' : 'warning'" size="small">
+                  {{ item.valid ? '已配置' : '未配置' }}
+                </el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MongoDB 配置验证 -->
+        <div v-if="mongodbValidation" class="config-section">
+          <h4>
+            <el-icon><Coin /></el-icon>
+            MongoDB 配置验证
+          </h4>
+
+          <!-- 大模型厂家配置 -->
+          <div v-if="mongodbValidation.llm_providers?.length" class="mongodb-subsection">
+            <h5>大模型厂家</h5>
+            <div class="config-items">
+              <div
+                v-for="(item, index) in mongodbValidation.llm_providers"
+                :key="index"
+                class="config-item"
+                :class="{
+                  'is-valid': item.status === '已配置',
+                  'is-warning': item.status === '未配置或占位符'
+                }"
+              >
+                <div class="item-icon">
+                  <el-icon v-if="item.status === '已配置'" color="#67C23A"><CircleCheck /></el-icon>
+                  <el-icon v-else color="#E6A23C"><Warning /></el-icon>
+                </div>
+                <div class="item-content">
+                  <div class="item-name">{{ item.display_name }}</div>
+                  <div class="item-description">{{ item.name }}</div>
+                </div>
+                <div class="item-status">
+                  <el-tag
+                    :type="item.status === '已配置' ? 'success' : item.enabled ? 'warning' : 'info'"
+                    size="small"
+                  >
+                    {{ item.status }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 数据源配置 -->
+          <div v-if="mongodbValidation.data_source_configs?.length" class="mongodb-subsection">
+            <h5>数据源配置</h5>
+            <div class="config-items">
+              <div
+                v-for="(item, index) in mongodbValidation.data_source_configs"
+                :key="index"
+                class="config-item"
+                :class="{
+                  'is-valid': item.status === '已配置' || item.status === '已配置（无需密钥）',
+                  'is-warning': item.status === '未配置或占位符' && item.enabled,
+                  'is-disabled': !item.enabled
+                }"
+              >
+                <div class="item-icon">
+                  <el-icon v-if="item.status.includes('已配置')" color="#67C23A"><CircleCheck /></el-icon>
+                  <el-icon v-else-if="item.enabled" color="#E6A23C"><Warning /></el-icon>
+                  <el-icon v-else color="#909399"><CircleClose /></el-icon>
+                </div>
+                <div class="item-content">
+                  <div class="item-name">{{ item.name }}</div>
+                  <div class="item-description">{{ item.type }}</div>
+                </div>
+                <div class="item-status">
+                  <el-tag
+                    :type="item.status.includes('已配置') ? 'success' : item.enabled ? 'warning' : 'info'"
+                    size="small"
+                  >
+                    {{ item.status }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MongoDB 配置警告 -->
+          <div v-if="mongodbValidation.warnings?.length" class="mongodb-warnings">
+            <el-alert
+              v-for="(warning, index) in mongodbValidation.warnings"
+              :key="index"
+              :title="warning"
+              type="warning"
+              :closable="false"
+              show-icon
+              class="warning-item"
+            />
+          </div>
+        </div>
+
+        <!-- 环境变量警告信息 -->
+        <div v-if="envValidation?.warnings?.length" class="warnings-section">
+          <h4>
+            <el-icon><InfoFilled /></el-icon>
+            环境变量警告
+          </h4>
+          <el-alert
+            v-for="(warning, index) in envValidation.warnings"
+            :key="index"
+            :title="warning"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="warning-item"
+          />
+        </div>
+
+        <!-- 帮助信息 -->
+        <div class="help-section">
+          <el-collapse>
+            <el-collapse-item title="如何修复配置问题？" name="1">
+              <div class="help-content">
+                <h5>必需配置</h5>
+                <p>必需配置需要在 <code>.env</code> 文件中设置：</p>
+                <ol>
+                  <li>在项目根目录找到 <code>.env</code> 文件（如果没有，复制 <code>.env.example</code>）</li>
+                  <li>按照提示填写缺少的配置项</li>
+                  <li>保存文件并重启后端服务</li>
+                </ol>
+
+                <h5>推荐配置</h5>
+                <p>推荐配置可以通过以下方式设置：</p>
+                <ul>
+                  <li>在 <code>.env</code> 文件中设置（推荐）</li>
+                  <li>在"配置管理"页面的"大模型配置"或"数据源配置"中设置</li>
+                </ul>
+
+                <h5>常见问题</h5>
+                <p><strong>Q: 为什么修改后还是显示未配置？</strong></p>
+                <p>A: 环境变量需要重启后端服务才能生效。</p>
+
+                <p><strong>Q: 如何获取 API 密钥？</strong></p>
+                <p>A: 请访问对应服务商的官网注册并获取密钥。详见"配置管理"页面的帮助信息。</p>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import {
+  CircleCheck,
+  CircleClose,
+  Refresh,
+  Star,
+  Warning,
+  InfoFilled,
+  Coin
+} from '@element-plus/icons-vue'
+import axios from 'axios'
+
+// 类型定义
+interface ConfigItem {
+  key: string
+  name: string
+  description: string
+  valid: boolean
+  error?: string
+  help?: string
+}
+
+interface EnvValidationResult {
+  success: boolean
+  missing_required?: Array<{ key: string; description: string }>
+  missing_recommended?: Array<{ key: string; description: string }>
+  invalid_configs?: Array<{ key: string; error: string }>
+  warnings?: string[]
+}
+
+interface MongoDBValidationResult {
+  llm_providers?: Array<{
+    name: string
+    display_name: string
+    is_active: boolean
+    has_api_key: boolean
+    status: string
+  }>
+  data_source_configs?: Array<{
+    name: string
+    type: string
+    enabled: boolean
+    has_api_key: boolean
+    status: string
+  }>
+  warnings?: string[]
+}
+
+interface ValidationResult {
+  success: boolean
+  env_validation?: EnvValidationResult
+  mongodb_validation?: MongoDBValidationResult
+}
+
+// 响应式数据
+const validating = ref(false)
+const validationResult = ref<ValidationResult | null>(null)
+const envValidation = ref<EnvValidationResult | null>(null)
+const mongodbValidation = ref<MongoDBValidationResult | null>(null)
+const requiredConfigs = ref<ConfigItem[]>([])
+const recommendedConfigs = ref<ConfigItem[]>([])
+
+// 计算属性：是否有推荐配置警告
+const hasRecommendedWarnings = computed(() => {
+  const hasMissingRecommended = (envValidation.value?.missing_recommended?.length ?? 0) > 0
+  const hasMongodbWarnings = (mongodbValidation.value?.warnings?.length ?? 0) > 0
+  return hasMissingRecommended || hasMongodbWarnings
+})
+
+// 方法
+const handleValidate = async () => {
+  validating.value = true
+  try {
+    const response = await axios.get('/api/system/config/validate')
+
+    console.log('🔍 配置验证响应:', response.data)
+
+    if (response.data.success) {
+      validationResult.value = response.data.data
+
+      // 提取环境变量验证结果和 MongoDB 验证结果
+      envValidation.value = response.data.data.env_validation || null
+      mongodbValidation.value = response.data.data.mongodb_validation || null
+
+      console.log('🔍 环境变量验证:', envValidation.value)
+      console.log('🔍 MongoDB 验证:', mongodbValidation.value)
+
+      updateConfigItems()
+
+      if (validationResult.value?.success) {
+        ElMessage.success('配置验证通过')
+      } else {
+        ElMessage.warning('配置验证失败，请检查缺少的配置项')
+      }
+    } else {
+      ElMessage.error(response.data.message || '验证失败')
+    }
+  } catch (error: any) {
+    console.error('配置验证失败:', error)
+    ElMessage.error(error.response?.data?.message || '验证失败')
+  } finally {
+    validating.value = false
+  }
+}
+
+const updateConfigItems = () => {
+  if (!envValidation.value) return
+
+  // 更新必需配置
+  const requiredKeys = [
+    { key: 'MONGODB_HOST', name: 'MongoDB 主机', description: 'MongoDB 数据库主机地址' },
+    { key: 'MONGODB_PORT', name: 'MongoDB 端口', description: 'MongoDB 数据库端口' },
+    { key: 'MONGODB_DATABASE', name: 'MongoDB 数据库', description: 'MongoDB 数据库名称' },
+    { key: 'REDIS_HOST', name: 'Redis 主机', description: 'Redis 缓存主机地址' },
+    { key: 'REDIS_PORT', name: 'Redis 端口', description: 'Redis 缓存端口' },
+    { key: 'JWT_SECRET', name: 'JWT 密钥', description: 'JWT 认证密钥' }
+  ]
+
+  requiredConfigs.value = requiredKeys.map(item => {
+    const missing = envValidation.value?.missing_required?.find(m => m.key === item.key)
+    const invalid = envValidation.value?.invalid_configs?.find(i => i.key === item.key)
+
+    return {
+      ...item,
+      valid: !missing && !invalid,
+      error: invalid?.error || (missing ? '未配置' : undefined)
+    }
+  })
+
+  // 更新推荐配置
+  const recommendedKeys = [
+    { key: 'DEEPSEEK_API_KEY', name: 'DeepSeek API', description: 'DeepSeek 大模型 API 密钥', help: '用于 AI 分析功能' },
+    { key: 'DASHSCOPE_API_KEY', name: '通义千问 API', description: '阿里云通义千问 API 密钥', help: '用于 AI 分析功能' },
+    { key: 'TUSHARE_TOKEN', name: 'Tushare Token', description: 'Tushare 数据源 Token', help: '用于获取专业A股数据' }
+  ]
+
+  recommendedConfigs.value = recommendedKeys.map(item => {
+    const missing = envValidation.value?.missing_recommended?.find(m => m.key === item.key)
+

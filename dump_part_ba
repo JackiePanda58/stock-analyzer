@@ -1,0 +1,2000 @@
+        curr_date (str): Current date you are trading at, yyyy-mm-dd (not used for Alpha Vantage)
+
+    Returns:
+        str: Cash flow statement data with normalized fields
+    """
+    params = {
+        "symbol": ticker,
+    }
+
+    return _make_api_request("CASH_FLOW", params)
+
+
+def get_income_statement(ticker: str, freq: str = "quarterly", curr_date: str = None) -> str:
+    """
+    Retrieve income statement data for a given ticker symbol using Alpha Vantage.
+
+    Args:
+        ticker (str): Ticker symbol of the company
+        freq (str): Reporting frequency: annual/quarterly (default quarterly) - not used for Alpha Vantage
+        curr_date (str): Current date you are trading at, yyyy-mm-dd (not used for Alpha Vantage)
+
+    Returns:
+        str: Income statement data with normalized fields
+    """
+    params = {
+        "symbol": ticker,
+    }
+
+    return _make_api_request("INCOME_STATEMENT", params)
+
+
+
+==================== tradingagents/dataflows/interface.py ====================
+from typing import Annotated
+
+# Import from vendor-specific modules
+from .y_finance import (
+    get_YFin_data_online,
+    get_stock_stats_indicators_window,
+    get_fundamentals as get_yfinance_fundamentals,
+    get_balance_sheet as get_yfinance_balance_sheet,
+    get_cashflow as get_yfinance_cashflow,
+    get_income_statement as get_yfinance_income_statement,
+    get_insider_transactions as get_yfinance_insider_transactions,
+)
+from .yfinance_news import get_news_yfinance, get_global_news_yfinance
+from .alpha_vantage import (
+    get_stock as get_alpha_vantage_stock,
+    get_indicator as get_alpha_vantage_indicator,
+    get_fundamentals as get_alpha_vantage_fundamentals,
+    get_balance_sheet as get_alpha_vantage_balance_sheet,
+    get_cashflow as get_alpha_vantage_cashflow,
+    get_income_statement as get_alpha_vantage_income_statement,
+    get_insider_transactions as get_alpha_vantage_insider_transactions,
+    get_news as get_alpha_vantage_news,
+    get_global_news as get_alpha_vantage_global_news,
+)
+from .alpha_vantage_common import AlphaVantageRateLimitError
+from .akshare_stock import (
+    get_china_stock_data,
+    get_china_stock_indicators,
+    get_china_fundamentals,
+    get_china_balance_sheet,
+    get_china_income_statement,
+    get_china_cashflow,
+    get_china_stock_news,
+    get_china_market_news,
+)
+
+# Configuration and routing logic
+from .config import get_config
+
+# Tools organized by category
+TOOLS_CATEGORIES = {
+    "core_stock_apis": {
+        "description": "OHLCV stock price data",
+        "tools": [
+            "get_stock_data"
+        ]
+    },
+    "technical_indicators": {
+        "description": "Technical analysis indicators",
+        "tools": [
+            "get_indicators"
+        ]
+    },
+    "fundamental_data": {
+        "description": "Company fundamentals",
+        "tools": [
+            "get_fundamentals",
+            "get_balance_sheet",
+            "get_cashflow",
+            "get_income_statement"
+        ]
+    },
+    "news_data": {
+        "description": "News and insider data",
+        "tools": [
+            "get_news",
+            "get_global_news",
+            "get_insider_transactions",
+        ]
+    }
+}
+
+VENDOR_LIST = [
+    "yfinance",
+    "alpha_vantage",
+]
+
+# Mapping of methods to their vendor-specific implementations
+VENDOR_METHODS = {
+    # core_stock_apis
+    "get_stock_data": {
+        "alpha_vantage": get_alpha_vantage_stock,
+        "yfinance": get_YFin_data_online,
+        "akshare": get_china_stock_data,
+    },
+    # technical_indicators
+    "get_indicators": {
+        "alpha_vantage": get_alpha_vantage_indicator,
+        "yfinance": get_stock_stats_indicators_window,
+        "akshare": get_china_stock_indicators,
+    },
+    # fundamental_data
+    "get_fundamentals": {
+        "alpha_vantage": get_alpha_vantage_fundamentals,
+        "yfinance": get_yfinance_fundamentals,
+        "akshare": get_china_fundamentals,
+    },
+    "get_balance_sheet": {
+        "alpha_vantage": get_alpha_vantage_balance_sheet,
+        "yfinance": get_yfinance_balance_sheet,
+        "akshare": get_china_balance_sheet,
+    },
+    "get_cashflow": {
+        "alpha_vantage": get_alpha_vantage_cashflow,
+        "yfinance": get_yfinance_cashflow,
+        "akshare": get_china_cashflow,
+    },
+    "get_income_statement": {
+        "alpha_vantage": get_alpha_vantage_income_statement,
+        "yfinance": get_yfinance_income_statement,
+        "akshare": get_china_income_statement,
+    },
+    # news_data
+    "get_news": {
+        "alpha_vantage": get_alpha_vantage_news,
+        "yfinance": get_news_yfinance,
+        "akshare": get_china_stock_news,
+    },
+    "get_global_news": {
+        "yfinance": get_global_news_yfinance,
+        "alpha_vantage": get_alpha_vantage_global_news,
+        "akshare": get_china_market_news,
+    },
+    "get_insider_transactions": {
+        "alpha_vantage": get_alpha_vantage_insider_transactions,
+        "yfinance": get_yfinance_insider_transactions,
+    },
+}
+
+def get_category_for_method(method: str) -> str:
+    """Get the category that contains the specified method."""
+    for category, info in TOOLS_CATEGORIES.items():
+        if method in info["tools"]:
+            return category
+    raise ValueError(f"Method '{method}' not found in any category")
+
+def get_vendor(category: str, method: str = None) -> str:
+    """Get the configured vendor for a data category or specific tool method.
+    Tool-level configuration takes precedence over category-level.
+    """
+    config = get_config()
+
+    # Check tool-level configuration first (if method provided)
+    if method:
+        tool_vendors = config.get("tool_vendors", {})
+        if method in tool_vendors:
+            return tool_vendors[method]
+
+    # Fall back to category-level configuration
+    return config.get("data_vendors", {}).get(category, "default")
+
+def route_to_vendor(method: str, *args, **kwargs):
+    """Route method calls to appropriate vendor implementation with fallback support."""
+    category = get_category_for_method(method)
+    vendor_config = get_vendor(category, method)
+    primary_vendors = [v.strip() for v in vendor_config.split(',')]
+
+    if method not in VENDOR_METHODS:
+        raise ValueError(f"Method '{method}' not supported")
+
+    # Build fallback chain: primary vendors first, then remaining available vendors
+    all_available_vendors = list(VENDOR_METHODS[method].keys())
+    fallback_vendors = primary_vendors.copy()
+    for vendor in all_available_vendors:
+        if vendor not in fallback_vendors:
+            fallback_vendors.append(vendor)
+
+    for vendor in fallback_vendors:
+        if vendor not in VENDOR_METHODS[method]:
+            continue
+
+        vendor_impl = VENDOR_METHODS[method][vendor]
+        impl_func = vendor_impl[0] if isinstance(vendor_impl, list) else vendor_impl
+
+        try:
+            return impl_func(*args, **kwargs)
+        except AlphaVantageRateLimitError:
+            continue  # Only rate limits trigger fallback
+
+    raise RuntimeError(f"No available vendor for '{method}'")
+
+==================== tradingagents/dataflows/alpha_vantage_news.py ====================
+from .alpha_vantage_common import _make_api_request, format_datetime_for_api
+
+def get_news(ticker, start_date, end_date) -> dict[str, str] | str:
+    """Returns live and historical market news & sentiment data from premier news outlets worldwide.
+
+    Covers stocks, cryptocurrencies, forex, and topics like fiscal policy, mergers & acquisitions, IPOs.
+
+    Args:
+        ticker: Stock symbol for news articles.
+        start_date: Start date for news search.
+        end_date: End date for news search.
+
+    Returns:
+        Dictionary containing news sentiment data or JSON string.
+    """
+
+    params = {
+        "tickers": ticker,
+        "time_from": format_datetime_for_api(start_date),
+        "time_to": format_datetime_for_api(end_date),
+    }
+
+    return _make_api_request("NEWS_SENTIMENT", params)
+
+def get_global_news(curr_date, look_back_days: int = 7, limit: int = 50) -> dict[str, str] | str:
+    """Returns global market news & sentiment data without ticker-specific filtering.
+
+    Covers broad market topics like financial markets, economy, and more.
+
+    Args:
+        curr_date: Current date in yyyy-mm-dd format.
+        look_back_days: Number of days to look back (default 7).
+        limit: Maximum number of articles (default 50).
+
+    Returns:
+        Dictionary containing global news sentiment data or JSON string.
+    """
+    from datetime import datetime, timedelta
+
+    # Calculate start date
+    curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
+    start_dt = curr_dt - timedelta(days=look_back_days)
+    start_date = start_dt.strftime("%Y-%m-%d")
+
+    params = {
+        "topics": "financial_markets,economy_macro,economy_monetary",
+        "time_from": format_datetime_for_api(start_date),
+        "time_to": format_datetime_for_api(curr_date),
+        "limit": str(limit),
+    }
+
+    return _make_api_request("NEWS_SENTIMENT", params)
+
+
+def get_insider_transactions(symbol: str) -> dict[str, str] | str:
+    """Returns latest and historical insider transactions by key stakeholders.
+
+    Covers transactions by founders, executives, board members, etc.
+
+    Args:
+        symbol: Ticker symbol. Example: "IBM".
+
+    Returns:
+        Dictionary containing insider transaction data or JSON string.
+    """
+
+    params = {
+        "symbol": symbol,
+    }
+
+    return _make_api_request("INSIDER_TRANSACTIONS", params)
+
+==================== tradingagents/dataflows/alpha_vantage_stock.py ====================
+from datetime import datetime
+from .alpha_vantage_common import _make_api_request, _filter_csv_by_date_range
+
+def get_stock(
+    symbol: str,
+    start_date: str,
+    end_date: str
+) -> str:
+    """
+    Returns raw daily OHLCV values, adjusted close values, and historical split/dividend events
+    filtered to the specified date range.
+
+    Args:
+        symbol: The name of the equity. For example: symbol=IBM
+        start_date: Start date in yyyy-mm-dd format
+        end_date: End date in yyyy-mm-dd format
+
+    Returns:
+        CSV string containing the daily adjusted time series data filtered to the date range.
+    """
+    # Parse dates to determine the range
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    today = datetime.now()
+
+    # Choose outputsize based on whether the requested range is within the latest 100 days
+    # Compact returns latest 100 data points, so check if start_date is recent enough
+    days_from_today_to_start = (today - start_dt).days
+    outputsize = "compact" if days_from_today_to_start < 100 else "full"
+
+    params = {
+        "symbol": symbol,
+        "outputsize": outputsize,
+        "datatype": "csv",
+    }
+
+    response = _make_api_request("TIME_SERIES_DAILY_ADJUSTED", params)
+
+    return _filter_csv_by_date_range(response, start_date, end_date)
+
+==================== tradingagents/dataflows/utils.py ====================
+import os
+import json
+import pandas as pd
+from datetime import date, timedelta, datetime
+from typing import Annotated
+
+SavePathType = Annotated[str, "File path to save data. If None, data is not saved."]
+
+def save_output(data: pd.DataFrame, tag: str, save_path: SavePathType = None) -> None:
+    if save_path:
+        data.to_csv(save_path)
+        print(f"{tag} saved to {save_path}")
+
+
+def get_current_date():
+    return date.today().strftime("%Y-%m-%d")
+
+
+def decorate_all_methods(decorator):
+    def class_decorator(cls):
+        for attr_name, attr_value in cls.__dict__.items():
+            if callable(attr_value):
+                setattr(cls, attr_name, decorator(attr_value))
+        return cls
+
+    return class_decorator
+
+
+def get_next_weekday(date):
+
+    if not isinstance(date, datetime):
+        date = datetime.strptime(date, "%Y-%m-%d")
+
+    if date.weekday() >= 5:
+        days_to_add = 7 - date.weekday()
+        next_weekday = date + timedelta(days=days_to_add)
+        return next_weekday
+    else:
+        return date
+
+
+==================== tradingagents/dataflows/__init__.py ====================
+
+
+==================== tradingagents/dataflows/yfinance_news.py ====================
+"""yfinance-based news data fetching functions."""
+
+import yfinance as yf
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+
+def _extract_article_data(article: dict) -> dict:
+    """Extract article data from yfinance news format (handles nested 'content' structure)."""
+    # Handle nested content structure
+    if "content" in article:
+        content = article["content"]
+        title = content.get("title", "No title")
+        summary = content.get("summary", "")
+        provider = content.get("provider", {})
+        publisher = provider.get("displayName", "Unknown")
+
+        # Get URL from canonicalUrl or clickThroughUrl
+        url_obj = content.get("canonicalUrl") or content.get("clickThroughUrl") or {}
+        link = url_obj.get("url", "")
+
+        # Get publish date
+        pub_date_str = content.get("pubDate", "")
+        pub_date = None
+        if pub_date_str:
+            try:
+                pub_date = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                pass
+
+        return {
+            "title": title,
+            "summary": summary,
+            "publisher": publisher,
+            "link": link,
+            "pub_date": pub_date,
+        }
+    else:
+        # Fallback for flat structure
+        return {
+            "title": article.get("title", "No title"),
+            "summary": article.get("summary", ""),
+            "publisher": article.get("publisher", "Unknown"),
+            "link": article.get("link", ""),
+            "pub_date": None,
+        }
+
+
+def get_news_yfinance(
+    ticker: str,
+    start_date: str,
+    end_date: str,
+) -> str:
+    """
+    Retrieve news for a specific stock ticker using yfinance.
+
+    Args:
+        ticker: Stock ticker symbol (e.g., "AAPL")
+        start_date: Start date in yyyy-mm-dd format
+        end_date: End date in yyyy-mm-dd format
+
+    Returns:
+        Formatted string containing news articles
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        news = stock.get_news(count=20)
+
+        if not news:
+            return f"No news found for {ticker}"
+
+        # Parse date range for filtering
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+
+        news_str = ""
+        filtered_count = 0
+
+        for article in news:
+            data = _extract_article_data(article)
+
+            # Filter by date if publish time is available
+            if data["pub_date"]:
+                pub_date_naive = data["pub_date"].replace(tzinfo=None)
+                if not (start_dt <= pub_date_naive <= end_dt + relativedelta(days=1)):
+                    continue
+
+            news_str += f"### {data['title']} (source: {data['publisher']})\n"
+            if data["summary"]:
+                news_str += f"{data['summary']}\n"
+            if data["link"]:
+                news_str += f"Link: {data['link']}\n"
+            news_str += "\n"
+            filtered_count += 1
+
+        if filtered_count == 0:
+            return f"No news found for {ticker} between {start_date} and {end_date}"
+
+        return f"## {ticker} News, from {start_date} to {end_date}:\n\n{news_str}"
+
+    except Exception as e:
+        return f"Error fetching news for {ticker}: {str(e)}"
+
+
+def get_global_news_yfinance(
+    curr_date: str,
+    look_back_days: int = 7,
+    limit: int = 10,
+) -> str:
+    """
+    Retrieve global/macro economic news using yfinance Search.
+
+    Args:
+        curr_date: Current date in yyyy-mm-dd format
+        look_back_days: Number of days to look back
+        limit: Maximum number of articles to return
+
+    Returns:
+        Formatted string containing global news articles
+    """
+    # Search queries for macro/global news
+    search_queries = [
+        "stock market economy",
+        "Federal Reserve interest rates",
+        "inflation economic outlook",
+        "global markets trading",
+    ]
+
+    all_news = []
+    seen_titles = set()
+
+    try:
+        for query in search_queries:
+            search = yf.Search(
+                query=query,
+                news_count=limit,
+                enable_fuzzy_query=True,
+            )
+
+            if search.news:
+                for article in search.news:
+                    # Handle both flat and nested structures
+                    if "content" in article:
+                        data = _extract_article_data(article)
+                        title = data["title"]
+                    else:
+                        title = article.get("title", "")
+
+                    # Deduplicate by title
+                    if title and title not in seen_titles:
+                        seen_titles.add(title)
+                        all_news.append(article)
+
+            if len(all_news) >= limit:
+                break
+
+        if not all_news:
+            return f"No global news found for {curr_date}"
+
+        # Calculate date range
+        curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
+        start_dt = curr_dt - relativedelta(days=look_back_days)
+        start_date = start_dt.strftime("%Y-%m-%d")
+
+        news_str = ""
+        for article in all_news[:limit]:
+            # Handle both flat and nested structures
+            if "content" in article:
+                data = _extract_article_data(article)
+                title = data["title"]
+                publisher = data["publisher"]
+                link = data["link"]
+                summary = data["summary"]
+            else:
+                title = article.get("title", "No title")
+                publisher = article.get("publisher", "Unknown")
+                link = article.get("link", "")
+                summary = ""
+
+            news_str += f"### {title} (source: {publisher})\n"
+            if summary:
+                news_str += f"{summary}\n"
+            if link:
+                news_str += f"Link: {link}\n"
+            news_str += "\n"
+
+        return f"## Global Market News, from {start_date} to {curr_date}:\n\n{news_str}"
+
+    except Exception as e:
+        return f"Error fetching global news: {str(e)}"
+
+
+==================== tradingagents/dataflows/config.py ====================
+import tradingagents.default_config as default_config
+from typing import Dict, Optional
+
+# Use default config but allow it to be overridden
+_config: Optional[Dict] = None
+
+
+def initialize_config():
+    """Initialize the configuration with default values."""
+    global _config
+    if _config is None:
+        _config = default_config.DEFAULT_CONFIG.copy()
+
+
+def set_config(config: Dict):
+    """Update the configuration with custom values."""
+    global _config
+    if _config is None:
+        _config = default_config.DEFAULT_CONFIG.copy()
+    _config.update(config)
+
+
+def get_config() -> Dict:
+    """Get the current configuration."""
+    if _config is None:
+        initialize_config()
+    return _config.copy()
+
+
+# Initialize with default config
+initialize_config()
+
+
+==================== tradingagents/dataflows/alpha_vantage.py ====================
+# Import functions from specialized modules
+from .alpha_vantage_stock import get_stock
+from .alpha_vantage_indicator import get_indicator
+from .alpha_vantage_fundamentals import get_fundamentals, get_balance_sheet, get_cashflow, get_income_statement
+from .alpha_vantage_news import get_news, get_global_news, get_insider_transactions
+
+==================== tradingagents/llm_clients/validators.py ====================
+"""Model name validators for each provider.
+
+Only validates model names - does NOT enforce limits.
+Let LLM providers use their own defaults for unspecified params.
+"""
+
+VALID_MODELS = {
+    "openai": [
+        # GPT-5 series
+        "gpt-5.4-pro",
+        "gpt-5.4",
+        "gpt-5.2",
+        "gpt-5.1",
+        "gpt-5",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        # GPT-4.1 series
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+    ],
+    "anthropic": [
+        # Claude 4.6 series (latest)
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+        # Claude 4.5 series
+        "claude-opus-4-5",
+        "claude-sonnet-4-5",
+        "claude-haiku-4-5",
+    ],
+    "google": [
+        # Gemini 3.1 series (preview)
+        "gemini-3.1-pro-preview",
+        "gemini-3.1-flash-lite-preview",
+        # Gemini 3 series (preview)
+        "gemini-3-flash-preview",
+        # Gemini 2.5 series
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+    ],
+    "xai": [
+        # Grok 4.1 series
+        "grok-4-1-fast-reasoning",
+        "grok-4-1-fast-non-reasoning",
+        # Grok 4 series
+        "grok-4-0709",
+        "grok-4-fast-reasoning",
+        "grok-4-fast-non-reasoning",
+    ],
+}
+
+
+def validate_model(provider: str, model: str) -> bool:
+    """Check if model name is valid for the given provider.
+
+    For ollama, openrouter - any model is accepted.
+    """
+    provider_lower = provider.lower()
+
+    if provider_lower in ("ollama", "openrouter"):
+        return True
+
+    if provider_lower not in VALID_MODELS:
+        return True
+
+    return model in VALID_MODELS[provider_lower]
+
+
+==================== tradingagents/llm_clients/openai_client.py ====================
+import os
+from typing import Any, Optional
+
+from langchain_openai import ChatOpenAI
+
+from .base_client import BaseLLMClient
+from .validators import validate_model
+
+
+class UnifiedChatOpenAI(ChatOpenAI):
+    """ChatOpenAI subclass that strips temperature/top_p for GPT-5 family models.
+
+    GPT-5 family models use reasoning natively. temperature/top_p are only
+    accepted when reasoning.effort is 'none'; with any other effort level
+    (or for older GPT-5/GPT-5-mini/GPT-5-nano which always reason) the API
+    rejects these params. Langchain defaults temperature=0.7, so we must
+    strip it to avoid errors.
+
+    Non-GPT-5 models (GPT-4.1, xAI, Ollama, etc.) are unaffected.
+    """
+
+    def __init__(self, **kwargs):
+        if "gpt-5" in kwargs.get("model", "").lower():
+            kwargs.pop("temperature", None)
+            kwargs.pop("top_p", None)
+        super().__init__(**kwargs)
+
+
+class OpenAIClient(BaseLLMClient):
+    """Client for OpenAI, Ollama, OpenRouter, and xAI providers."""
+
+    def __init__(
+        self,
+        model: str,
+        base_url: Optional[str] = None,
+        provider: str = "openai",
+        **kwargs,
+    ):
+        super().__init__(model, base_url, **kwargs)
+        self.provider = provider.lower()
+
+    def get_llm(self) -> Any:
+        """Return configured ChatOpenAI instance."""
+        llm_kwargs = {"model": self.model}
+
+        if self.provider == "xai":
+            llm_kwargs["base_url"] = "https://api.x.ai/v1"
+            api_key = os.environ.get("XAI_API_KEY")
+            if api_key:
+                llm_kwargs["api_key"] = api_key
+        elif self.provider == "openrouter":
+            llm_kwargs["base_url"] = "https://openrouter.ai/api/v1"
+            api_key = os.environ.get("OPENROUTER_API_KEY")
+            if api_key:
+                llm_kwargs["api_key"] = api_key
+        elif self.provider == "ollama":
+            llm_kwargs["base_url"] = "http://localhost:11434/v1"
+            llm_kwargs["api_key"] = "ollama"  # Ollama doesn't require auth
+        elif self.base_url:
+            llm_kwargs["base_url"] = self.base_url
+
+        for key in ("timeout", "max_retries", "reasoning_effort", "api_key", "callbacks", "http_client", "http_async_client"):
+            if key in self.kwargs:
+                llm_kwargs[key] = self.kwargs[key]
+
+        # 确保 max_retries 默认启用（处理 MiniMax 429 限速）
+        if "max_retries" not in llm_kwargs:
+            llm_kwargs["max_retries"] = 5
+
+        llm_kwargs["max_tokens"] = 2000
+        llm_kwargs["temperature"] = 1.0
+
+        base_llm = UnifiedChatOpenAI(**llm_kwargs)
+        return base_llm
+
+    def validate_model(self) -> bool:
+        """Validate model for the provider."""
+        return validate_model(self.provider, self.model)
+
+
+==================== tradingagents/llm_clients/factory.py ====================
+from typing import Optional
+
+from .base_client import BaseLLMClient
+from .openai_client import OpenAIClient
+from .anthropic_client import AnthropicClient
+from .google_client import GoogleClient
+
+
+def create_llm_client(
+    provider: str,
+    model: str,
+    base_url: Optional[str] = None,
+    **kwargs,
+) -> BaseLLMClient:
+    """Create an LLM client for the specified provider.
+
+    Args:
+        provider: LLM provider (openai, anthropic, google, xai, ollama, openrouter)
+        model: Model name/identifier
+        base_url: Optional base URL for API endpoint
+        **kwargs: Additional provider-specific arguments
+            - http_client: Custom httpx.Client for SSL proxy or certificate customization
+            - http_async_client: Custom httpx.AsyncClient for async operations
+            - timeout: Request timeout in seconds
+            - max_retries: Maximum retry attempts
+            - api_key: API key for the provider
+            - callbacks: LangChain callbacks
+
+    Returns:
+        Configured BaseLLMClient instance
+
+    Raises:
+        ValueError: If provider is not supported
+    """
+    provider_lower = provider.lower()
+
+    if provider_lower in ("openai", "ollama", "openrouter"):
+        return OpenAIClient(model, base_url, provider=provider_lower, **kwargs)
+
+    if provider_lower == "xai":
+        return OpenAIClient(model, base_url, provider="xai", **kwargs)
+
+    if provider_lower == "anthropic":
+        return AnthropicClient(model, base_url, **kwargs)
+
+    if provider_lower == "google":
+        return GoogleClient(model, base_url, **kwargs)
+
+    raise ValueError(f"Unsupported LLM provider: {provider}")
+
+
+==================== tradingagents/llm_clients/base_client.py ====================
+from abc import ABC, abstractmethod
+from typing import Any, Optional
+
+
+class BaseLLMClient(ABC):
+    """Abstract base class for LLM clients."""
+
+    def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
+        self.model = model
+        self.base_url = base_url
+        self.kwargs = kwargs
+
+    @abstractmethod
+    def get_llm(self) -> Any:
+        """Return the configured LLM instance."""
+        pass
+
+    @abstractmethod
+    def validate_model(self) -> bool:
+        """Validate that the model is supported by this client."""
+        pass
+
+
+==================== tradingagents/llm_clients/anthropic_client.py ====================
+from typing import Any, Optional
+
+from langchain_anthropic import ChatAnthropic
+
+from .base_client import BaseLLMClient
+from .validators import validate_model
+
+
+class AnthropicClient(BaseLLMClient):
+    """Client for Anthropic Claude models."""
+
+    def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
+        super().__init__(model, base_url, **kwargs)
+
+    def get_llm(self) -> Any:
+        """Return configured ChatAnthropic instance."""
+        llm_kwargs = {"model": self.model}
+
+        for key in ("timeout", "max_retries", "api_key", "max_tokens", "callbacks", "http_client", "http_async_client"):
+            if key in self.kwargs:
+                llm_kwargs[key] = self.kwargs[key]
+
+        return ChatAnthropic(**llm_kwargs)
+
+    def validate_model(self) -> bool:
+        """Validate model for Anthropic."""
+        return validate_model("anthropic", self.model)
+
+
+==================== tradingagents/llm_clients/google_client.py ====================
+from typing import Any, Optional
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from .base_client import BaseLLMClient
+from .validators import validate_model
+
+
+class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
+    """ChatGoogleGenerativeAI with normalized content output.
+
+    Gemini 3 models return content as list: [{'type': 'text', 'text': '...'}]
+    This normalizes to string for consistent downstream handling.
+    """
+
+    def _normalize_content(self, response):
+        content = response.content
+        if isinstance(content, list):
+            texts = [
+                item.get("text", "") if isinstance(item, dict) and item.get("type") == "text"
+                else item if isinstance(item, str) else ""
+                for item in content
+            ]
+            response.content = "\n".join(t for t in texts if t)
+        return response
+
+    def invoke(self, input, config=None, **kwargs):
+        return self._normalize_content(super().invoke(input, config, **kwargs))
+
+
+class GoogleClient(BaseLLMClient):
+    """Client for Google Gemini models."""
+
+    def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
+        super().__init__(model, base_url, **kwargs)
+
+    def get_llm(self) -> Any:
+        """Return configured ChatGoogleGenerativeAI instance."""
+        llm_kwargs = {"model": self.model}
+
+        for key in ("timeout", "max_retries", "google_api_key", "callbacks", "http_client", "http_async_client"):
+            if key in self.kwargs:
+                llm_kwargs[key] = self.kwargs[key]
+
+        # Map thinking_level to appropriate API param based on model
+        # Gemini 3 Pro: low, high
+        # Gemini 3 Flash: minimal, low, medium, high
+        # Gemini 2.5: thinking_budget (0=disable, -1=dynamic)
+        thinking_level = self.kwargs.get("thinking_level")
+        if thinking_level:
+            model_lower = self.model.lower()
+            if "gemini-3" in model_lower:
+                # Gemini 3 Pro doesn't support "minimal", use "low" instead
+                if "pro" in model_lower and thinking_level == "minimal":
+                    thinking_level = "low"
+                llm_kwargs["thinking_level"] = thinking_level
+            else:
+                # Gemini 2.5: map to thinking_budget
+                llm_kwargs["thinking_budget"] = -1 if thinking_level == "high" else 0
+
+        return NormalizedChatGoogleGenerativeAI(**llm_kwargs)
+
+    def validate_model(self) -> bool:
+        """Validate model for Google."""
+        return validate_model("google", self.model)
+
+
+==================== tradingagents/llm_clients/__init__.py ====================
+from .base_client import BaseLLMClient
+from .factory import create_llm_client
+
+__all__ = ["BaseLLMClient", "create_llm_client"]
+
+
+==================== tradingagents/llm_clients/rate_limiter.py ====================
+import time
+import functools
+from typing import Any, Callable
+from config.logger import sys_logger
+
+def retry_on_rate_limit(
+ max_retries: int = 5,
+ base_delay: float = 10.0,
+ max_delay: float = 120.0,
+ backoff_factor: float = 2.0,
+):
+ def decorator(func: Callable) -> Callable:
+ @functools.wraps(func)
+ def wrapper(*args, **kwargs) -> Any:
+ delay = base_delay
+ for attempt in range(max_retries + 1):
+ try:
+ return func(*args, **kwargs)
+ except Exception as e:
+ err_str = str(e).lower()
+ is_rate_limit = (
+ "429" in err_str
+ or "rate limit" in err_str
+ or "ratelimit" in err_str
+ or "2056" in err_str
+ or "usage limit exceeded" in err_str
+ )
+ if is_rate_limit and attempt < max_retries:
+ wait = min(delay, max_delay)
+ sys_logger.warning(f"⚠️ MiniMax 速率限制触发！第 {attempt + 1}/{max_retries} 次重试，正在休眠等待 {wait:.0f} 秒...")
+ time.sleep(wait)
+ delay = min(delay * backoff_factor, max_delay)
+ else:
+ raise
+ return func(*args, **kwargs)
+ return wrapper
+ return decorator
+
+class RateLimitedChatOpenAI:
+ def __init__(self, llm: Any, **retry_kwargs):
+ self._llm = llm
+ self._retry_kwargs = retry_kwargs
+
+ def invoke(self, *args, **kwargs):
+ @retry_on_rate_limit(**self._retry_kwargs)
+ def _invoke():
+ return self._llm.invoke(*args, **kwargs)
+ return _invoke()
+
+ def stream(self, *args, **kwargs):
+ @retry_on_rate_limit(**self._retry_kwargs)
+ def _stream():
+ return self._llm.stream(*args, **kwargs)
+ return _stream()
+
+ def __getattr__(self, name: str) -> Any:
+ return getattr(self._llm, name)
+
+ def bind_tools(self, *args, **kwargs):
+ bound_llm = self._llm.bind_tools(*args, **kwargs)
+ return RateLimitedChatOpenAI(bound_llm, **self._retry_kwargs)
+
+ def with_structured_output(self, *args, **kwargs):
+ bound_llm = self._llm.with_structured_output(*args, **kwargs)
+ return RateLimitedChatOpenAI(bound_llm, **self._retry_kwargs)
+
+
+==================== tradingagents/agents/__init__.py ====================
+from .utils.agent_utils import create_msg_delete
+from .utils.agent_states import AgentState, InvestDebateState, RiskDebateState
+from .utils.memory import FinancialSituationMemory
+
+from .analysts.fundamentals_analyst import create_fundamentals_analyst
+from .analysts.market_analyst import create_market_analyst
+from .analysts.news_analyst import create_news_analyst
+from .analysts.social_media_analyst import create_social_media_analyst
+
+from .researchers.bear_researcher import create_bear_researcher
+from .researchers.bull_researcher import create_bull_researcher
+
+from .risk_mgmt.aggressive_debator import create_aggressive_debator
+from .risk_mgmt.conservative_debator import create_conservative_debator
+from .risk_mgmt.neutral_debator import create_neutral_debator
+
+from .managers.research_manager import create_research_manager
+from .managers.risk_manager import create_risk_manager
+
+from .trader.trader import create_trader
+
+__all__ = [
+    "FinancialSituationMemory",
+    "AgentState",
+    "create_msg_delete",
+    "InvestDebateState",
+    "RiskDebateState",
+    "create_bear_researcher",
+    "create_bull_researcher",
+    "create_research_manager",
+    "create_fundamentals_analyst",
+    "create_market_analyst",
+    "create_neutral_debator",
+    "create_news_analyst",
+    "create_aggressive_debator",
+    "create_risk_manager",
+    "create_conservative_debator",
+    "create_social_media_analyst",
+    "create_trader",
+]
+
+
+==================== tradingagents/agents/risk_mgmt/conservative_debator.py ====================
+from langchain_core.messages import AIMessage
+import time
+import json
+
+
+def create_conservative_debator(llm):
+    def conservative_node(state) -> dict:
+        risk_debate_state = state["risk_debate_state"]
+        history = risk_debate_state.get("history", "")
+        conservative_history = risk_debate_state.get("conservative_history", "")
+
+        current_aggressive_response = risk_debate_state.get("current_aggressive_response", "")
+        current_neutral_response = risk_debate_state.get("current_neutral_response", "")
+
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        trader_decision = state["trader_investment_plan"]
+
+        prompt = f"""As the Conservative Risk Analyst, your primary objective is to protect assets, minimize volatility, and ensure steady, reliable growth. You prioritize stability, security, and risk mitigation, carefully assessing potential losses, economic downturns, and market volatility. When evaluating the trader's decision or plan, critically examine high-risk elements, pointing out where the decision may expose the firm to undue risk and where more cautious alternatives could secure long-term gains. Here is the trader's decision:
+
+{trader_decision}
+
+Your task is to actively counter the arguments of the Aggressive and Neutral Analysts, highlighting where their views may overlook potential threats or fail to prioritize sustainability. Respond directly to their points, drawing from the following data sources to build a convincing case for a low-risk approach adjustment to the trader's decision:
+
+Market Research Report: {market_research_report}
+Social Media Sentiment Report: {sentiment_report}
+Latest World Affairs Report: {news_report}
+Company Fundamentals Report: {fundamentals_report}
+Here is the current conversation history: {history} Here is the last response from the aggressive analyst: {current_aggressive_response} Here is the last response from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not hallucinate and just present your point.
+
+Engage by questioning their optimism and emphasizing the potential downsides they may have overlooked. Address each of their counterpoints to showcase why a conservative stance is ultimately the safest path for the firm's assets. Focus on debating and critiquing their arguments to demonstrate the strength of a low-risk strategy over their approaches. Output conversationally as if you are speaking without any special formatting."""
+
+        response = llm.invoke(prompt)
+
+        argument = f"Conservative Analyst: {response.content}"
+
+        new_risk_debate_state = {
+            "history": history + "\n" + argument,
+            "aggressive_history": risk_debate_state.get("aggressive_history", ""),
+            "conservative_history": conservative_history + "\n" + argument,
+            "neutral_history": risk_debate_state.get("neutral_history", ""),
+            "latest_speaker": "Conservative",
+            "current_aggressive_response": risk_debate_state.get(
+                "current_aggressive_response", ""
+            ),
+            "current_conservative_response": argument,
+            "current_neutral_response": risk_debate_state.get(
+                "current_neutral_response", ""
+            ),
+            "count": risk_debate_state["count"] + 1,
+        }
+
+        return {"risk_debate_state": new_risk_debate_state}
+
+    return conservative_node
+
+
+==================== tradingagents/agents/risk_mgmt/neutral_debator.py ====================
+import time
+import json
+
+
+def create_neutral_debator(llm):
+    def neutral_node(state) -> dict:
+        risk_debate_state = state["risk_debate_state"]
+        history = risk_debate_state.get("history", "")
+        neutral_history = risk_debate_state.get("neutral_history", "")
+
+        current_aggressive_response = risk_debate_state.get("current_aggressive_response", "")
+        current_conservative_response = risk_debate_state.get("current_conservative_response", "")
+
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        trader_decision = state["trader_investment_plan"]
+
+        prompt = f"""As the Neutral Risk Analyst, your role is to provide a balanced perspective, weighing both the potential benefits and risks of the trader's decision or plan. You prioritize a well-rounded approach, evaluating the upsides and downsides while factoring in broader market trends, potential economic shifts, and diversification strategies.Here is the trader's decision:
+
+{trader_decision}
+
+Your task is to challenge both the Aggressive and Conservative Analysts, pointing out where each perspective may be overly optimistic or overly cautious. Use insights from the following data sources to support a moderate, sustainable strategy to adjust the trader's decision:
+
+Market Research Report: {market_research_report}
+Social Media Sentiment Report: {sentiment_report}
+Latest World Affairs Report: {news_report}
+Company Fundamentals Report: {fundamentals_report}
+Here is the current conversation history: {history} Here is the last response from the aggressive analyst: {current_aggressive_response} Here is the last response from the conservative analyst: {current_conservative_response}. If there are no responses from the other viewpoints, do not hallucinate and just present your point.
+
+Engage actively by analyzing both sides critically, addressing weaknesses in the aggressive and conservative arguments to advocate for a more balanced approach. Challenge each of their points to illustrate why a moderate risk strategy might offer the best of both worlds, providing growth potential while safeguarding against extreme volatility. Focus on debating rather than simply presenting data, aiming to show that a balanced view can lead to the most reliable outcomes. Output conversationally as if you are speaking without any special formatting."""
+
+        response = llm.invoke(prompt)
+
+        argument = f"Neutral Analyst: {response.content}"
+
+        new_risk_debate_state = {
+            "history": history + "\n" + argument,
+            "aggressive_history": risk_debate_state.get("aggressive_history", ""),
+            "conservative_history": risk_debate_state.get("conservative_history", ""),
+            "neutral_history": neutral_history + "\n" + argument,
+            "latest_speaker": "Neutral",
+            "current_aggressive_response": risk_debate_state.get(
+                "current_aggressive_response", ""
+            ),
+            "current_conservative_response": risk_debate_state.get("current_conservative_response", ""),
+            "current_neutral_response": argument,
+            "count": risk_debate_state["count"] + 1,
+        }
+
+        return {"risk_debate_state": new_risk_debate_state}
+
+    return neutral_node
+
+
+==================== tradingagents/agents/risk_mgmt/aggressive_debator.py ====================
+import time
+import json
+
+
+def create_aggressive_debator(llm):
+    def aggressive_node(state) -> dict:
+        risk_debate_state = state["risk_debate_state"]
+        history = risk_debate_state.get("history", "")
+        aggressive_history = risk_debate_state.get("aggressive_history", "")
+
+        current_conservative_response = risk_debate_state.get("current_conservative_response", "")
+        current_neutral_response = risk_debate_state.get("current_neutral_response", "")
+
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        trader_decision = state["trader_investment_plan"]
+
+        prompt = f"""As the Aggressive Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
+
+{trader_decision}
+
+Your task is to create a compelling case for the trader's decision by questioning and critiquing the conservative and neutral stances to demonstrate why your high-reward perspective offers the best path forward. Incorporate insights from the following sources into your arguments:
+
+Market Research Report: {market_research_report}
+Social Media Sentiment Report: {sentiment_report}
+Latest World Affairs Report: {news_report}
+Company Fundamentals Report: {fundamentals_report}
+Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_conservative_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints, do not hallucinate and just present your point.
+
+Engage actively by addressing any specific concerns raised, refuting the weaknesses in their logic, and asserting the benefits of risk-taking to outpace market norms. Maintain a focus on debating and persuading, not just presenting data. Challenge each counterpoint to underscore why a high-risk approach is optimal. Output conversationally as if you are speaking without any special formatting."""
+
+        response = llm.invoke(prompt)
+
+        argument = f"Aggressive Analyst: {response.content}"
+
+        new_risk_debate_state = {
+            "history": history + "\n" + argument,
+            "aggressive_history": aggressive_history + "\n" + argument,
+            "conservative_history": risk_debate_state.get("conservative_history", ""),
+            "neutral_history": risk_debate_state.get("neutral_history", ""),
+            "latest_speaker": "Aggressive",
+            "current_aggressive_response": argument,
+            "current_conservative_response": risk_debate_state.get("current_conservative_response", ""),
+            "current_neutral_response": risk_debate_state.get(
+                "current_neutral_response", ""
+            ),
+            "count": risk_debate_state["count"] + 1,
+        }
+
+        return {"risk_debate_state": new_risk_debate_state}
+
+    return aggressive_node
+
+
+==================== tradingagents/agents/trader/trader.py ====================
+import functools
+import time
+import json
+
+
+def create_trader(llm, memory):
+    def trader_node(state, name):
+        company_name = state["company_of_interest"]
+        investment_plan = state["investment_plan"]
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        past_memories = memory.get_memories(curr_situation, n_matches=2)
+
+        past_memory_str = ""
+        if past_memories:
+            for i, rec in enumerate(past_memories, 1):
+                past_memory_str += rec["recommendation"] + "\n\n"
+        else:
+            past_memory_str = "No past memories found."
+
+        context = {
+            "role": "user",
+            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
+        }
+
+        messages = [
+            {
+                "role": "system",
+                "content": f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situatiosn you traded in and the lessons learned: {past_memory_str}""",
+            },
+            context,
+        ]
+
+        result = llm.invoke(messages)
+
+        return {
+            "messages": [result],
+            "trader_investment_plan": result.content,
+            "sender": name,
+        }
+
+    return functools.partial(trader_node, name="Trader")
+
+
+==================== tradingagents/agents/managers/research_manager.py ====================
+import time
+import json
+
+
+def create_research_manager(llm, memory):
+    def research_manager_node(state) -> dict:
+        history = state["investment_debate_state"].get("history", "")
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        investment_debate_state = state["investment_debate_state"]
+
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        past_memories = memory.get_memories(curr_situation, n_matches=2)
+
+        past_memory_str = ""
+        for i, rec in enumerate(past_memories, 1):
+            past_memory_str += rec["recommendation"] + "\n\n"
+
+        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+
+Additionally, develop a detailed investment plan for the trader. This should include:
+
+Your Recommendation: A decisive stance supported by the most convincing arguments.
+Rationale: An explanation of why these arguments lead to your conclusion.
+Strategic Actions: Concrete steps for implementing the recommendation.
+Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
+
+Here are your past reflections on mistakes:
+\"{past_memory_str}\"
+
+Here is the debate:
+Debate History:
+{history}"""
+        response = llm.invoke(prompt)
+
+        new_investment_debate_state = {
+            "judge_decision": response.content,
+            "history": investment_debate_state.get("history", ""),
+            "bear_history": investment_debate_state.get("bear_history", ""),
+            "bull_history": investment_debate_state.get("bull_history", ""),
+            "current_response": response.content,
+            "count": investment_debate_state["count"],
+        }
+
+        return {
+            "investment_debate_state": new_investment_debate_state,
+            "investment_plan": response.content,
+        }
+
+    return research_manager_node
+
+
+==================== tradingagents/agents/managers/risk_manager.py ====================
+import time
+import json
+
+
+def create_risk_manager(llm, memory):
+    def risk_manager_node(state) -> dict:
+
+        company_name = state["company_of_interest"]
+
+        history = state["risk_debate_state"]["history"]
+        risk_debate_state = state["risk_debate_state"]
+        market_research_report = state["market_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+        sentiment_report = state["sentiment_report"]
+        trader_plan = state["investment_plan"]
+
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        past_memories = memory.get_memories(curr_situation, n_matches=2)
+
+        past_memory_str = ""
+        for i, rec in enumerate(past_memories, 1):
+            past_memory_str += rec["recommendation"] + "\n\n"
+
+        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Aggressive, Neutral, and Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+
+Guidelines for Decision-Making:
+1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.
+2. **Provide Rationale**: Support your recommendation with direct quotes and counterarguments from the debate.
+3. **Refine the Trader's Plan**: Start with the trader's original plan, **{trader_plan}**, and adjust it based on the analysts' insights.
+4. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments and improve the decision you are making now to make sure you don't make a wrong BUY/SELL/HOLD call that loses money.
+
+Deliverables:
+- A clear and actionable recommendation: Buy, Sell, or Hold.
+- Detailed reasoning anchored in the debate and past reflections.
+
+---
+
+**Analysts Debate History:**  
+{history}
+
+---
+
+Focus on actionable insights and continuous improvement. Build on past lessons, critically evaluate all perspectives, and ensure each decision advances better outcomes.
+
+【排版与输出格式强制要求】
+无论标的是个股还是ETF，你必须使用以下 Markdown 结构输出最终研报。请使用清晰的标题、加粗和列表，拒绝大段密集文本：
+
+# 📊 [标的名称 (代码)] 深度分析报告
+**分析日期**：[YYYY-MM-DD]
+
+## 1. 核心投资结论
+* **最终交易建议**：[买入 / 持有 / 卖出]
+* **一句话逻辑**：[高度凝练的百字核心逻辑]
+
+## 2. 关键数据速览
+* **技术面信号**：[例如：RSI 超卖 / MACD 金叉等]
+* **基本面/流动性状况**：[股票写财务亮点，ETF写流动性或成分股状态]
+* **宏观与新闻催化**：[近期最核心的一条利好/利空]
+
+## 3. 多维深度解析
+### 📈 技术与资金面
+[分点详细陈述技术指标与量价关系...]
+
+### 🏢 核心基本面 / 宏观逻辑
+[分点详细陈述盈利能力、估值水平或宏观政策环境...]
+
+### ⚠️ 风险提示与操作策略
+* **核心风险点**：[最需要警惕的下行风险]
+* **操作建议**：[仓位建议及具体的止盈/止损位参考]
+
+"""
+        response = llm.invoke(prompt)
+
+        new_risk_debate_state = {
+            "judge_decision": response.content,
+            "history": risk_debate_state["history"],
+            "aggressive_history": risk_debate_state["aggressive_history"],
+            "conservative_history": risk_debate_state["conservative_history"],
+            "neutral_history": risk_debate_state["neutral_history"],
+            "latest_speaker": "Judge",
+            "current_aggressive_response": risk_debate_state["current_aggressive_response"],
+            "current_conservative_response": risk_debate_state["current_conservative_response"],
+            "current_neutral_response": risk_debate_state["current_neutral_response"],
+            "count": risk_debate_state["count"],
+        }
+
+        return {
+            "risk_debate_state": new_risk_debate_state,
+            "final_trade_decision": response.content,
+        }
+
+    return risk_manager_node
+
+
+==================== tradingagents/agents/utils/core_stock_tools.py ====================
+from langchain_core.tools import tool
+from typing import Annotated
+from tradingagents.dataflows.interface import route_to_vendor
+
+
+@tool
+def get_stock_data(
+    symbol: Annotated[str, "ticker symbol of the company"],
+    start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
+    end_date: Annotated[str, "End date in yyyy-mm-dd format"],
+) -> str:
+    """
+    Retrieve stock price data (OHLCV) for a given ticker symbol.
+    Uses the configured core_stock_apis vendor.
+    Args:
+        symbol (str): Ticker symbol of the company, e.g. AAPL, TSM
+        start_date (str): Start date in yyyy-mm-dd format
+        end_date (str): End date in yyyy-mm-dd format
+    Returns:
+        str: A formatted dataframe containing the stock price data for the specified ticker symbol in the specified date range.
+    """
+    return route_to_vendor("get_stock_data", symbol, start_date, end_date)
+
+
+==================== tradingagents/agents/utils/agent_utils.py ====================
+from langchain_core.messages import HumanMessage, RemoveMessage
+
+# Import tools from separate utility files
+from tradingagents.agents.utils.core_stock_tools import (
+    get_stock_data
+)
+from tradingagents.agents.utils.technical_indicators_tools import (
+    get_indicators
+)
+from tradingagents.agents.utils.fundamental_data_tools import (
+    get_fundamentals,
+    get_balance_sheet,
+    get_cashflow,
+    get_income_statement
+)
+from tradingagents.agents.utils.news_data_tools import (
+    get_news,
+    get_insider_transactions,
+    get_global_news
+)
+
+def create_msg_delete():
+    def delete_messages(state):
+        """Clear messages and add placeholder for Anthropic compatibility"""
+        messages = state["messages"]
+
+        # Remove all messages
+        removal_operations = [RemoveMessage(id=m.id) for m in messages]
+
+        # Add a minimal placeholder message
+        placeholder = HumanMessage(content="Continue")
+
+        return {"messages": removal_operations + [placeholder]}
+
+    return delete_messages
+
+
+        
+
+==================== tradingagents/agents/utils/fundamental_data_tools.py ====================
+from langchain_core.tools import tool
+from typing import Annotated
+from tradingagents.dataflows.interface import route_to_vendor
+
+
+@tool
+def get_fundamentals(
+    ticker: Annotated[str, "ticker symbol"],
+    curr_date: Annotated[str, "current date you are trading at, yyyy-mm-dd"],
+) -> str:
+    """
+    Retrieve comprehensive fundamental data for a given ticker symbol.
+    Uses the configured fundamental_data vendor.
+    Args:
+        ticker (str): Ticker symbol of the company
+        curr_date (str): Current date you are trading at, yyyy-mm-dd
+    Returns:
+        str: A formatted report containing comprehensive fundamental data
+    """
+    return route_to_vendor("get_fundamentals", ticker, curr_date)
+
+
+@tool
+def get_balance_sheet(
+    ticker: Annotated[str, "ticker symbol"],
+    freq: Annotated[str, "reporting frequency: annual/quarterly"] = "quarterly",
+    curr_date: Annotated[str, "current date you are trading at, yyyy-mm-dd"] = None,
+) -> str:
+    """
+    Retrieve balance sheet data for a given ticker symbol.
+    Uses the configured fundamental_data vendor.
+    Args:
+        ticker (str): Ticker symbol of the company
+        freq (str): Reporting frequency: annual/quarterly (default quarterly)
+        curr_date (str): Current date you are trading at, yyyy-mm-dd
+    Returns:
+        str: A formatted report containing balance sheet data
+    """
+    return route_to_vendor("get_balance_sheet", ticker, freq, curr_date)
+
+
+@tool
+def get_cashflow(
+    ticker: Annotated[str, "ticker symbol"],
+    freq: Annotated[str, "reporting frequency: annual/quarterly"] = "quarterly",
+    curr_date: Annotated[str, "current date you are trading at, yyyy-mm-dd"] = None,
+) -> str:
+    """
+    Retrieve cash flow statement data for a given ticker symbol.
+    Uses the configured fundamental_data vendor.
+    Args:
+        ticker (str): Ticker symbol of the company
+        freq (str): Reporting frequency: annual/quarterly (default quarterly)
+        curr_date (str): Current date you are trading at, yyyy-mm-dd
+    Returns:
+        str: A formatted report containing cash flow statement data
+    """
+    return route_to_vendor("get_cashflow", ticker, freq, curr_date)
+
+
+@tool
+def get_income_statement(
+    ticker: Annotated[str, "ticker symbol"],
+    freq: Annotated[str, "reporting frequency: annual/quarterly"] = "quarterly",
+    curr_date: Annotated[str, "current date you are trading at, yyyy-mm-dd"] = None,
+) -> str:
+    """
+    Retrieve income statement data for a given ticker symbol.
+    Uses the configured fundamental_data vendor.
+    Args:
+        ticker (str): Ticker symbol of the company
+        freq (str): Reporting frequency: annual/quarterly (default quarterly)
+        curr_date (str): Current date you are trading at, yyyy-mm-dd
+    Returns:
+        str: A formatted report containing income statement data
+    """
+    return route_to_vendor("get_income_statement", ticker, freq, curr_date)
+
+==================== tradingagents/agents/utils/technical_indicators_tools.py ====================
+from langchain_core.tools import tool
+from typing import Annotated
+from tradingagents.dataflows.interface import route_to_vendor
+
+@tool
+def get_indicators(
+    symbol: Annotated[str, "ticker symbol of the company"],
+    indicator: Annotated[str, "technical indicator to get the analysis and report of"],
+    curr_date: Annotated[str, "The current trading date you are trading on, YYYY-mm-dd"],
+    look_back_days: Annotated[int, "how many days to look back"] = 30,
+) -> str:
+    """
+    Retrieve a single technical indicator for a given ticker symbol.
+    Uses the configured technical_indicators vendor.
+    Args:
+        symbol (str): Ticker symbol of the company, e.g. AAPL, TSM
+        indicator (str): A single technical indicator name, e.g. 'rsi', 'macd'. Call this tool once per indicator.
+        curr_date (str): The current trading date you are trading on, YYYY-mm-dd
+        look_back_days (int): How many days to look back, default is 30
+    Returns:
+        str: A formatted dataframe containing the technical indicators for the specified ticker symbol and indicator.
+    """
+    # LLMs sometimes pass multiple indicators as a comma-separated string;
+    # split and process each individually.
+    indicators = [i.strip() for i in indicator.split(",") if i.strip()]
+    if len(indicators) > 1:
+        results = []
+        for ind in indicators:
+            results.append(route_to_vendor("get_indicators", symbol, ind, curr_date, look_back_days))
+        return "\n\n".join(results)
+    return route_to_vendor("get_indicators", symbol, indicator.strip(), curr_date, look_back_days)
+
+==================== tradingagents/agents/utils/news_data_tools.py ====================
+from langchain_core.tools import tool
+from typing import Annotated
+from tradingagents.dataflows.interface import route_to_vendor
+
+@tool
+def get_news(
+    ticker: Annotated[str, "Ticker symbol"],
+    start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
+    end_date: Annotated[str, "End date in yyyy-mm-dd format"],
+) -> str:
+    """
+    Retrieve news data for a given ticker symbol.
+    Uses the configured news_data vendor.
+    Args:
+        ticker (str): Ticker symbol
+        start_date (str): Start date in yyyy-mm-dd format
+        end_date (str): End date in yyyy-mm-dd format
+    Returns:
+        str: A formatted string containing news data
+    """
+    return route_to_vendor("get_news", ticker, start_date, end_date)
+
+@tool
+def get_global_news(
+    curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
+    look_back_days: Annotated[int, "Number of days to look back"] = 7,
+    limit: Annotated[int, "Maximum number of articles to return"] = 5,
+) -> str:
+    """
+    Retrieve global news data.
+    Uses the configured news_data vendor.
+    Args:
+        curr_date (str): Current date in yyyy-mm-dd format
+        look_back_days (int): Number of days to look back (default 7)
+        limit (int): Maximum number of articles to return (default 5)
+    Returns:
+        str: A formatted string containing global news data
+    """
+    return route_to_vendor("get_global_news", curr_date, look_back_days, limit)
+
+@tool
+def get_insider_transactions(
+    ticker: Annotated[str, "ticker symbol"],
+) -> str:
+    """
+    Retrieve insider transaction information about a company.
+    Uses the configured news_data vendor.
+    Args:
+        ticker (str): Ticker symbol of the company
+    Returns:
+        str: A report of insider transaction data
+    """
+    return route_to_vendor("get_insider_transactions", ticker)
+
+
+==================== tradingagents/agents/utils/memory.py ====================
+"""Financial situation memory using BM25 for lexical similarity matching.
+
+Uses BM25 (Best Matching 25) algorithm for retrieval - no API calls,
+no token limits, works offline with any LLM provider.
+"""
+
+from rank_bm25 import BM25Okapi
+from typing import List, Tuple
+import re
+
+
+class FinancialSituationMemory:
+    """Memory system for storing and retrieving financial situations using BM25."""
+
+    def __init__(self, name: str, config: dict = None):
+        """Initialize the memory system.
+
+        Args:
+            name: Name identifier for this memory instance
+            config: Configuration dict (kept for API compatibility, not used for BM25)
+        """
+        self.name = name
+        self.documents: List[str] = []
+        self.recommendations: List[str] = []
+        self.bm25 = None
+
+    def _tokenize(self, text: str) -> List[str]:
+        """Tokenize text for BM25 indexing.
+
+        Simple whitespace + punctuation tokenization with lowercasing.
+        """
+        # Lowercase and split on non-alphanumeric characters
+        tokens = re.findall(r'\b\w+\b', text.lower())
+        return tokens
+
+    def _rebuild_index(self):
+        """Rebuild the BM25 index after adding documents."""
+        if self.documents:
+            tokenized_docs = [self._tokenize(doc) for doc in self.documents]
+            self.bm25 = BM25Okapi(tokenized_docs)
+        else:
+            self.bm25 = None
+
+    def add_situations(self, situations_and_advice: List[Tuple[str, str]]):
+        """Add financial situations and their corresponding advice.
+
+        Args:
+            situations_and_advice: List of tuples (situation, recommendation)
+        """
+        for situation, recommendation in situations_and_advice:
+            self.documents.append(situation)
+            self.recommendations.append(recommendation)
+
+        # Rebuild BM25 index with new documents
+        self._rebuild_index()
+
+    def get_memories(self, current_situation: str, n_matches: int = 1) -> List[dict]:
+        """Find matching recommendations using BM25 similarity.
+
+        Args:
+            current_situation: The current financial situation to match against
+            n_matches: Number of top matches to return
+
+        Returns:
+            List of dicts with matched_situation, recommendation, and similarity_score
+        """
+        if not self.documents or self.bm25 is None:
+            return []
+
+        # Tokenize query
+        query_tokens = self._tokenize(current_situation)
+
+        # Get BM25 scores for all documents
+        scores = self.bm25.get_scores(query_tokens)
+
+        # Get top-n indices sorted by score (descending)
+        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_matches]
+
+        # Build results
+        results = []
+        max_score = max(scores) if max(scores) > 0 else 1  # Normalize scores
+
+        for idx in top_indices:
+            # Normalize score to 0-1 range for consistency
+            normalized_score = scores[idx] / max_score if max_score > 0 else 0
+            results.append({
+                "matched_situation": self.documents[idx],
+                "recommendation": self.recommendations[idx],
+                "similarity_score": normalized_score,
+            })
+
+        return results
+
+    def clear(self):
+        """Clear all stored memories."""
+        self.documents = []
+        self.recommendations = []
+        self.bm25 = None
+
+
+if __name__ == "__main__":
+    # Example usage
+    matcher = FinancialSituationMemory("test_memory")
+
+    # Example data
+    example_data = [
+        (
+            "High inflation rate with rising interest rates and declining consumer spending",
+            "Consider defensive sectors like consumer staples and utilities. Review fixed-income portfolio duration.",
+        ),
+        (
+            "Tech sector showing high volatility with increasing institutional selling pressure",
+            "Reduce exposure to high-growth tech stocks. Look for value opportunities in established tech companies with strong cash flows.",
+        ),
+        (
+            "Strong dollar affecting emerging markets with increasing forex volatility",
+            "Hedge currency exposure in international positions. Consider reducing allocation to emerging market debt.",
+        ),
+        (
+            "Market showing signs of sector rotation with rising yields",
+            "Rebalance portfolio to maintain target allocations. Consider increasing exposure to sectors benefiting from higher rates.",
+        ),
+    ]
+
+    # Add the example situations and recommendations
+    matcher.add_situations(example_data)
+
+    # Example query
+    current_situation = """
+    Market showing increased volatility in tech sector, with institutional investors
+    reducing positions and rising interest rates affecting growth stock valuations
+    """
+
+    try:
+        recommendations = matcher.get_memories(current_situation, n_matches=2)
+
+        for i, rec in enumerate(recommendations, 1):
+            print(f"\nMatch {i}:")
+            print(f"Similarity Score: {rec['similarity_score']:.2f}")
+            print(f"Matched Situation: {rec['matched_situation']}")
+            print(f"Recommendation: {rec['recommendation']}")
+
+    except Exception as e:
+        print(f"Error during recommendation: {str(e)}")
+
+
+==================== tradingagents/agents/utils/agent_states.py ====================
+from typing import Annotated, Sequence
+from datetime import date, timedelta, datetime
+from typing_extensions import TypedDict, Optional
+from langchain_openai import ChatOpenAI
+from tradingagents.agents import *
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import END, StateGraph, START, MessagesState
+
+
+# Researcher team state
+class InvestDebateState(TypedDict):
+    bull_history: Annotated[
+        str, "Bullish Conversation history"
+    ]  # Bullish Conversation history
+    bear_history: Annotated[
+        str, "Bearish Conversation history"
+    ]  # Bullish Conversation history
+    history: Annotated[str, "Conversation history"]  # Conversation history
+    current_response: Annotated[str, "Latest response"]  # Last response
+    judge_decision: Annotated[str, "Final judge decision"]  # Last response
+    count: Annotated[int, "Length of the current conversation"]  # Conversation length
+
+
+# Risk management team state
+class RiskDebateState(TypedDict):
+    aggressive_history: Annotated[
+        str, "Aggressive Agent's Conversation history"
+    ]  # Conversation history
+    conservative_history: Annotated[
+        str, "Conservative Agent's Conversation history"
+    ]  # Conversation history
+    neutral_history: Annotated[
+        str, "Neutral Agent's Conversation history"
+    ]  # Conversation history
+    history: Annotated[str, "Conversation history"]  # Conversation history
+    latest_speaker: Annotated[str, "Analyst that spoke last"]
+    current_aggressive_response: Annotated[
+        str, "Latest response by the aggressive analyst"
+    ]  # Last response
+    current_conservative_response: Annotated[
+        str, "Latest response by the conservative analyst"
+    ]  # Last response
+    current_neutral_response: Annotated[
+        str, "Latest response by the neutral analyst"
+    ]  # Last response
+    judge_decision: Annotated[str, "Judge's decision"]
+    count: Annotated[int, "Length of the current conversation"]  # Conversation length
+
+
+class AgentState(MessagesState):
+    company_of_interest: Annotated[str, "Company that we are interested in trading"]
+    trade_date: Annotated[str, "What date we are trading at"]
+
+    sender: Annotated[str, "Agent that sent this message"]
+
+    # research step
+    market_report: Annotated[str, "Report from the Market Analyst"]
+    sentiment_report: Annotated[str, "Report from the Social Media Analyst"]
+    news_report: Annotated[
+        str, "Report from the News Researcher of current world affairs"
+    ]
+    fundamentals_report: Annotated[str, "Report from the Fundamentals Researcher"]
+
+    # researcher team discussion step
+    investment_debate_state: Annotated[
+        InvestDebateState, "Current state of the debate on if to invest or not"
+    ]
+    investment_plan: Annotated[str, "Plan generated by the Analyst"]
+
+    trader_investment_plan: Annotated[str, "Plan generated by the Trader"]
+
+    # risk management team discussion step
+    risk_debate_state: Annotated[
+        RiskDebateState, "Current state of the debate on evaluating risk"
+    ]
+    final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
+
+
+==================== tradingagents/agents/analysts/market_analyst.py ====================
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+import time
+import json
+from tradingagents.agents.utils.agent_utils import get_stock_data, get_indicators
+from tradingagents.dataflows.config import get_config
+
+
+def create_market_analyst(llm):
+
+    def market_analyst_node(state):
+        current_date = state["trade_date"]
+        ticker = state["company_of_interest"]
+        company_name = state["company_of_interest"]
+
+        tools = [
+            get_stock_data,
+            get_indicators,
+        ]
+
+        system_message = (
+            """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
+
+Moving Averages:
+- close_50_sma: 50 SMA: A medium-term trend indicator. Usage: Identify trend direction and serve as dynamic support/resistance. Tips: It lags price; combine with faster indicators for timely signals.
+- close_200_sma: 200 SMA: A long-term trend benchmark. Usage: Confirm overall market trend and identify golden/death cross setups. Tips: It reacts slowly; best for strategic trend confirmation rather than frequent trading entries.
+- close_10_ema: 10 EMA: A responsive short-term average. Usage: Capture quick shifts in momentum and potential entry points. Tips: Prone to noise in choppy markets; use alongside longer averages for filtering false signals.
+
+MACD Related:
+- macd: MACD: Computes momentum via differences of EMAs. Usage: Look for crossovers and divergence as signals of trend changes. Tips: Confirm with other indicators in low-volatility or sideways markets.
+- macds: MACD Signal: An EMA smoothing of the MACD line. Usage: Use crossovers with the MACD line to trigger trades. Tips: Should be part of a broader strategy to avoid false positives.
+- macdh: MACD Histogram: Shows the gap between the MACD line and its signal. Usage: Visualize momentum strength and spot divergence early. Tips: Can be volatile; complement with additional filters in fast-moving markets.
+
+Momentum Indicators:
+- rsi: RSI: Measures momentum to flag overbought/oversold conditions. Usage: Apply 70/30 thresholds and watch for divergence to signal reversals. Tips: In strong trends, RSI may remain extreme; always cross-check with trend analysis.
+
+Volatility Indicators:
+- boll: Bollinger Middle: A 20 SMA serving as the basis for Bollinger Bands. Usage: Acts as a dynamic benchmark for price movement. Tips: Combine with the upper and lower bands to effectively spot breakouts or reversals.
+- boll_ub: Bollinger Upper Band: Typically 2 standard deviations above the middle line. Usage: Signals potential overbought conditions and breakout zones. Tips: Confirm signals with other tools; prices may ride the band in strong trends.
+- boll_lb: Bollinger Lower Band: Typically 2 standard deviations below the middle line. Usage: Indicates potential oversold conditions. Tips: Use additional analysis to avoid false reversal signals.
+- atr: ATR: Averages true range to measure volatility. Usage: Set stop-loss levels and adjust position sizes based on current market volatility. Tips: It's a reactive measure, so use it as part of a broader risk management strategy.
+
+Volume-Based Indicators:
+- vwma: VWMA: A moving average weighted by volume. Usage: Confirm trends by integrating price action with volume data. Tips: Watch for skewed results from volume spikes; use in combination with other volume analyses.
+
+- Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names. Write a very detailed and nuanced report of the trends you observe. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions."""
+            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+        )
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are a helpful AI assistant, collaborating with other assistants."
+                    " Use the provided tools to progress towards answering the question."
+                    " If you are unable to fully answer, that's OK; another assistant with different tools"
+                    " will help where you left off. Execute what you can to make progress."
+                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
+                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
+                    " You have access to the following tools: {tool_names}.\n{system_message}"
+                    "For your reference, the current date is {current_date}. The company we want to look at is {ticker}",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+
+        prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(tool_names=", ".join([tool.name for tool in tools]))
+        prompt = prompt.partial(current_date=current_date)
+        prompt = prompt.partial(ticker=ticker)
+
+        chain = prompt | llm.bind_tools(tools)
+
+        result = chain.invoke(state["messages"])
+
+        report = ""
+
+        if len(result.tool_calls) == 0:
+            report = result.content
+
+        return {
+            "messages": [result],
+            "market_report": report,
+        }
+
+    return market_analyst_node
+
+
+==================== tradingagents/agents/analysts/social_media_analyst.py ====================
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+import time
+import json
+from tradingagents.agents.utils.agent_utils import get_news
+from tradingagents.dataflows.config import get_config
+
+
+def create_social_media_analyst(llm):
+    def social_media_analyst_node(state):
+        current_date = state["trade_date"]
+        ticker = state["company_of_interest"]
+        company_name = state["company_of_interest"]
+
+        tools = [
+            get_news,
+        ]
+
+        system_message = (
+            "You are a social media and company specific news researcher/analyst tasked with analyzing social media posts, recent company news, and public sentiment for a specific company over the past week. You will be given a company's name your objective is to write a comprehensive long report detailing your analysis, insights, and implications for traders and investors on this company's current state after looking at social media and what people are saying about that company, analyzing sentiment data of what people feel each day about the company, and looking at recent company news. Use the get_news(query, start_date, end_date) tool to search for company-specific news and social media discussions. Try to look at all sources possible from social media to sentiment to news. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions."
+            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read.""",
+        )
+
+        prompt = ChatPromptTemplate.from_messages(

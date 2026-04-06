@@ -1,0 +1,2000 @@
+      this.preferences = {
+        defaultMarket: 'A股',
+        defaultDepth: '标准',
+        autoRefresh: true,
+        refreshInterval: 30,
+        showWelcome: true
+      }
+    },
+    
+    // 设置网络状态
+    setOnlineStatus(isOnline: boolean) {
+      this.isOnline = isOnline
+    },
+
+    // 设置API连接状态
+    setApiConnected(connected: boolean) {
+      this.apiConnected = connected
+      this.lastApiCheck = Date.now()
+    },
+
+    // 检查API连接状态
+    async checkApiConnection() {
+      try {
+        // 使用 AbortController 实现超时
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3秒超时
+
+        const response = await fetch('/api/health', {
+          method: 'GET',
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+        const connected = response.ok
+        this.setApiConnected(connected)
+        return connected
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.warn('API连接检查超时')
+        } else {
+          console.warn('API连接检查失败:', error)
+        }
+        this.setApiConnected(false)
+        return false
+      }
+    },
+
+    // 获取API版本信息
+    async fetchApiVersion() {
+      try {
+        // 使用 AbortController 实现超时
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3秒超时
+
+        const response = await fetch('/api/health', {
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+
+        if (response.ok) {
+          const data = await response.json()
+          this.apiVersion = data.version || 'unknown'
+          this.setApiConnected(true)
+        } else {
+          this.setApiConnected(false)
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.warn('获取API版本超时')
+        } else {
+          console.warn('获取API版本失败:', error)
+        }
+        this.apiVersion = 'unknown'
+        this.setApiConnected(false)
+      }
+    },
+    
+    // 重置应用状态
+    resetAppState() {
+      this.loading = false
+      this.loadingProgress = 0
+      this.currentRoute = null
+    }
+  }
+})
+
+
+==================== frontend/src/stores/notifications.ts ====================
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { notificationsApi, type NotificationItem } from '@/api/notifications'
+import { useAuthStore } from '@/stores/auth'
+
+export const useNotificationStore = defineStore('notifications', () => {
+  const items = ref<NotificationItem[]>([])
+  const unreadCount = ref(0)
+  const loading = ref(false)
+  const drawerVisible = ref(false)
+
+  // 🔥 WebSocket 连接状态
+  const ws = ref<WebSocket | null>(null)
+  const wsConnected = ref(false)
+  let wsReconnectTimer: any = null
+  let wsReconnectAttempts = 0
+  const maxReconnectAttempts = 10  // 增加重连次数
+
+  // 连接状态
+  const connected = computed(() => wsConnected.value)
+
+  const hasUnread = computed(() => unreadCount.value > 0)
+
+  async function refreshUnreadCount() {
+    try {
+      const res = await notificationsApi.getUnreadCount()
+      unreadCount.value = res?.data?.count ?? 0
+    } catch {
+      // noop
+    }
+  }
+
+  async function loadList(status: 'unread' | 'all' = 'all') {
+    loading.value = true
+    try {
+      const res = await notificationsApi.getList({ status, page: 1, page_size: 20 })
+      items.value = res?.data?.items ?? []
+    } catch {
+      items.value = []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function markRead(id: string) {
+    await notificationsApi.markRead(id)
+    const idx = items.value.findIndex(x => x.id === id)
+    if (idx !== -1) items.value[idx].status = 'read'
+    if (unreadCount.value > 0) unreadCount.value -= 1
+  }
+
+  async function markAllRead() {
+    await notificationsApi.markAllRead()
+    items.value = items.value.map(x => ({ ...x, status: 'read' }))
+    unreadCount.value = 0
+  }
+
+  function addNotification(n: Omit<NotificationItem, 'id' | 'status' | 'created_at'> & { id?: string; created_at?: string; status?: 'unread' | 'read' }) {
+    const id = n.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const created_at = n.created_at || new Date().toISOString()
+    const item: NotificationItem = {
+      id,
+      title: n.title,
+      content: n.content,
+      type: n.type,
+      status: n.status ?? 'unread',
+      created_at,
+      link: n.link,
+      source: n.source
+    }
+    items.value.unshift(item)
+    if (item.status === 'unread') unreadCount.value += 1
+  }
+
+  // 🔥 连接 WebSocket（优先）
+  function connectWebSocket() {
+    try {
+      // 若已存在连接，先关闭
+      if (ws.value) {
+        try { ws.value.close() } catch {}
+        ws.value = null
+      }
+      if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null }
+
+      const authStore = useAuthStore()
+      const token = authStore.token || localStorage.getItem('auth-token') || ''
+      if (!token) {
+        console.warn('[WS] 未找到 token，无法连接 WebSocket')
+        return
+      }
+
+      // WebSocket 连接地址
+      // 🔥 统一使用当前访问的服务器地址（开发环境通过 Vite 代理，生产环境通过 Nginx 代理）
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${wsProtocol}//139.155.146.217:8030/api/ws/notifications?token=${encodeURIComponent(token)}`
+
+      console.log('[WS] 连接到:', wsUrl)
+
+      const socket = new WebSocket(wsUrl)
+      ws.value = socket
+
+      socket.onopen = () => {
+        console.log('[WS] 连接成功')
+        wsConnected.value = true
+        wsReconnectAttempts = 0
+      }
+
+      socket.onclose = (event) => {
+        console.log('[WS] 连接关闭:', event.code, event.reason)
+        wsConnected.value = false
+        ws.value = null
+
+        // 自动重连
+        if (wsReconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts), 30000)
+          console.log(`[WS] ${delay}ms 后重连 (尝试 ${wsReconnectAttempts + 1}/${maxReconnectAttempts})`)
+
+          wsReconnectTimer = setTimeout(() => {
+            wsReconnectAttempts++
+            connectWebSocket()
+          }, delay)
+        } else {
+          console.error('[WS] 达到最大重连次数，停止重连')
+        }
+      }
+
+      socket.onerror = (error) => {
+        console.error('[WS] 连接错误:', error)
+        wsConnected.value = false
+      }
+
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data)
+          handleWebSocketMessage(message)
+        } catch (error) {
+          console.error('[WS] 解析消息失败:', error)
+        }
+      }
+    } catch (error) {
+      console.error('[WS] 连接失败:', error)
+      wsConnected.value = false
+    }
+  }
+
+  // 处理 WebSocket 消息
+  function handleWebSocketMessage(message: any) {
+    console.log('[WS] 收到消息:', message)
+
+    switch (message.type) {
+      case 'connected':
+        console.log('[WS] 连接确认:', message.data)
+        break
+
+      case 'notification':
+        // 处理通知
+        if (message.data && message.data.title && message.data.type) {
+          addNotification({
+            id: message.data.id,
+            title: message.data.title,
+            content: message.data.content,
+            type: message.data.type,
+            link: message.data.link,
+            source: message.data.source,
+            created_at: message.data.created_at,
+            status: message.data.status || 'unread'
+          })
+        }
+        break
+
+      case 'heartbeat':
+        // 心跳消息，无需处理
+        break
+
+      default:
+        console.warn('[WS] 未知消息类型:', message.type)
+    }
+  }
+
+  // 断开 WebSocket
+  function disconnectWebSocket() {
+    if (wsReconnectTimer) {
+      clearTimeout(wsReconnectTimer)
+      wsReconnectTimer = null
+    }
+
+    if (ws.value) {
+      try { ws.value.close() } catch {}
+      ws.value = null
+    }
+
+    wsConnected.value = false
+    wsReconnectAttempts = 0
+  }
+
+  // 🔥 连接 WebSocket
+  function connect() {
+    console.log('[Notifications] 开始连接...')
+    connectWebSocket()
+  }
+
+  // 🔥 断开 WebSocket
+  function disconnect() {
+    console.log('[Notifications] 断开连接...')
+    disconnectWebSocket()
+  }
+
+  function setDrawerVisible(v: boolean) {
+    drawerVisible.value = v
+  }
+
+  return {
+    items,
+    unreadCount,
+    hasUnread,
+    loading,
+    drawerVisible,
+    connected,
+    wsConnected,
+    refreshUnreadCount,
+    loadList,
+    markRead,
+    markAllRead,
+    addNotification,
+    connect,
+    disconnect,
+    connectWebSocket,
+    disconnectWebSocket,
+    setDrawerVisible
+  }
+})
+
+
+==================== frontend/src/stores/auth.ts ====================
+import { defineStore } from 'pinia'
+import { useStorage } from '@vueuse/core'
+import { authApi } from '@/api/auth'
+import type { User, LoginForm, RegisterForm } from '@/types/auth'
+
+export interface AuthState {
+  // 认证状态
+  isAuthenticated: boolean
+  token: string | null
+  refreshToken: string | null
+  
+  // 用户信息
+  user: User | null
+  
+  // 权限信息
+  permissions: string[]
+  roles: string[]
+  
+  // 登录状态
+  loginLoading: boolean
+  
+  // 重定向路径
+  redirectPath: string
+}
+
+export const useAuthStore = defineStore('auth', {
+  state: (): AuthState => {
+    const token = useStorage('auth-token', null).value || null
+    const refreshToken = useStorage('refresh-token', null).value || null
+
+    // 验证token格式
+    const isValidToken = (token: string | null): boolean => {
+      if (!token || typeof token !== 'string') return false
+      // 检查是否是mock token（开发时可能设置的测试token）
+      if (token === 'mock-token' || token.startsWith('mock-')) {
+        console.warn('⚠️ 检测到mock token，将被清除:', token)
+        return false
+      }
+      // JWT token应该有3个部分，用.分隔
+      return token.split('.').length === 3
+    }
+
+    const validToken = isValidToken(token) ? token : null
+    const validRefreshToken = isValidToken(refreshToken) ? refreshToken : null
+
+    // 如果token无效，清除相关数据
+    if (!validToken || !validRefreshToken) {
+      console.log('🧹 清除无效的认证信息')
+      localStorage.removeItem('auth-token')
+      localStorage.removeItem('refresh-token')
+      localStorage.removeItem('user-info')
+    }
+
+    return {
+      isAuthenticated: !!validToken,
+      token: validToken,
+      refreshToken: validRefreshToken,
+
+      user: validToken ? (useStorage('user-info', null).value || null) : null,
+
+      permissions: [],
+      roles: [],
+
+      loginLoading: false,
+      redirectPath: '/'
+    }
+  },
+
+  getters: {
+    // 用户头像：优先使用用户设置的头像，否则返回 undefined 使用默认图标
+    userAvatar(): string | undefined {
+      return this.user?.avatar || undefined
+    },
+    
+    // 用户显示名称
+    userDisplayName(): string {
+      return this.user?.username || this.user?.email || '未知用户'
+    },
+    
+    // 是否为管理员
+    isAdmin(): boolean {
+      return this.roles.includes('admin')
+    },
+    
+    // 检查权限
+    hasPermission(): (permission: string) => boolean {
+      return (permission: string) => {
+        return this.permissions.includes(permission) || this.isAdmin
+      }
+    },
+    
+    // 检查角色
+    hasRole(): (role: string) => boolean {
+      return (role: string) => {
+        return this.roles.includes(role)
+      }
+    },
+    
+    // 用户统计信息
+    userStats(): Record<string, number> {
+      return {
+        totalAnalyses: this.user?.total_analyses || 0,
+        successfulAnalyses: this.user?.successful_analyses || 0,
+        failedAnalyses: this.user?.failed_analyses || 0,
+        dailyQuota: this.user?.daily_quota || 1000,
+        concurrentLimit: this.user?.concurrent_limit || 3
+      }
+    }
+  },
+
+  actions: {
+    // 设置认证信息
+    setAuthInfo(token: string, refreshToken?: string, user?: User) {
+      this.token = token
+      this.isAuthenticated = true
+
+      if (refreshToken) {
+        this.refreshToken = refreshToken
+      }
+
+      if (user) {
+        this.user = user
+      }
+
+      // 手动保存到localStorage（确保持久化）
+      localStorage.setItem('auth-token', token)
+      if (refreshToken) {
+        localStorage.setItem('refresh-token', refreshToken)
+      }
+      if (user) {
+        localStorage.setItem('user-info', JSON.stringify(user))
+      }
+
+      // 设置API请求头
+      this.setAuthHeader(token)
+
+      console.log('✅ 认证信息已保存:', {
+        token: token ? '已设置' : '未设置',
+        refreshToken: refreshToken ? '已设置' : '未设置',
+        user: user ? user.username : '未设置',
+        isAuthenticated: this.isAuthenticated
+      })
+    },
+    
+    // 清除认证信息
+    clearAuthInfo() {
+      this.token = null
+      this.refreshToken = null
+      this.user = null
+      this.isAuthenticated = false
+      this.permissions = []
+      this.roles = []
+
+      // 清除API请求头
+      this.setAuthHeader(null)
+
+      // 清除本地存储
+      localStorage.removeItem('auth-token')
+      localStorage.removeItem('refresh-token')
+      localStorage.removeItem('user-info')
+    },
+
+    // 跳转到登录页
+    redirectToLogin() {
+      // 避免在非浏览器环境中使用router
+      if (typeof window !== 'undefined') {
+        // 使用window.location进行跳转，避免router依赖问题
+        const currentPath = window.location.pathname
+        if (currentPath !== '/login') {
+          console.log('🔄 跳转到登录页...')
+          window.location.href = '/login'
+        }
+      }
+    },
+    
+    // 设置API请求头
+    setAuthHeader(token: string | null) {
+      // 这里会在API模块中设置Authorization头
+      // 具体实现在api/request.ts中
+    },
+    
+    // 登录
+    async login(loginForm: LoginForm) {
+      // 防止重复登录请求
+      if (this.loginLoading) {
+        console.log('⏭️ 登录请求进行中，跳过重复调用')
+        return false
+      }
+
+      try {
+        this.loginLoading = true
+
+        const response = await authApi.login(loginForm)
+
+        if (response.success) {
+          const { access_token, refresh_token, user } = response.data
+
+          // 设置认证信息
+          this.setAuthInfo(access_token, refresh_token, user)
+
+          // 开源版admin用户拥有所有权限
+          this.permissions = ['*']
+          this.roles = ['admin']
+
+          // 同步用户偏好设置到 appStore
+          this.syncUserPreferencesToAppStore()
+
+          // 启动 token 自动刷新定时器
+          const { setupTokenRefreshTimer } = await import('@/utils/auth')
+          setupTokenRefreshTimer()
+
+          // 不在这里显示成功消息，由调用方显示
+          return true
+        } else {
+          // 不在这里显示错误消息，由调用方显示
+          return false
+        }
+      } catch (error: any) {
+        console.error('登录失败:', error)
+        // 不在这里显示错误消息，由调用方显示
+        return false
+      } finally {
+        this.loginLoading = false
+      }
+    },
+    
+    // 注册
+    async register(registerForm: RegisterForm) {
+      try {
+        const response = await authApi.register(registerForm)
+        
+        if (response.success) {
+          ElMessage.success('注册成功，请登录')
+          return true
+        } else {
+          ElMessage.error(response.message || '注册失败')
+          return false
+        }
+      } catch (error: any) {
+        console.error('注册失败:', error)
+        ElMessage.error(error.message || '注册失败，请重试')
+        return false
+      }
+    },
+    
+    // 登出
+    async logout() {
+      try {
+        // 调用登出API
+        await authApi.logout()
+      } catch (error) {
+        console.error('登出API调用失败:', error)
+      } finally {
+        // 无论API调用是否成功，都清除本地认证信息
+        this.clearAuthInfo()
+        console.log('✅ 用户已登出，认证信息已清除')
+
+        // 跳转到登录页
+        this.redirectToLogin()
+      }
+    },
+    
+    // 刷新Token
+    async refreshAccessToken() {
+      try {
+        console.log('🔄 开始刷新Token...')
+
+        if (!this.refreshToken) {
+          console.warn('❌ 没有refresh token，无法刷新')
+          throw new Error('没有刷新令牌')
+        }
+
+        console.log('📝 Refresh token信息:', {
+          length: this.refreshToken.length,
+          prefix: this.refreshToken.substring(0, 10),
+          isValid: this.refreshToken.split('.').length === 3
+        })
+
+        // 验证refresh token格式
+        if (this.refreshToken.split('.').length !== 3) {
+          console.error('❌ Refresh token格式无效')
+          throw new Error('Refresh token格式无效')
+        }
+
+        const response = await authApi.refreshToken(this.refreshToken)
+        console.log('📨 刷新响应:', response)
+
+        if (response.success) {
+          const { access_token, refresh_token } = response.data
+          console.log('✅ Token刷新成功')
+          this.setAuthInfo(access_token, refresh_token)
+          return true
+        } else {
+          console.error('❌ Token刷新失败:', response.message)
+          throw new Error(response.message || 'Token刷新失败')
+        }
+      } catch (error: any) {
+        console.error('❌ Token刷新异常:', error)
+
+        // 如果是网络错误或服务器错误，不要立即清除认证信息
+        if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500) {
+          console.warn('⚠️ 网络或服务器错误，保留认证信息')
+          return false
+        }
+
+        // 其他错误（如401），清除认证信息
+        console.log('🧹 清除认证信息并跳转登录')
+        this.clearAuthInfo()
+        this.redirectToLogin()
+
+        return false
+      }
+    },
+    
+    // 获取用户信息
+    async fetchUserInfo() {
+      try {
+        console.log('📡 正在获取用户信息...')
+        const response = await authApi.getUserInfo()
+
+        if (response.success) {
+          this.user = response.data
+          console.log('✅ 用户信息获取成功:', this.user?.username)
+
+          // 同步用户偏好设置到 appStore
+          this.syncUserPreferencesToAppStore()
+
+          return true
+        } else {
+          console.warn('⚠️ 获取用户信息失败:', response.message)
+          throw new Error(response.message || '获取用户信息失败')
+        }
+      } catch (error) {
+        console.error('❌ 获取用户信息失败:', error)
+        // 重新抛出错误，让上层处理
+        throw error
+      }
+    },
+    
+    // 开源版不需要权限检查，admin拥有所有权限
+    async fetchUserPermissions() {
+      this.permissions = ['*']
+      this.roles = ['admin']
+      return true
+    },
+    
+    // 更新用户信息
+    async updateUserInfo(userInfo: Partial<User>) {
+      try {
+        const response = await authApi.updateUserInfo(userInfo)
+
+        if (response.success) {
+          this.user = { ...this.user!, ...response.data }
+
+          // 同步用户偏好设置到 appStore
+          this.syncUserPreferencesToAppStore()
+
+          ElMessage.success('用户信息更新成功')
+          return true
+        } else {
+          ElMessage.error(response.message || '更新失败')
+          return false
+        }
+      } catch (error: any) {
+        console.error('更新用户信息失败:', error)
+        ElMessage.error(error.message || '更新失败，请重试')
+        return false
+      }
+    },
+    
+    // 同步用户偏好设置到 appStore
+    syncUserPreferencesToAppStore() {
+      if (!this.user?.preferences) return
+
+      // 动态导入 appStore 避免循环依赖
+      import('./app').then(({ useAppStore }) => {
+        const appStore = useAppStore()
+        const prefs = this.user!.preferences
+
+        // 同步主题设置
+        if (prefs.ui_theme) {
+          appStore.setTheme(prefs.ui_theme as 'light' | 'dark' | 'auto')
+        }
+
+        // 同步侧边栏宽度
+        if (prefs.sidebar_width) {
+          appStore.setSidebarWidth(prefs.sidebar_width)
+        }
+
+        // 同步语言设置
+        if (prefs.language) {
+          appStore.setLanguage(prefs.language as 'zh-CN' | 'en-US')
+        }
+
+        // 同步分析偏好
+        if (prefs.default_market || prefs.default_depth || prefs.auto_refresh !== undefined || prefs.refresh_interval) {
+          appStore.updatePreferences({
+            defaultMarket: prefs.default_market as any,
+            defaultDepth: prefs.default_depth as any,
+            autoRefresh: prefs.auto_refresh,
+            refreshInterval: prefs.refresh_interval
+          })
+        }
+
+        console.log('✅ 用户偏好设置已同步到 appStore')
+      })
+    },
+
+    // 修改密码
+    async changePassword(oldPassword: string, newPassword: string) {
+      try {
+        const response = await authApi.changePassword({
+          old_password: oldPassword,
+          new_password: newPassword
+        })
+
+        if (response.success) {
+          ElMessage.success('密码修改成功')
+          return true
+        } else {
+          ElMessage.error(response.message || '密码修改失败')
+          return false
+        }
+      } catch (error: any) {
+        console.error('修改密码失败:', error)
+        ElMessage.error(error.message || '修改密码失败，请重试')
+        return false
+      }
+    },
+    
+    // 设置重定向路径
+    setRedirectPath(path: string) {
+      this.redirectPath = path
+    },
+    
+    // 获取并清除重定向路径
+    getAndClearRedirectPath(): string {
+      const path = this.redirectPath || '/dashboard'
+      this.redirectPath = '/dashboard'
+      return path
+    },
+    
+    // 检查认证状态
+    async checkAuthStatus() {
+      if (this.token) {
+        try {
+          console.log('🔍 检查token有效性...')
+          // 验证token是否有效
+          const valid = await this.fetchUserInfo()
+          if (valid) {
+            this.isAuthenticated = true
+            await this.fetchUserPermissions()
+            console.log('✅ 认证状态验证成功')
+          } else {
+            // Token无效，尝试刷新
+            console.log('🔄 Token无效，尝试刷新...')
+            await this.refreshAccessToken()
+          }
+        } catch (error) {
+          console.error('❌ 检查认证状态失败:', error)
+          // 如果是网络错误或超时，不清除认证信息，只是标记为未认证
+          if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            console.warn('⚠️ 网络超时，保留认证信息但标记为未认证状态')
+            this.isAuthenticated = false
+          } else {
+            // 其他错误则清除认证信息
+            this.clearAuthInfo()
+            this.redirectToLogin()
+          }
+        }
+      } else {
+        console.log('📝 没有token，跳过认证检查')
+      }
+    }
+  }
+})
+
+
+==================== frontend/src/utils/stock.ts ====================
+/**
+ * 股票代码字段兼容性工具函数
+ * 
+ * 用于处理前后端字段标准化过程中的兼容性问题
+ */
+
+/**
+ * 从对象中获取股票代码（兼容新旧字段）
+ * @param obj 包含股票代码的对象
+ * @returns 股票代码（6位）
+ */
+export function getStockSymbol(obj: any): string {
+  return obj?.symbol || obj?.stock_code || obj?.code || ''
+}
+
+/**
+ * 从对象中获取完整股票代码（如 000001.SZ）
+ * @param obj 包含股票代码的对象
+ * @returns 完整股票代码
+ */
+export function getFullSymbol(obj: any): string {
+  return obj?.full_symbol || obj?.symbol || obj?.stock_code || obj?.code || ''
+}
+
+/**
+ * 创建包含兼容字段的股票代码对象
+ * @param symbol 6位股票代码
+ * @param fullSymbol 完整代码（可选）
+ * @returns 包含新旧字段的对象
+ */
+export function createSymbolObject(symbol: string, fullSymbol?: string) {
+  return {
+    symbol,
+    stock_code: symbol,  // 兼容字段
+    code: symbol,        // 兼容字段
+    ...(fullSymbol && { full_symbol: fullSymbol })
+  }
+}
+
+/**
+ * 标准化股票代码列表（去重、兼容新旧字段）
+ * @param symbols 股票代码列表（可能包含新旧字段）
+ * @returns 标准化后的代码列表
+ */
+export function normalizeSymbols(symbols: (string | { symbol?: string; stock_code?: string; code?: string })[]): string[] {
+  const result = new Set<string>()
+  
+  for (const item of symbols) {
+    if (typeof item === 'string') {
+      if (item) result.add(item)
+    } else if (item && typeof item === 'object') {
+      const symbol = getStockSymbol(item)
+      if (symbol) result.add(symbol)
+    }
+  }
+  
+  return Array.from(result)
+}
+
+/**
+ * 验证股票代码格式
+ * @param symbol 股票代码
+ * @param market 市场类型（可选）
+ * @returns 是否有效
+ */
+export function validateSymbol(symbol: string, market?: string): boolean {
+  if (!symbol) return false
+  
+  const trimmed = symbol.trim()
+  
+  if (market === 'A股' || market === 'CN') {
+    // A股：6位数字
+    return /^\d{6}$/.test(trimmed)
+  } else if (market === '美股' || market === 'US') {
+    // 美股：1-5个字母
+    return /^[A-Z]{1,5}$/.test(trimmed.toUpperCase())
+  } else if (market === '港股' || market === 'HK') {
+    // 港股：4-5位数字.HK
+    return /^\d{4,5}(\.HK)?$/.test(trimmed.toUpperCase())
+  }
+  
+  // 未指定市场时，尝试通用验证
+  return /^\d{6}$/.test(trimmed) || // A股
+         /^[A-Z]{1,5}$/.test(trimmed.toUpperCase()) || // 美股
+         /^\d{4,5}(\.HK)?$/.test(trimmed.toUpperCase()) // 港股
+}
+
+/**
+ * 格式化股票代码显示
+ * @param symbol 股票代码
+ * @param market 市场类型（可选）
+ * @returns 格式化后的代码
+ */
+export function formatSymbol(symbol: string, market?: string): string {
+  if (!symbol) return ''
+  
+  const trimmed = symbol.trim()
+  
+  if (market === '美股' || market === 'US') {
+    return trimmed.toUpperCase()
+  } else if (market === '港股' || market === 'HK') {
+    // 确保港股代码包含 .HK 后缀
+    if (/^\d{4,5}$/.test(trimmed)) {
+      return `${trimmed}.HK`
+    }
+    return trimmed.toUpperCase()
+  }
+  
+  return trimmed
+}
+
+/**
+ * 从完整代码中提取6位代码
+ * @param fullSymbol 完整代码（如 000001.SZ）
+ * @returns 6位代码
+ */
+export function extractSymbol(fullSymbol: string): string {
+  if (!fullSymbol) return ''
+  
+  // 移除市场后缀（.SZ, .SH, .BJ, .HK等）
+  return fullSymbol.split('.')[0]
+}
+
+/**
+ * 从6位代码推断市场代码
+ * @param symbol 6位股票代码
+ * @returns 市场代码（SZ/SH/BJ）或 null
+ */
+export function inferMarketCode(symbol: string): string | null {
+  if (!symbol || !/^\d{6}$/.test(symbol)) return null
+  
+  const code = symbol.substring(0, 3)
+  
+  // 深圳市场
+  if (['000', '001', '002', '003', '300', '301'].includes(code)) {
+    return 'SZ'
+  }
+  
+  // 上海市场
+  if (['600', '601', '603', '605', '688', '689'].includes(code)) {
+    return 'SH'
+  }
+  
+  // 北京市场
+  if (['430', '830', '870'].includes(code)) {
+    return 'BJ'
+  }
+  
+  return null
+}
+
+/**
+ * 构建完整股票代码
+ * @param symbol 6位股票代码
+ * @param marketCode 市场代码（可选，如果不提供则自动推断）
+ * @returns 完整代码（如 000001.SZ）
+ */
+export function buildFullSymbol(symbol: string, marketCode?: string): string {
+  if (!symbol) return ''
+  
+  const market = marketCode || inferMarketCode(symbol)
+  
+  if (market) {
+    return `${symbol}.${market}`
+  }
+  
+  return symbol
+}
+
+/**
+ * 批量转换对象中的股票代码字段
+ * @param obj 包含股票代码的对象
+ * @returns 转换后的对象（包含新旧字段）
+ */
+export function normalizeStockObject<T extends Record<string, any>>(obj: T): T {
+  if (!obj) return obj
+  
+  const symbol = getStockSymbol(obj)
+  
+  if (symbol) {
+    return {
+      ...obj,
+      symbol,
+      stock_code: symbol,  // 兼容字段
+      code: symbol         // 兼容字段
+    }
+  }
+  
+  return obj
+}
+
+/**
+ * 批量转换对象数组中的股票代码字段
+ * @param arr 对象数组
+ * @returns 转换后的数组
+ */
+export function normalizeStockArray<T extends Record<string, any>>(arr: T[]): T[] {
+  if (!Array.isArray(arr)) return arr
+  
+  return arr.map(item => normalizeStockObject(item))
+}
+
+
+
+==================== frontend/src/utils/datetime.ts ====================
+/**
+ * 日期时间工具函数
+ * 统一处理时间转换和显示
+ *
+ * 处理逻辑：
+ * 1. 如果时间字符串包含时区信息（+08:00 或 Z），直接使用
+ * 2. 🔥 如果时间字符串没有时区信息，假定为 UTC+8 时间（后端已经入库为 UTC+8）
+ * 3. 最终统一显示为中国时区（Asia/Shanghai）
+ *
+ * 注意：后端要求所有入库数据都是 UTC+8 时间，但可能没有时区标志
+ */
+
+/**
+ * 格式化时间字符串，自动处理时区转换
+ * @param dateStr - 时间字符串或时间戳
+ * @param options - 格式化选项
+ * @returns 格式化后的时间字符串
+ */
+export function formatDateTime(
+  dateStr: string | number | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!dateStr) return '-'
+
+  try {
+    let timeStr: string
+
+    // 处理时间戳（秒或毫秒）
+    if (typeof dateStr === 'number') {
+      // 如果是秒级时间戳（小于 10000000000），转换为毫秒
+      const timestamp = dateStr < 10000000000 ? dateStr * 1000 : dateStr
+      timeStr = new Date(timestamp).toISOString()
+    } else {
+      timeStr = String(dateStr).trim()
+    }
+
+    // 检查时间字符串是否包含时区信息
+    const hasTimezone = timeStr.endsWith('Z') ||
+                       timeStr.includes('+') ||
+                       timeStr.includes('-', 10) // 日期后面的 - 才是时区标识
+
+    // 🔥 如果没有时区标识，假定为 UTC+8 时间（后端已经入库为 UTC+8），添加 +08:00 后缀
+    // 注意：如果后端已经返回了带时区的时间（如 +08:00 或 Z），这里不会修改
+    if (timeStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && !hasTimezone) {
+      console.debug('[时间处理] 检测到不带时区的时间字符串，添加 +08:00:', timeStr)
+      timeStr += '+08:00'
+      console.debug('[时间处理] 转换后:', timeStr)
+    } else {
+      console.debug('[时间处理] 时间字符串已有时区或格式不匹配:', timeStr, 'hasTimezone:', hasTimezone)
+    }
+
+    // 解析时间字符串
+    const date = new Date(timeStr)
+
+    if (isNaN(date.getTime())) {
+      console.warn('无效的时间格式:', dateStr)
+      return String(dateStr)
+    }
+
+    // 默认格式化选项
+    const defaultOptions: Intl.DateTimeFormatOptions = {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }
+
+    // 合并用户提供的选项
+    const finalOptions = { ...defaultOptions, ...options }
+
+    // 格式化为中国本地时间（UTC+8）
+    return date.toLocaleString('zh-CN', finalOptions)
+  } catch (e) {
+    console.error('时间格式化错误:', e, dateStr)
+    return String(dateStr)
+  }
+}
+
+/**
+ * 格式化时间并添加相对时间描述
+ * @param dateStr - 时间字符串或时间戳
+ * @returns 格式化后的时间字符串 + 相对时间
+ */
+export function formatDateTimeWithRelative(dateStr: string | number | null | undefined): string {
+  if (!dateStr) return '-'
+  
+  try {
+    let timeStr: string
+    
+    // 处理时间戳
+    if (typeof dateStr === 'number') {
+      const timestamp = dateStr < 10000000000 ? dateStr * 1000 : dateStr
+      timeStr = new Date(timestamp).toISOString()
+    } else {
+      timeStr = String(dateStr).trim()
+    }
+    
+    // 🔥 如果时间字符串没有时区标识，假定为 UTC+8 时间（后端已经入库为 UTC+8），添加 +08:00 后缀
+    if (timeStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && !timeStr.endsWith('Z') && !timeStr.includes('+') && !timeStr.includes('-', 10)) {
+      timeStr += '+08:00'
+    }
+    
+    const utcDate = new Date(timeStr)
+    
+    if (isNaN(utcDate.getTime())) {
+      console.warn('无效的时间格式:', dateStr)
+      return String(dateStr)
+    }
+    
+    // 获取当前时间
+    const now = new Date()
+    
+    // 计算时间差
+    const diff = now.getTime() - utcDate.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor(diff / (1000 * 60))
+    
+    // 格式化为中国本地时间
+    const formatted = utcDate.toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    // 添加相对时间
+    let relative = ''
+    if (days > 0) {
+      relative = `（${days}天前）`
+    } else if (hours > 0) {
+      relative = `（${hours}小时前）`
+    } else if (minutes > 0) {
+      relative = `（${minutes}分钟前）`
+    } else {
+      relative = '（刚刚）'
+    }
+    
+    return formatted + ' ' + relative
+  } catch (e) {
+    console.error('时间格式化错误:', e, dateStr)
+    return String(dateStr)
+  }
+}
+
+/**
+ * 仅格式化日期部分（不含时间）
+ * @param dateStr - 时间字符串或时间戳
+ * @returns 格式化后的日期字符串
+ */
+export function formatDate(dateStr: string | number | null | undefined): string {
+  return formatDateTime(dateStr, {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
+
+/**
+ * 仅格式化时间部分（不含日期）
+ * @param dateStr - 时间字符串或时间戳
+ * @returns 格式化后的时间字符串
+ */
+export function formatTime(dateStr: string | number | null | undefined): string {
+  return formatDateTime(dateStr, {
+    timeZone: 'Asia/Shanghai',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+}
+
+/**
+ * 格式化相对时间（距离现在多久）
+ * @param dateStr - 时间字符串或时间戳
+ * @returns 相对时间描述
+ */
+export function formatRelativeTime(dateStr: string | number | null | undefined): string {
+  if (!dateStr) return '-'
+
+  try {
+    let timeStr: string
+
+    // 处理时间戳
+    if (typeof dateStr === 'number') {
+      const timestamp = dateStr < 10000000000 ? dateStr * 1000 : dateStr
+      timeStr = new Date(timestamp).toISOString()
+    } else {
+      timeStr = String(dateStr).trim()
+    }
+
+    // 🔥 如果时间字符串没有时区标识，假定为 UTC+8 时间（后端已经入库为 UTC+8），添加 +08:00 后缀
+    if (timeStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && !timeStr.endsWith('Z') && !timeStr.includes('+') && !timeStr.includes('-', 10)) {
+      timeStr += '+08:00'
+    }
+
+    const targetDate = new Date(timeStr)
+
+    if (isNaN(targetDate.getTime())) {
+      console.warn('无效的时间格式:', dateStr)
+      return String(dateStr)
+    }
+
+    // 获取当前时间
+    const now = new Date()
+
+    // 计算时间差（毫秒）
+    const diff = targetDate.getTime() - now.getTime()
+    const absDiff = Math.abs(diff)
+
+    // 转换为各种时间单位
+    const seconds = Math.floor(absDiff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    // 判断是过去还是将来
+    const isPast = diff < 0
+
+    // 格式化相对时间
+    if (days > 0) {
+      return isPast ? `${days}天前` : `${days}天后`
+    } else if (hours > 0) {
+      return isPast ? `${hours}小时前` : `${hours}小时后`
+    } else if (minutes > 0) {
+      return isPast ? `${minutes}分钟前` : `${minutes}分钟后`
+    } else if (seconds > 10) {
+      return isPast ? `${seconds}秒前` : `${seconds}秒后`
+    } else {
+      return isPast ? '刚刚' : '即将执行'
+    }
+  } catch (e) {
+    console.error('相对时间格式化错误:', e, dateStr)
+    return String(dateStr)
+  }
+}
+
+
+==================== frontend/src/utils/market.ts ====================
+// 市场参数规范化：将各类板块/交易所/缩写统一为分析模块支持的 A股/美股/港股
+export const normalizeMarketForAnalysis = (market: any): string => {
+  const raw = String(market ?? '').trim()
+  const upper = raw.toUpperCase()
+  const cn = raw
+  const isA = [
+    'A股', '主板', '创业板', '科创板', '中小板', '沪市', '深市', '上交所', '深交所', '北交所'
+  ].includes(cn) || ['CN', 'SH', 'SZ', 'SSE', 'SZSE'].includes(upper)
+  const isHK = ['港股', '港交所'].includes(cn) || ['HK', 'HKEX'].includes(upper)
+  const isUS = ['美股', '纳斯达克', '纽交所'].includes(cn) || ['US', 'NASDAQ', 'NYSE', 'AMEX'].includes(upper)
+  if (isA) return 'A股'
+  if (isHK) return '港股'
+  if (isUS) return '美股'
+  // 默认按A股处理
+  return 'A股'
+}
+
+/**
+ * 将交易所代码转换为市场类型
+ * @param exchangeCode 交易所代码（如 "sz", "sh", "hk", "us"）
+ * @returns 市场类型（"A股", "港股", "美股"）
+ */
+export const exchangeCodeToMarket = (exchangeCode: string): string => {
+  const code = String(exchangeCode ?? '').toLowerCase().trim()
+
+  // A股交易所代码
+  if (['sz', 'sh', 'bj', 'sse', 'szse', 'bse'].includes(code)) {
+    return 'A股'
+  }
+
+  // 港股交易所代码
+  if (['hk', 'hkex'].includes(code)) {
+    return '港股'
+  }
+
+  // 美股交易所代码
+  if (['us', 'nasdaq', 'nyse', 'amex'].includes(code)) {
+    return '美股'
+  }
+
+  // 默认返回A股
+  return 'A股'
+}
+
+/**
+ * 根据股票代码判断市场类型
+ * @param stockCode 股票代码
+ * @returns 市场类型（"A股", "港股", "美股"）
+ */
+export const getMarketByStockCode = (stockCode: string): string => {
+  const code = String(stockCode ?? '').trim().toUpperCase()
+
+  // 港股：明确带 .HK 后缀
+  if (code.endsWith('.HK')) {
+    return '港股'
+  }
+
+  // A股：6位数字
+  if (/^\d{6}$/.test(code)) {
+    return 'A股'
+  }
+
+  // 港股：1-5位数字（3位、4位、5位都是港股）
+  // 例如：700(腾讯)、1810(小米)、9988(阿里巴巴)
+  if (/^\d{1,5}$/.test(code)) {
+    return '港股'
+  }
+
+  // 美股：纯字母（至少1个字母）
+  if (/^[A-Z]+$/.test(code)) {
+    return '美股'
+  }
+
+  // 默认返回A股
+  return 'A股'
+}
+
+export default {
+  normalizeMarketForAnalysis,
+  exchangeCodeToMarket,
+  getMarketByStockCode
+}
+
+
+
+==================== frontend/src/utils/auth.ts ====================
+/**
+ * 认证工具函数
+ * 统一处理认证相关的逻辑
+ */
+
+import { useAuthStore } from '@/stores/auth'
+import router from '@/router'
+import { ElMessage } from 'element-plus'
+
+/**
+ * 检查是否是认证错误
+ */
+export const isAuthError = (error: any): boolean => {
+  if (!error) return false
+
+  // 检查 HTTP 状态码
+  if (error.response?.status === 401) {
+    return true
+  }
+
+  // 检查业务错误码
+  const code = error.code || error.response?.data?.code
+  if (code === 401 || code === 40101 || code === 40102 || code === 40103) {
+    return true
+  }
+
+  // 检查错误消息
+  const message = error.message || error.response?.data?.message || ''
+  const authKeywords = [
+    '认证失败',
+    '登录已过期',
+    '未授权',
+    'unauthorized',
+    'token',
+    'Token',
+    'TOKEN',
+    '请重新登录'
+  ]
+
+  return authKeywords.some(keyword => message.includes(keyword))
+}
+
+/**
+ * 处理认证错误
+ * 清除认证信息并跳转到登录页
+ */
+export const handleAuthError = (error?: any, showMessage = true): void => {
+  console.log('🔒 处理认证错误:', error)
+
+  const authStore = useAuthStore()
+
+  // 清除认证信息
+  authStore.clearAuthInfo()
+
+  // 显示错误消息
+  if (showMessage) {
+    const message = error?.message || error?.response?.data?.message || '登录已过期，请重新登录'
+    ElMessage.error(message)
+  }
+
+  // 跳转到登录页
+  const currentPath = router.currentRoute.value.fullPath
+  if (currentPath !== '/login') {
+    // 保存当前路径，登录后跳转回来
+    authStore.setRedirectPath(currentPath)
+    router.push('/login')
+  }
+}
+
+/**
+ * 检查 token 是否有效
+ */
+export const isTokenValid = (token: string | null): boolean => {
+  if (!token || typeof token !== 'string') {
+    return false
+  }
+
+  // 检查是否是 mock token
+  if (token === 'mock-token' || token.startsWith('mock-')) {
+    console.warn('⚠️ 检测到 mock token')
+    return false
+  }
+
+  // JWT token 应该有 3 个部分，用 . 分隔
+  const parts = token.split('.')
+  if (parts.length !== 3) {
+    console.warn('⚠️ Token 格式无效')
+    return false
+  }
+
+  // 尝试解析 token payload
+  try {
+    const payload = JSON.parse(atob(parts[1]))
+    
+    // 检查是否过期
+    if (payload.exp) {
+      const now = Math.floor(Date.now() / 1000)
+      if (payload.exp < now) {
+        console.warn('⚠️ Token 已过期')
+        return false
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.warn('⚠️ Token 解析失败:', error)
+    return false
+  }
+}
+
+/**
+ * 从 token 中提取用户信息
+ */
+export const parseToken = (token: string): any => {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return null
+    }
+
+    const payload = JSON.parse(atob(parts[1]))
+    return payload
+  } catch (error) {
+    console.error('❌ Token 解析失败:', error)
+    return null
+  }
+}
+
+/**
+ * 获取 token 剩余有效时间（秒）
+ */
+export const getTokenRemainingTime = (token: string): number => {
+  const payload = parseToken(token)
+  if (!payload || !payload.exp) {
+    return 0
+  }
+
+  const now = Math.floor(Date.now() / 1000)
+  const remaining = payload.exp - now
+
+  return Math.max(0, remaining)
+}
+
+/**
+ * 检查 token 是否即将过期（默认 5 分钟）
+ */
+export const isTokenExpiringSoon = (token: string, thresholdSeconds = 300): boolean => {
+  const remaining = getTokenRemainingTime(token)
+  return remaining > 0 && remaining < thresholdSeconds
+}
+
+/**
+ * 自动刷新 token（如果即将过期）
+ */
+export const autoRefreshToken = async (): Promise<boolean> => {
+  const authStore = useAuthStore()
+
+  if (!authStore.token) {
+    return false
+  }
+
+  // 检查 token 是否即将过期
+  if (isTokenExpiringSoon(authStore.token)) {
+    console.log('🔄 Token 即将过期，自动刷新...')
+    try {
+      const success = await authStore.refreshAccessToken()
+      if (success) {
+        console.log('✅ Token 自动刷新成功')
+        return true
+      } else {
+        console.log('❌ Token 自动刷新失败')
+        return false
+      }
+    } catch (error) {
+      console.error('❌ Token 自动刷新异常:', error)
+      return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * 设置定时刷新 token
+ */
+export const setupTokenRefreshTimer = (): void => {
+  // 每分钟检查一次
+  setInterval(() => {
+    autoRefreshToken()
+  }, 60000)
+
+  console.log('✅ Token 自动刷新定时器已启动')
+}
+
+
+
+==================== frontend/src/utils/stockValidator.ts ====================
+/**
+ * 股票代码格式验证工具
+ * 支持 A股、美股、港股的代码格式验证
+ */
+
+export interface StockValidationResult {
+  valid: boolean
+  market?: 'A股' | '美股' | '港股'
+  message?: string
+  normalizedCode?: string
+}
+
+/**
+ * A股代码格式验证
+ * 格式：6位数字
+ * - 60xxxx: 上海主板
+ * - 68xxxx: 科创板
+ * - 00xxxx: 深圳主板
+ * - 30xxxx: 创业板
+ * - 43xxxx/83xxxx/87xxxx: 北交所
+ */
+export function validateAStock(code: string): StockValidationResult {
+  // 移除空格和特殊字符
+  const cleanCode = code.trim().replace(/[^0-9]/g, '')
+  
+  // 必须是6位数字
+  if (!/^\d{6}$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: 'A股代码必须是6位数字'
+    }
+  }
+  
+  // 验证前缀
+  const prefix = cleanCode.substring(0, 2)
+  const validPrefixes = ['60', '68', '00', '30', '43', '83', '87']
+  
+  if (!validPrefixes.includes(prefix)) {
+    return {
+      valid: false,
+      message: 'A股代码前缀不正确（支持：60/68/00/30/43/83/87开头）'
+    }
+  }
+  
+  return {
+    valid: true,
+    market: 'A股',
+    normalizedCode: cleanCode
+  }
+}
+
+/**
+ * 美股代码格式验证
+ * 格式：1-5个大写字母
+ * 示例：AAPL, MSFT, GOOGL, TSLA, BRK.B
+ */
+export function validateUSStock(code: string): StockValidationResult {
+  // 移除空格，保留字母和点号
+  const cleanCode = code.trim().toUpperCase().replace(/[^A-Z.]/g, '')
+  
+  // 基本格式：1-5个字母，可能包含一个点号
+  if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: '美股代码格式不正确（1-5个字母，如：AAPL、BRK.B）'
+    }
+  }
+  
+  // 不能全是点号
+  if (cleanCode.replace(/\./g, '').length === 0) {
+    return {
+      valid: false,
+      message: '美股代码不能为空'
+    }
+  }
+  
+  return {
+    valid: true,
+    market: '美股',
+    normalizedCode: cleanCode
+  }
+}
+
+/**
+ * 港股代码格式验证
+ * 格式：5位数字（前面可能有0）
+ * 示例：00700（腾讯）、09988（阿里巴巴）、01810（小米）
+ * 也支持不带前导0的格式：700、9988、1810
+ */
+export function validateHKStock(code: string): StockValidationResult {
+  // 移除空格和特殊字符
+  const cleanCode = code.trim().replace(/[^0-9]/g, '')
+  
+  // 必须是1-5位数字
+  if (!/^\d{1,5}$/.test(cleanCode)) {
+    return {
+      valid: false,
+      message: '港股代码必须是1-5位数字'
+    }
+  }
+  
+  // 转换为5位格式（补齐前导0）
+  const normalizedCode = cleanCode.padStart(5, '0')
+  
+  return {
+    valid: true,
+    market: '港股',
+    normalizedCode: normalizedCode
+  }
+}
+
+/**
+ * 自动识别股票代码格式并验证
+ * @param code 股票代码
+ * @param marketHint 市场提示（可选），如果提供则优先验证该市场
+ */
+export function validateStockCode(
+  code: string,
+  marketHint?: 'A股' | '美股' | '港股'
+): StockValidationResult {
+  if (!code || !code.trim()) {
+    return {
+      valid: false,
+      message: '请输入股票代码'
+    }
+  }
+  
+  const trimmedCode = code.trim()
+  
+  // 如果提供了市场提示，优先验证该市场
+  if (marketHint) {
+    switch (marketHint) {
+      case 'A股':
+        return validateAStock(trimmedCode)
+      case '美股':
+        return validateUSStock(trimmedCode)
+      case '港股':
+        return validateHKStock(trimmedCode)
+    }
+  }
+  
+  // 自动识别：先判断是否全是数字
+  const isNumeric = /^\d+$/.test(trimmedCode.replace(/[^0-9]/g, ''))
+  
+  if (isNumeric) {
+    const cleanCode = trimmedCode.replace(/[^0-9]/g, '')
+    
+    // 6位数字 -> A股
+    if (cleanCode.length === 6) {
+      return validateAStock(cleanCode)
+    }
+    
+    // 1-5位数字 -> 港股
+    if (cleanCode.length >= 1 && cleanCode.length <= 5) {
+      return validateHKStock(cleanCode)
+    }
+    
+    return {
+      valid: false,
+      message: '数字代码长度不正确（A股6位，港股1-5位）'
+    }
+  }
+  
+  // 包含字母 -> 美股
+  if (/[A-Za-z]/.test(trimmedCode)) {
+    return validateUSStock(trimmedCode)
+  }
+  
+  return {
+    valid: false,
+    message: '无法识别的股票代码格式'
+  }
+}
+
+/**
+ * 获取股票代码格式说明
+ */
+export function getStockCodeFormatHelp(market: 'A股' | '美股' | '港股'): string {
+  switch (market) {
+    case 'A股':
+      return '6位数字，如：000001（平安银行）、600519（贵州茅台）'
+    case '美股':
+      return '1-5个字母，如：AAPL（苹果）、TSLA（特斯拉）'
+    case '港股':
+      return '1-5位数字，如：700（腾讯）、9988（阿里巴巴）'
+    default:
+      return ''
+  }
+}
+
+/**
+ * 获取股票代码示例
+ */
+export function getStockCodeExamples(market: 'A股' | '美股' | '港股'): string[] {
+  switch (market) {
+    case 'A股':
+      return ['000001', '600519', '000858', '300750']
+    case '美股':
+      return ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
+    case '港股':
+      return ['00700', '09988', '01810', '03690']
+    default:
+      return []
+  }
+}
+
+/**
+ * 格式化股票代码显示
+ * @param code 原始代码
+ * @param market 市场类型
+ */
+export function formatStockCode(code: string, market: 'A股' | '美股' | '港股'): string {
+  const validation = validateStockCode(code, market)
+  return validation.normalizedCode || code
+}
+
+
+
+==================== frontend/src/utils/__tests__/market.test.ts ====================
+import { describe, it, expect } from 'vitest'
+import { getMarketByStockCode } from '../market'
+
+describe('getMarketByStockCode', () => {
+  describe('A股识别', () => {
+    it('应该识别6位数字为A股', () => {
+      expect(getMarketByStockCode('000001')).toBe('A股')
+      expect(getMarketByStockCode('600519')).toBe('A股')
+      expect(getMarketByStockCode('300750')).toBe('A股')
+      expect(getMarketByStockCode('688981')).toBe('A股')
+    })
+  })
+
+  describe('港股识别', () => {
+    it('应该识别带.HK后缀的代码为港股', () => {
+      expect(getMarketByStockCode('0700.HK')).toBe('港股')
+      expect(getMarketByStockCode('9988.HK')).toBe('港股')
+      expect(getMarketByStockCode('1810.HK')).toBe('港股')
+    })
+
+    it('应该识别1位数字为港股', () => {
+      expect(getMarketByStockCode('1')).toBe('港股')
+      expect(getMarketByStockCode('2')).toBe('港股')
+    })
+
+    it('应该识别2位数字为港股', () => {
+      expect(getMarketByStockCode('01')).toBe('港股')
+      expect(getMarketByStockCode('88')).toBe('港股')
+    })
+
+    it('应该识别3位数字为港股', () => {
+      expect(getMarketByStockCode('700')).toBe('港股')
+      expect(getMarketByStockCode('388')).toBe('港股')
+    })
+
+    it('应该识别4位数字为港股', () => {
+      expect(getMarketByStockCode('1810')).toBe('港股')
+      expect(getMarketByStockCode('9988')).toBe('港股')
+      expect(getMarketByStockCode('3690')).toBe('港股')
+    })
+
+    it('应该识别5位数字为港股', () => {
+      expect(getMarketByStockCode('00700')).toBe('港股')
+      expect(getMarketByStockCode('09988')).toBe('港股')
+      expect(getMarketByStockCode('01810')).toBe('港股')
+    })
+  })
+
+  describe('美股识别', () => {
+    it('应该识别纯字母代码为美股', () => {
+      expect(getMarketByStockCode('AAPL')).toBe('美股')
+      expect(getMarketByStockCode('TSLA')).toBe('美股')
+      expect(getMarketByStockCode('GOOGL')).toBe('美股')
+      expect(getMarketByStockCode('MSFT')).toBe('美股')
+    })
+
+    it('应该识别小写字母代码为美股', () => {
+      expect(getMarketByStockCode('aapl')).toBe('美股')
+      expect(getMarketByStockCode('tsla')).toBe('美股')
+    })
+  })
+
+  describe('边界情况', () => {
+    it('应该处理空字符串', () => {
+      expect(getMarketByStockCode('')).toBe('A股') // 默认返回A股
+    })
+
+    it('应该处理带空格的代码', () => {
+      expect(getMarketByStockCode(' 700 ')).toBe('港股')
+      expect(getMarketByStockCode(' AAPL ')).toBe('美股')
+    })
+  })
+})
+
+
+
+==================== frontend/src/router/index.ts ====================
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+import { nextTick } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
+import { ElMessage } from 'element-plus'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+// 配置NProgress
+NProgress.configure({
+  showSpinner: false,
+  minimum: 0.2,
+  easing: 'ease',
+  speed: 500
+})
+
+// 路由配置
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: '/dashboard'
+  },
+  // 兼容文档链接：将 /paper/<name>.md 重定向到学习中心文章路由
+  {
+    path: '/paper/:name.md',
+    name: 'PaperMdRedirect',
+    redirect: (to) => `/learning/article/${to.params.name as string}`,
+    meta: { title: '文档跳转', hideInMenu: true, requiresAuth: false }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '仪表板',
+      icon: 'Dashboard',
+      requiresAuth: true,
+      transition: 'fade'
+    },
+    children: [
+      {
+        path: '',
+        name: 'DashboardHome',
+        component: () => import('@/views/Dashboard/index.vue'),
+        meta: {
+          title: '仪表板',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  {
+    path: '/analysis',
+    name: 'Analysis',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/analysis/single',
+    children: [
+      {
+        path: 'single',
+        name: 'SingleAnalysis',
+        component: () => import('@/views/Analysis/SingleAnalysis.vue')
+      },
+      {
+        path: 'batch',
+        name: 'BatchAnalysis',
+        component: () => import('@/views/Analysis/BatchAnalysis.vue')
+      },
+
+    ]
+  },
+  {
+    path: '/screening',
+    name: 'StockScreening',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '股票筛选',
+      icon: 'Search',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: '',
+        name: 'StockScreeningHome',
+        component: () => import('@/views/Screening/index.vue'),
+        meta: {
+          title: '股票筛选',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+
+  {
+    path: '/favorites',
+    name: 'Favorites',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '我的自选股',
+      icon: 'Star',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: '',
+        name: 'FavoritesHome',
+        component: () => import('@/views/Favorites/index.vue'),
+        meta: {
+          title: '我的自选股',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  {
+    path: '/learning',
+    name: 'Learning',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '学习中心',
+      icon: 'Reading',
+      requiresAuth: false,
+      transition: 'fade'
+    },
+    children: [
+      {
+        path: '',
+        name: 'LearningHome',
+        component: () => import('@/views/Learning/index.vue'),
+        meta: {
+          title: '学习中心',
+          requiresAuth: false
+        }
+      },
+      {
+        path: ':category',
+        name: 'LearningCategory',
+        component: () => import('@/views/Learning/Category.vue'),
+        meta: {
+          title: '学习分类',
+          requiresAuth: false
+        }
+      },
+      {
+        path: 'article/:id',
+        name: 'LearningArticle',
+        component: () => import('@/views/Learning/Article.vue'),
+        meta: {
+          title: '文章详情',
+          requiresAuth: false
+        }
+      }
+    ]
+  },
+  {
+    path: '/stocks',
+    name: 'Stocks',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '股票详情',
+      icon: 'TrendCharts',
+      requiresAuth: true,
+      hideInMenu: true,

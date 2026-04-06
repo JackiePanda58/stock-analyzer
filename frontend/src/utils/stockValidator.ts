@@ -31,17 +31,22 @@ export function validateAStock(code: string): StockValidationResult {
     }
   }
   
-  // 验证前缀
+  // 验证前缀（宽松模式：支持所有6位数字，含ETF/LOF等基金）
   const prefix = cleanCode.substring(0, 2)
+  // 保留原有权威前缀，同时放行其他6位数字代码（ETF、北交所、创业板等）
   const validPrefixes = ['60', '68', '00', '30', '43', '83', '87']
-  
+
   if (!validPrefixes.includes(prefix)) {
-    return {
-      valid: false,
-      message: 'A股代码前缀不正确（支持：60/68/00/30/43/83/87开头）'
+    // 再次尝试：若为纯6位数字，仍允许通过（支持ETF、LOF等）
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return {
+        valid: false,
+        message: 'A股/ETF代码必须是6位数字'
+      }
     }
+    // 6位纯数字（非标准前缀），放行
   }
-  
+
   return {
     valid: true,
     market: 'A股',

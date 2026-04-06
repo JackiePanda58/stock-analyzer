@@ -1,0 +1,2000 @@
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑模型目录' : '添加模型目录'"
+      width="1200px"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-width="120px"
+      >
+        <el-form-item label="厂家标识" prop="provider">
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <el-select
+              v-model="formData.provider"
+              placeholder="请选择厂家"
+              :disabled="isEdit"
+              filterable
+              @change="handleProviderChange"
+              style="flex: 1"
+            >
+              <el-option
+                v-for="provider in availableProviders"
+                :key="provider.name"
+                :label="`${provider.display_name} (${provider.name})`"
+                :value="provider.name"
+              />
+            </el-select>
+            <el-button
+              :icon="Refresh"
+              :loading="providersLoading"
+              @click="() => loadProviders(true)"
+              title="刷新厂家列表"
+            />
+          </div>
+          <div class="form-tip">
+            选择已配置的厂家，如果没有找到需要的厂家，请先在"厂家管理"中添加，然后点击刷新按钮
+          </div>
+        </el-form-item>
+        <el-form-item label="厂家名称" prop="provider_name">
+          <el-input
+            v-model="formData.provider_name"
+            placeholder="如: 通义千问"
+            :disabled="true"
+          />
+          <div class="form-tip">
+            自动从选择的厂家中获取
+          </div>
+        </el-form-item>
+        <el-form-item label="模型列表">
+          <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleAddModel"
+            >
+              <el-icon><Plus /></el-icon>
+              手动添加模型
+            </el-button>
+
+            <!-- 聚合平台特殊功能 -->
+            <template v-if="isAggregatorProvider">
+              <el-button
+                type="success"
+                size="small"
+                @click="handleFetchModelsFromAPI"
+                :loading="fetchingModels"
+              >
+                <el-icon><Refresh /></el-icon>
+                从 API 获取模型列表
+              </el-button>
+              <el-button
+                type="warning"
+                size="small"
+                @click="handleUsePresetModels"
+              >
+                <el-icon><Document /></el-icon>
+                使用预设模板
+              </el-button>
+            </template>
+          </div>
+
+          <el-alert
+            v-if="isAggregatorProvider"
+            title="💡 提示"
+            type="info"
+            :closable="false"
+            style="margin-bottom: 10px"
+          >
+            聚合平台支持多个厂家的模型。您可以：
+            <ul style="margin: 5px 0 0 20px; padding: 0;">
+              <li>点击"从 API 获取模型列表"自动获取（需要配置 API Key）</li>
+              <li>点击"使用预设模板"快速导入常用模型</li>
+              <li>点击"手动添加模型"逐个添加</li>
+            </ul>
+          </el-alert>
+
+          <el-table :data="formData.models" border max-height="400">
+            <el-table-column label="模型名称" width="200">
+              <template #default="{ row, $index }">
+                <el-input
+                  v-model="row.name"
+                  placeholder="如: qwen-turbo"
+                  size="small"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column label="显示名称" width="280">
+              <template #default="{ row, $index }">
+                <el-input
+                  v-model="row.display_name"
+                  placeholder="如: Qwen Turbo - 快速经济"
+                  size="small"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column label="输入价格/1K" width="180">
+              <template #default="{ row, $index }">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <el-input-number
+                    v-model="row.input_price_per_1k"
+                    :min="0"
+                    :step="0.0001"
+                    size="small"
+                    :controls="false"
+                    style="width: 110px;"
+                  />
+                  <span style="color: #909399; font-size: 12px; white-space: nowrap;">{{ row.currency || 'CNY' }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="输出价格/1K" width="180">
+              <template #default="{ row, $index }">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <el-input-number
+                    v-model="row.output_price_per_1k"
+                    :min="0"
+                    :step="0.0001"
+                    size="small"
+                    :controls="false"
+                    style="width: 110px;"
+                  />
+                  <span style="color: #909399; font-size: 12px; white-space: nowrap;">{{ row.currency || 'CNY' }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="上下文长度" width="150">
+              <template #default="{ row, $index }">
+                <el-input
+                  v-model.number="row.context_length"
+                  placeholder="1000000"
+                  size="small"
+                  type="number"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column label="货币单位" width="120">
+              <template #default="{ row, $index }">
+                <el-select
+                  v-model="row.currency"
+                  size="small"
+                  placeholder="选择货币"
+                >
+                  <el-option label="CNY" value="CNY" />
+                  <el-option label="USD" value="USD" />
+                  <el-option label="EUR" value="EUR" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="100" fixed="right">
+              <template #default="{ $index }">
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click="handleRemoveModel($index)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSave" :loading="saving">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Plus, Refresh, Document } from '@element-plus/icons-vue'
+import { configApi, type LLMProvider } from '@/api/config'
+import axios from 'axios'
+
+// 数据
+const loading = ref(false)
+const catalogs = ref<any[]>([])
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const saving = ref(false)
+const formRef = ref<FormInstance>()
+const availableProviders = ref<LLMProvider[]>([])
+const providersLoading = ref(false)
+const fetchingModels = ref(false)
+
+// 聚合平台列表
+const aggregatorProviders = ['302ai', 'oneapi', 'newapi', 'openrouter', 'custom_aggregator']
+
+// 计算属性：判断当前选择的是否为聚合平台
+const isAggregatorProvider = computed(() => {
+  return aggregatorProviders.includes(formData.value.provider)
+})
+
+interface ModelInfo {
+  name: string
+  display_name: string
+  input_price_per_1k?: number | null
+  output_price_per_1k?: number | null
+  context_length?: number | null
+  max_tokens?: number | null
+  currency?: string
+  description?: string
+  is_deprecated?: boolean
+  release_date?: string
+  capabilities?: string[]
+}
+
+const formData = ref({
+  provider: '',
+  provider_name: '',
+  models: [] as ModelInfo[]
+})
+
+const rules: FormRules = {
+  provider: [{ required: true, message: '请输入厂家标识', trigger: 'blur' }],
+  provider_name: [{ required: true, message: '请输入厂家名称', trigger: 'blur' }]
+}
+
+// 方法
+const loadCatalogs = async () => {
+  loading.value = true
+  try {
+    const response = await configApi.getModelCatalog()
+    catalogs.value = response
+  } catch (error) {
+    console.error('加载模型目录失败:', error)
+    ElMessage.error('加载模型目录失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载可用的厂家列表
+const loadProviders = async (showSuccessMessage = false) => {
+  providersLoading.value = true
+  try {
+    const providers = await configApi.getLLMProviders()
+    availableProviders.value = providers
+    console.log('✅ 加载厂家列表成功:', availableProviders.value.length)
+    if (showSuccessMessage) {
+      ElMessage.success(`已刷新厂家列表，共 ${providers.length} 个厂家`)
+    }
+  } catch (error) {
+    console.error('❌ 加载厂家列表失败:', error)
+    ElMessage.error('加载厂家列表失败')
+  } finally {
+    providersLoading.value = false
+  }
+}
+
+// 处理厂家选择
+const handleProviderChange = (providerName: string) => {
+  const provider = availableProviders.value.find(p => p.name === providerName)
+  if (provider) {
+    formData.value.provider_name = provider.display_name
+  }
+}
+
+const handleAdd = async () => {
+  isEdit.value = false
+  formData.value = {
+    provider: '',
+    provider_name: '',
+    models: []
+  }
+  // 打开对话框前刷新厂家列表，确保显示最新添加的厂家
+  await loadProviders()
+  dialogVisible.value = true
+}
+
+const handleEdit = async (row: any) => {
+  isEdit.value = true
+  formData.value = {
+    provider: row.provider,
+    provider_name: row.provider_name,
+    models: JSON.parse(JSON.stringify(row.models))
+  }
+  // 打开对话框前刷新厂家列表
+  await loadProviders()
+  dialogVisible.value = true
+}
+
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除厂家 ${row.provider_name} 的模型目录吗？`,
+      '确认删除',
+      {
+        type: 'warning'
+      }
+    )
+    
+    await configApi.deleteModelCatalog(row.provider)
+    ElMessage.success('删除成功')
+    await loadCatalogs()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleAddModel = () => {
+  formData.value.models.push({
+    name: '',
+    display_name: '',
+    input_price_per_1k: null,
+    output_price_per_1k: null,
+    context_length: null,
+    currency: 'CNY'
+  })
+}
+
+const handleRemoveModel = (index: number) => {
+  formData.value.models.splice(index, 1)
+}
+
+// 从 API 获取模型列表
+const handleFetchModelsFromAPI = async () => {
+  try {
+    // 检查是否选择了厂家
+    if (!formData.value.provider) {
+      ElMessage.warning('请先选择厂家')
+      return
+    }
+
+    // 获取厂家信息
+    const provider = availableProviders.value.find(p => p.name === formData.value.provider)
+    if (!provider) {
+      ElMessage.error('未找到厂家信息')
+      return
+    }
+
+    // 检查是否配置了 base_url
+    if (!provider.default_base_url) {
+      ElMessage.warning('该厂家未配置 API 基础地址')
+      return
+    }
+
+    // 提示：某些聚合平台（如 OpenRouter）不需要 API Key
+    if (!provider.extra_config?.has_api_key) {
+      console.log('⚠️ 该厂家未配置 API Key，尝试无认证访问')
+    }
+
+    await ElMessageBox.confirm(
+      '此操作将从 API 获取模型列表并覆盖当前的模型列表，是否继续？',
+      '确认操作',
+      { type: 'warning' }
+    )
+
+    fetchingModels.value = true
+
+    // 构建 API URL
+    let baseUrl = provider.default_base_url
+    if (!baseUrl.endsWith('/v1')) {
+      baseUrl = baseUrl.replace(/\/$/, '') + '/v1'
+    }
+    const apiUrl = `${baseUrl}/models`
+
+    console.log('🔍 获取模型列表:', apiUrl)
+    console.log('🔍 厂家信息:', provider)
+
+    // 调用后端 API 来获取模型列表（避免 CORS 问题）
+    // 注意：需要传递厂家的 ID，而不是 name
+    const response = await configApi.fetchProviderModels(provider.id)
+
+    console.log('📊 API 响应:', response)
+
+    if (response.success && response.models && response.models.length > 0) {
+      // 转换模型格式，包含价格信息
+      formData.value.models = response.models.map((model: any) => ({
+        name: model.id || model.name,
+        display_name: model.name || model.id,
+        // 使用 API 返回的价格信息（USD），如果没有则为 null
+        input_price_per_1k: model.input_price_per_1k || null,
+        output_price_per_1k: model.output_price_per_1k || null,
+        context_length: model.context_length || null,
+        // OpenRouter 的价格是 USD
+        currency: 'USD'
+      }))
+
+      // 统计有价格信息的模型数量
+      const modelsWithPricing = formData.value.models.filter(m => m.input_price_per_1k || m.output_price_per_1k).length
+
+      ElMessage.success(`成功获取 ${formData.value.models.length} 个模型（${modelsWithPricing} 个包含价格信息）`)
+    } else {
+      // 显示详细的错误信息
+      const errorMsg = response.message || '获取模型列表失败或列表为空'
+      console.error('❌ 获取失败:', errorMsg)
+      ElMessage.error(errorMsg)
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('获取模型列表失败:', error)
+      const errorMsg = error.response?.data?.detail || error.message || '获取模型列表失败'
+      ElMessage.error(errorMsg)
+    }
+  } finally {
+    fetchingModels.value = false
+  }
+}
+
+// 使用预设模板
+const handleUsePresetModels = async () => {
+  try {
+    if (!formData.value.provider) {
+      ElMessage.warning('请先选择厂家')
+      return
+    }
+
+    await ElMessageBox.confirm(
+      '此操作将使用预设模板并覆盖当前的模型列表，是否继续？',
+      '确认操作',
+      { type: 'warning' }
+    )
+
+    // 根据不同的聚合平台提供不同的预设模板
+    const presetModels = getPresetModels(formData.value.provider)
+
+    if (presetModels.length > 0) {
+      formData.value.models = presetModels
+      ElMessage.success(`已导入 ${presetModels.length} 个预设模型`)
+    } else {
+      ElMessage.warning('该厂家暂无预设模板')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('导入预设模板失败:', error)
+    }
+  }
+}
+
+// 获取预设模型列表
+const getPresetModels = (providerName: string): ModelInfo[] => {
+  const presets: Record<string, ModelInfo[]> = {
+    '302ai': [
+      // OpenAI 模型
+      { name: 'gpt-4o', display_name: 'GPT-4o', input_price_per_1k: 0.005, output_price_per_1k: 0.015, context_length: 128000, currency: 'USD' },
+      { name: 'gpt-4o-mini', display_name: 'GPT-4o Mini', input_price_per_1k: 0.00015, output_price_per_1k: 0.0006, context_length: 128000, currency: 'USD' },
+      { name: 'gpt-4-turbo', display_name: 'GPT-4 Turbo', input_price_per_1k: 0.01, output_price_per_1k: 0.03, context_length: 128000, currency: 'USD' },
+      { name: 'gpt-3.5-turbo', display_name: 'GPT-3.5 Turbo', input_price_per_1k: 0.0005, output_price_per_1k: 0.0015, context_length: 16385, currency: 'USD' },
+
+      // Anthropic 模型
+      { name: 'claude-3-5-sonnet-20241022', display_name: 'Claude 3.5 Sonnet', input_price_per_1k: 0.003, output_price_per_1k: 0.015, context_length: 200000, currency: 'USD' },
+      { name: 'claude-3-5-haiku-20241022', display_name: 'Claude 3.5 Haiku', input_price_per_1k: 0.001, output_price_per_1k: 0.005, context_length: 200000, currency: 'USD' },
+      { name: 'claude-3-opus-20240229', display_name: 'Claude 3 Opus', input_price_per_1k: 0.015, output_price_per_1k: 0.075, context_length: 200000, currency: 'USD' },
+
+      // Google 模型
+      { name: 'gemini-2.0-flash-exp', display_name: 'Gemini 2.0 Flash', input_price_per_1k: 0, output_price_per_1k: 0, context_length: 1000000, currency: 'USD' },
+      { name: 'gemini-1.5-pro', display_name: 'Gemini 1.5 Pro', input_price_per_1k: 0.00125, output_price_per_1k: 0.005, context_length: 2000000, currency: 'USD' },
+      { name: 'gemini-1.5-flash', display_name: 'Gemini 1.5 Flash', input_price_per_1k: 0.000075, output_price_per_1k: 0.0003, context_length: 1000000, currency: 'USD' },
+    ],
+    'openrouter': [
+      // OpenAI 模型
+      { name: 'openai/gpt-4o', display_name: 'GPT-4o', input_price_per_1k: 0.005, output_price_per_1k: 0.015, context_length: 128000, currency: 'USD' },
+      { name: 'openai/gpt-4o-mini', display_name: 'GPT-4o Mini', input_price_per_1k: 0.00015, output_price_per_1k: 0.0006, context_length: 128000, currency: 'USD' },
+      { name: 'openai/gpt-3.5-turbo', display_name: 'GPT-3.5 Turbo', input_price_per_1k: 0.0005, output_price_per_1k: 0.0015, context_length: 16385, currency: 'USD' },
+
+      // Anthropic 模型
+      { name: 'anthropic/claude-3.5-sonnet', display_name: 'Claude 3.5 Sonnet', input_price_per_1k: 0.003, output_price_per_1k: 0.015, context_length: 200000, currency: 'USD' },
+      { name: 'anthropic/claude-3-opus', display_name: 'Claude 3 Opus', input_price_per_1k: 0.015, output_price_per_1k: 0.075, context_length: 200000, currency: 'USD' },
+
+      // Google 模型
+      { name: 'google/gemini-2.0-flash-exp', display_name: 'Gemini 2.0 Flash', input_price_per_1k: 0, output_price_per_1k: 0, context_length: 1000000, currency: 'USD' },
+      { name: 'google/gemini-pro-1.5', display_name: 'Gemini 1.5 Pro', input_price_per_1k: 0.00125, output_price_per_1k: 0.005, context_length: 2000000, currency: 'USD' },
+    ]
+  }
+
+  return presets[providerName] || []
+}
+
+const handleSave = async () => {
+  if (!formRef.value) return
+  
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    if (formData.value.models.length === 0) {
+      ElMessage.warning('请至少添加一个模型')
+      return
+    }
+    
+    saving.value = true
+    try {
+      await configApi.saveModelCatalog(formData.value)
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      await loadCatalogs()
+    } catch (error) {
+      console.error('保存失败:', error)
+      ElMessage.error('保存失败')
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+const formatDate = (date: string) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleString('zh-CN')
+}
+
+onMounted(() => {
+  loadCatalogs()
+  loadProviders()
+})
+</script>
+
+<style lang="scss" scoped>
+.model-catalog-management {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .form-tip {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    margin-top: 4px;
+  }
+}
+</style>
+
+
+
+==================== frontend/src/views/Settings/components/MarketCategoryManagement.vue ====================
+<template>
+  <div class="market-category-management">
+    <div class="header">
+      <h3>市场分类管理</h3>
+      <el-button type="primary" icon="Plus" @click="showAddDialog">
+        添加分类
+      </el-button>
+    </div>
+
+    <el-table
+      v-loading="loading"
+      :data="categories"
+      style="width: 100%"
+      row-key="id"
+    >
+      <el-table-column prop="sort_order" label="排序" width="80" sortable />
+      
+      <el-table-column prop="id" label="分类ID" width="120" />
+      
+      <el-table-column prop="display_name" label="显示名称" width="120" />
+      
+      <el-table-column prop="description" label="描述" min-width="200" />
+      
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.enabled ? 'success' : 'danger'" size="small">
+            {{ row.enabled ? '启用' : '禁用' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="数据源数量" width="120">
+        <template #default="{ row }">
+          <el-tag type="info" size="small">
+            {{ getDataSourceCount(row.id) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="创建时间" width="180">
+        <template #default="{ row }">
+          {{ formatDate(row.created_at) }}
+        </template>
+      </el-table-column>
+
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <el-button
+            size="small"
+            @click="editCategory(row)"
+          >
+            编辑
+          </el-button>
+          <el-button
+            size="small"
+            :type="row.enabled ? 'warning' : 'success'"
+            @click="toggleCategory(row)"
+          >
+            {{ row.enabled ? '禁用' : '启用' }}
+          </el-button>
+          <el-button
+            size="small"
+            type="danger"
+            @click="deleteCategory(row)"
+            :disabled="getDataSourceCount(row.id) > 0"
+          >
+            删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分类对话框 -->
+    <MarketCategoryDialog
+      v-model:visible="dialogVisible"
+      :category="currentCategory"
+      @success="handleSuccess"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { configApi, type MarketCategory, type DataSourceGrouping } from '@/api/config'
+import MarketCategoryDialog from './MarketCategoryDialog.vue'
+
+// Refs
+const loading = ref(false)
+const categories = ref<MarketCategory[]>([])
+const groupings = ref<DataSourceGrouping[]>([])
+const dialogVisible = ref(false)
+const currentCategory = ref<MarketCategory | null>(null)
+
+// Computed
+const getDataSourceCount = computed(() => {
+  return (categoryId: string) => {
+    return groupings.value.filter(g => g.market_category_id === categoryId && g.enabled).length
+  }
+})
+
+// 格式化日期
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
+}
+
+// 加载数据
+const loadCategories = async () => {
+  loading.value = true
+  try {
+    categories.value = await configApi.getMarketCategories()
+    // 按排序顺序排列
+    categories.value.sort((a, b) => a.sort_order - b.sort_order)
+  } catch (error) {
+    console.error('加载市场分类失败:', error)
+    ElMessage.error('加载市场分类失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadGroupings = async () => {
+  try {
+    groupings.value = await configApi.getDataSourceGroupings()
+  } catch (error) {
+    console.error('加载分组关系失败:', error)
+  }
+}
+
+// 显示添加对话框
+const showAddDialog = () => {
+  currentCategory.value = null
+  dialogVisible.value = true
+}
+
+// 编辑分类
+const editCategory = (category: MarketCategory) => {
+  currentCategory.value = category
+  dialogVisible.value = true
+}
+
+// 切换分类状态
+const toggleCategory = async (category: MarketCategory) => {
+  try {
+    await configApi.updateMarketCategory(category.id, {
+      enabled: !category.enabled
+    })
+    
+    category.enabled = !category.enabled
+    ElMessage.success(`分类已${category.enabled ? '启用' : '禁用'}`)
+  } catch (error) {
+    console.error('切换分类状态失败:', error)
+    ElMessage.error('切换分类状态失败')
+  }
+}
+
+// 删除分类
+const deleteCategory = async (category: MarketCategory) => {
+  const dataSourceCount = getDataSourceCount.value(category.id)
+  
+  if (dataSourceCount > 0) {
+    ElMessage.warning('该分类下还有数据源，无法删除')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除市场分类 "${category.display_name}" 吗？`,
+      '确认删除',
+      { type: 'warning' }
+    )
+
+    await configApi.deleteMarketCategory(category.id)
+    await loadCategories()
+    ElMessage.success('市场分类删除成功')
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除市场分类失败:', error)
+      ElMessage.error('删除市场分类失败')
+    }
+  }
+}
+
+// 处理成功
+const handleSuccess = () => {
+  loadCategories()
+}
+
+// 生命周期
+onMounted(() => {
+  loadCategories()
+  loadGroupings()
+})
+</script>
+
+<style lang="scss" scoped>
+.market-category-management {
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h3 {
+      margin: 0;
+      color: #303133;
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/MarketCategoryDialog.vue ====================
+<template>
+  <el-dialog
+    :model-value="visible"
+    :title="isEdit ? '编辑市场分类' : '添加市场分类'"
+    width="500px"
+    @update:model-value="$emit('update:visible', $event)"
+    @close="handleClose"
+  >
+    <el-form
+      ref="formRef"
+      :model="formData"
+      :rules="rules"
+      label-width="100px"
+      label-position="left"
+    >
+      <el-form-item label="分类ID" prop="id">
+        <el-input
+          v-model="formData.id"
+          placeholder="请输入分类ID（英文）"
+          :disabled="isEdit"
+        />
+        <div class="form-help">用于系统内部标识，建议使用英文</div>
+      </el-form-item>
+
+      <el-form-item label="分类名称" prop="name">
+        <el-input
+          v-model="formData.name"
+          placeholder="请输入分类名称"
+          :disabled="isEdit"
+        />
+        <div class="form-help">系统内部名称，通常与ID相同</div>
+      </el-form-item>
+
+      <el-form-item label="显示名称" prop="display_name">
+        <el-input
+          v-model="formData.display_name"
+          placeholder="请输入显示名称"
+        />
+        <div class="form-help">用户界面显示的名称</div>
+      </el-form-item>
+
+      <el-form-item label="排序顺序" prop="sort_order">
+        <el-input-number
+          v-model="formData.sort_order"
+          :min="1"
+          :max="100"
+          controls-position="right"
+          style="width: 200px"
+        />
+        <div class="form-help">数值越小排序越靠前</div>
+      </el-form-item>
+
+      <el-form-item label="启用状态">
+        <el-switch v-model="formData.enabled" />
+      </el-form-item>
+
+      <el-form-item label="描述" prop="description">
+        <el-input
+          v-model="formData.description"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入分类描述"
+        />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
+          {{ isEdit ? '更新' : '创建' }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { configApi, type MarketCategory } from '@/api/config'
+
+// Props
+interface Props {
+  visible: boolean
+  category?: MarketCategory | null
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  category: null
+})
+
+// Emits
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'success': []
+}>()
+
+// Refs
+const formRef = ref<FormInstance>()
+const loading = ref(false)
+
+// Computed
+const isEdit = computed(() => !!props.category)
+
+// 表单数据
+const defaultFormData = {
+  id: '',
+  name: '',
+  display_name: '',
+  description: '',
+  enabled: true,
+  sort_order: 1
+}
+
+const formData = ref({ ...defaultFormData })
+
+// 表单验证规则
+const rules: FormRules = {
+  id: [
+    { required: true, message: '请输入分类ID', trigger: 'blur' },
+    { pattern: /^[a-z_]+$/, message: '分类ID只能包含小写字母和下划线', trigger: 'blur' }
+  ],
+  name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
+  display_name: [{ required: true, message: '请输入显示名称', trigger: 'blur' }],
+  sort_order: [{ required: true, message: '请输入排序顺序', trigger: 'blur' }]
+}
+
+// 监听分类变化
+watch(
+  () => props.category,
+  (category) => {
+    if (category) {
+      formData.value = { ...category }
+    } else {
+      formData.value = { ...defaultFormData }
+    }
+  },
+  { immediate: true }
+)
+
+// 监听visible变化
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      if (props.category) {
+        formData.value = { ...props.category }
+      } else {
+        formData.value = { ...defaultFormData }
+      }
+    }
+  }
+)
+
+// 处理关闭
+const handleClose = () => {
+  emit('update:visible', false)
+}
+
+// 处理提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+    loading.value = true
+
+    if (isEdit.value) {
+      // 更新分类
+      await configApi.updateMarketCategory(formData.value.id, formData.value)
+      ElMessage.success('市场分类更新成功')
+    } else {
+      // 创建分类
+      await configApi.addMarketCategory(formData.value)
+      ElMessage.success('市场分类创建成功')
+    }
+
+    emit('success')
+    handleClose()
+  } catch (error) {
+    console.error('保存市场分类失败:', error)
+    ElMessage.error('保存市场分类失败')
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.form-help {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.dialog-footer {
+  text-align: right;
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/DataSourceGroupingDialog.vue ====================
+<template>
+  <el-dialog
+    :model-value="visible"
+    :title="`管理数据源分组 - ${dataSourceName}`"
+    width="600px"
+    @update:model-value="$emit('update:visible', $event)"
+    @close="handleClose"
+  >
+    <div class="grouping-content">
+      <div class="section">
+        <h4>可用市场分类</h4>
+        <div class="category-list">
+          <div
+            v-for="category in availableCategories"
+            :key="category.id"
+            class="category-item"
+          >
+            <div class="category-info">
+              <el-tag :type="category.enabled ? 'success' : 'info'" size="small">
+                {{ category.display_name }}
+              </el-tag>
+              <span class="category-desc">{{ category.description }}</span>
+            </div>
+            <div class="category-actions">
+              <el-input-number
+                v-model="categoryPriorities[category.id]"
+                :min="0"
+                :max="100"
+                size="small"
+                controls-position="right"
+                placeholder="优先级"
+                style="width: 100px; margin-right: 8px"
+              />
+              <el-button
+                size="small"
+                type="primary"
+                @click="addToCategory(category.id)"
+                :disabled="!category.enabled"
+              >
+                添加
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <el-divider />
+
+      <div class="section">
+        <h4>已加入的分类</h4>
+        <div class="assigned-list">
+          <div
+            v-for="grouping in currentGroupings"
+            :key="grouping.market_category_id"
+            class="assigned-item"
+          >
+            <div class="assigned-info">
+              <el-tag
+                :type="grouping.enabled ? 'success' : 'warning'"
+                size="small"
+              >
+                {{ getCategoryDisplayName(grouping.market_category_id) }}
+              </el-tag>
+              <span class="priority-info">优先级: {{ grouping.priority }}</span>
+            </div>
+            <div class="assigned-actions">
+              <el-input-number
+                v-model="grouping.priority"
+                :min="0"
+                :max="100"
+                size="small"
+                controls-position="right"
+                style="width: 100px; margin-right: 8px"
+                @change="updateGroupingPriority(grouping)"
+              />
+              <el-button
+                size="small"
+                :type="grouping.enabled ? 'warning' : 'success'"
+                @click="toggleGrouping(grouping)"
+              >
+                {{ grouping.enabled ? '禁用' : '启用' }}
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="removeFromCategory(grouping.market_category_id)"
+              >
+                移除
+              </el-button>
+            </div>
+          </div>
+          
+          <div v-if="currentGroupings.length === 0" class="empty-state">
+            <el-empty description="该数据源尚未加入任何市场分类" :image-size="80" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">关闭</el-button>
+        <el-button type="primary" @click="handleSave" :loading="saving">
+          保存更改
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  configApi, 
+  type MarketCategory, 
+  type DataSourceGrouping 
+} from '@/api/config'
+
+// Props
+interface Props {
+  visible: boolean
+  dataSourceName: string
+}
+
+const props = defineProps<Props>()
+
+// Emits
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'success': []
+}>()
+
+// Refs
+const saving = ref(false)
+const categories = ref<MarketCategory[]>([])
+const allGroupings = ref<DataSourceGrouping[]>([])
+const categoryPriorities = ref<Record<string, number>>({})
+
+// Computed
+const currentGroupings = computed(() => {
+  return allGroupings.value.filter(g => g.data_source_name === props.dataSourceName)
+})
+
+const availableCategories = computed(() => {
+  const assignedCategoryIds = currentGroupings.value.map(g => g.market_category_id)
+  return categories.value.filter(c => !assignedCategoryIds.includes(c.id))
+})
+
+// 获取分类显示名称
+const getCategoryDisplayName = (categoryId: string) => {
+  const category = categories.value.find(c => c.id === categoryId)
+  return category?.display_name || categoryId
+}
+
+// 加载数据
+const loadData = async () => {
+  try {
+    const [categoriesData, groupingsData] = await Promise.all([
+      configApi.getMarketCategories(),
+      configApi.getDataSourceGroupings()
+    ])
+    
+    categories.value = categoriesData.filter(c => c.enabled)
+    allGroupings.value = groupingsData
+    
+    // 初始化优先级
+    categories.value.forEach(category => {
+      categoryPriorities.value[category.id] = 0
+    })
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载数据失败')
+  }
+}
+
+// 添加到分类
+const addToCategory = async (categoryId: string) => {
+  try {
+    const priority = categoryPriorities.value[categoryId] || 0
+    await configApi.addDataSourceToCategory(props.dataSourceName, categoryId, priority)
+    
+    // 更新本地数据
+    allGroupings.value.push({
+      data_source_name: props.dataSourceName,
+      market_category_id: categoryId,
+      priority: priority,
+      enabled: true
+    })
+    
+    ElMessage.success('添加到分类成功')
+  } catch (error) {
+    console.error('添加到分类失败:', error)
+    ElMessage.error('添加到分类失败')
+  }
+}
+
+// 从分类中移除
+const removeFromCategory = async (categoryId: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要从该分类中移除此数据源吗？',
+      '确认移除',
+      { type: 'warning' }
+    )
+
+    await configApi.removeDataSourceFromCategory(props.dataSourceName, categoryId)
+    
+    // 更新本地数据
+    const index = allGroupings.value.findIndex(
+      g => g.data_source_name === props.dataSourceName && g.market_category_id === categoryId
+    )
+    if (index > -1) {
+      allGroupings.value.splice(index, 1)
+    }
+    
+    ElMessage.success('从分类中移除成功')
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('移除失败:', error)
+      ElMessage.error('移除失败')
+    }
+  }
+}
+
+// 切换分组状态
+const toggleGrouping = async (grouping: DataSourceGrouping) => {
+  try {
+    const newEnabled = !grouping.enabled
+    await configApi.updateDataSourceGrouping(
+      grouping.data_source_name,
+      grouping.market_category_id,
+      { enabled: newEnabled }
+    )
+    
+    grouping.enabled = newEnabled
+    ElMessage.success(`分组已${newEnabled ? '启用' : '禁用'}`)
+  } catch (error) {
+    console.error('切换分组状态失败:', error)
+    ElMessage.error('切换分组状态失败')
+  }
+}
+
+// 更新分组优先级
+const updateGroupingPriority = async (grouping: DataSourceGrouping) => {
+  try {
+    await configApi.updateDataSourceGrouping(
+      grouping.data_source_name,
+      grouping.market_category_id,
+      { priority: grouping.priority }
+    )
+  } catch (error) {
+    console.error('更新优先级失败:', error)
+    ElMessage.error('更新优先级失败')
+  }
+}
+
+// 监听visible变化
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      loadData()
+    }
+  }
+)
+
+// 处理关闭
+const handleClose = () => {
+  emit('update:visible', false)
+}
+
+// 处理保存
+const handleSave = () => {
+  emit('success')
+  handleClose()
+}
+
+// 生命周期
+onMounted(() => {
+  if (props.visible) {
+    loadData()
+  }
+})
+</script>
+
+<style lang="scss" scoped>
+.grouping-content {
+  .section {
+    margin-bottom: 20px;
+
+    h4 {
+      margin: 0 0 12px 0;
+      color: #303133;
+      font-size: 14px;
+    }
+  }
+
+  .category-list {
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid #ebeef5;
+      border-radius: 4px;
+      margin-bottom: 8px;
+
+      .category-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .category-desc {
+          color: #909399;
+          font-size: 12px;
+        }
+      }
+
+      .category-actions {
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+
+  .assigned-list {
+    .assigned-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f5f7fa;
+      border-radius: 4px;
+      margin-bottom: 8px;
+
+      .assigned-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .priority-info {
+          color: #909399;
+          font-size: 12px;
+        }
+      }
+
+      .assigned-actions {
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+    }
+  }
+}
+
+.dialog-footer {
+  text-align: right;
+}
+</style>
+
+
+==================== frontend/src/views/Analysis/SingleAnalysis.vue ====================
+<template>
+  <div class="single-analysis">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <h1 class="page-title">
+            <el-icon class="title-icon"><Document /></el-icon>
+            单股分析
+          </h1>
+          <p class="page-description">
+            AI驱动的智能股票分析，多维度评估投资价值与风险
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主要分析表单 -->
+    <div class="analysis-container">
+      <el-row :gutter="24">
+        <!-- 左侧：基础配置 -->
+        <el-col :span="18">
+          <el-card class="main-form-card" shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <h3>分析配置</h3>
+                <el-tag type="info" size="small">必填信息</el-tag>
+              </div>
+            </template>
+
+            <el-form :model="analysisForm" label-width="100px" class="analysis-form">
+              <!-- 股票信息 -->
+              <div class="form-section">
+                <h4 class="section-title">📊 股票信息</h4>
+                <el-row :gutter="16">
+                  <el-col :span="12">
+                    <el-form-item label="股票代码" required>
+                      <el-input
+                        v-model="analysisForm.stockCode"
+                        placeholder="如：000001、AAPL、700、1810"
+                        clearable
+                        size="large"
+                        class="stock-input"
+                        :class="{ 'is-error': stockCodeError }"
+                        @blur="validateStockCodeInput"
+                        @input="onStockCodeInput"
+                      >
+                        <template #prefix>
+                          <el-icon><TrendCharts /></el-icon>
+                        </template>
+                      </el-input>
+                      <div v-if="stockCodeError" class="error-message">
+                        <el-icon><WarningFilled /></el-icon>
+                        {{ stockCodeError }}
+                      </div>
+                      <div v-else-if="stockCodeHelp" class="help-message">
+                        <el-icon><InfoFilled /></el-icon>
+                        {{ stockCodeHelp }}
+                      </div>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="市场类型">
+                      <el-select
+                        v-model="analysisForm.market"
+                        placeholder="选择市场"
+                        size="large"
+                        style="width: 100%"
+                        @change="onMarketChange"
+                      >
+                        <el-option label="🇨🇳 A股市场" value="A股">
+                          <span>🇨🇳 A股市场</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（6位数字）</span>
+                        </el-option>
+                        <el-option label="🇺🇸 美股市场" value="美股">
+                          <span>🇺🇸 美股市场</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（1-5个字母）</span>
+                        </el-option>
+                        <el-option label="🇭🇰 港股市场" value="港股">
+                          <span>🇭🇰 港股市场</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（1-5位数字）</span>
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+
+                <el-form-item label="分析日期">
+                  <el-date-picker
+                    v-model="analysisForm.analysisDate"
+                    type="date"
+                    placeholder="选择分析基准日期"
+                    size="large"
+                    style="width: 100%"
+                    :disabled-date="disabledDate"
+                  />
+                </el-form-item>
+              </div>
+
+              <!-- 分析深度 -->
+              <div class="form-section">
+                <h4 class="section-title">🎯 分析深度</h4>
+                <div class="depth-selector">
+                  <div
+                    v-for="(depth, index) in depthOptions"
+                    :key="index"
+                    class="depth-option"
+                    :class="{ active: analysisForm.researchDepth === index + 1 }"
+                    @click="analysisForm.researchDepth = index + 1"
+                  >
+                    <div class="depth-icon">{{ depth.icon }}</div>
+                    <div class="depth-info">
+                      <div class="depth-name">{{ depth.name }}</div>
+                      <div class="depth-desc">{{ depth.description }}</div>
+                      <div class="depth-time">{{ depth.time }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 分析师团队 -->
+              <div class="form-section">
+                <h4 class="section-title">👥 分析师团队</h4>
+                <div class="analysts-grid">
+                  <div
+                    v-for="analyst in ANALYSTS"
+                    :key="analyst.id"
+                    class="analyst-card"
+                    :class="{ 
+                      active: analysisForm.selectedAnalysts.includes(analyst.name),
+                      disabled: analyst.name === '社媒分析师' && analysisForm.market === 'A股'
+                    }"
+                    @click="toggleAnalyst(analyst.name)"
+                  >
+                    <div class="analyst-avatar">
+                      <el-icon>
+                        <component :is="analyst.icon" />
+                      </el-icon>
+                    </div>
+                    <div class="analyst-content">
+                      <div class="analyst-name">{{ analyst.name }}</div>
+                      <div class="analyst-desc">{{ analyst.description }}</div>
+                    </div>
+                    <div class="analyst-check">
+                      <el-icon v-if="analysisForm.selectedAnalysts.includes(analyst.name)" class="check-icon">
+                        <Check />
+                      </el-icon>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- A股提示 -->
+                <el-alert
+                  v-if="analysisForm.market === 'A股'"
+                  title="A股市场暂不支持社媒分析（国内数据源限制）"
+                  type="info"
+                  :closable="false"
+                  style="margin-top: 12px"
+                />
+              </div>
+
+
+
+              <!-- 操作按钮 -->
+              <div class="form-section">
+                <div class="action-buttons" style="display: flex; justify-content: center; align-items: center; width: 100%; text-align: center;">
+                  <el-button
+                    v-if="analysisStatus === 'idle'"
+                    type="primary"
+                    size="large"
+                    @click="submitAnalysis"
+                    :loading="submitting"
+                    :disabled="!analysisForm.stockCode.trim()"
+                    class="submit-btn large-analysis-btn"
+                    style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
+                  >
+                    <el-icon><TrendCharts /></el-icon>
+                    开始智能分析
+                  </el-button>
+
+                  <el-button
+                    v-else-if="analysisStatus === 'running'"
+                    type="warning"
+                    size="large"
+                    disabled
+                    class="submit-btn large-analysis-btn"
+                    style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
+                  >
+                    <el-icon><Loading /></el-icon>
+                    分析进行中...
+                  </el-button>
+
+                  <div v-else-if="analysisStatus === 'completed'" style="display: flex; gap: 12px;">
+                    <el-button
+                      type="success"
+                      size="large"
+                      @click="showResults = !showResults"
+                      class="submit-btn"
+                      style="width: 180px; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;"
+                    >
+                      <el-icon><Document /></el-icon>
+                      {{ showResults ? '隐藏结果' : '查看结果' }}
+                    </el-button>
+
+                    <el-button
+                      type="primary"
+                      size="large"
+                      @click="restartAnalysis"
+                      class="submit-btn"
+                      style="width: 180px; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;"
+                    >
+                      <el-icon><Refresh /></el-icon>
+                      重新分析
+                    </el-button>
+                  </div>
+
+                  <el-button
+                    v-else-if="analysisStatus === 'failed'"
+                    type="danger"
+                    size="large"
+                    @click="restartAnalysis"
+                    class="submit-btn large-analysis-btn"
+                    style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
+                  >
+                    <el-icon><Refresh /></el-icon>
+                    重新分析
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 分析进度显示 -->
+              <div v-if="analysisStatus === 'running'" class="progress-section">
+                <el-card class="progress-card" shadow="hover">
+                  <template #header>
+                    <div class="progress-header">
+                      <h4>
+                        <el-icon class="rotating-icon">
+                          <Loading />
+                        </el-icon>
+                        分析进行中...
+                      </h4>
+                      <!-- 任务ID已隐藏 -->
+                      <!-- <el-tag type="warning">{{ currentTaskId }}</el-tag> -->
+                    </div>
+                  </template>
+
+                  <div class="progress-content">
+                    <!-- 总体进度信息 -->
+                    <div class="overall-progress-info">
+                      <div class="progress-stats">
+                        <!-- 当前步骤已隐藏 -->
+                        <!--
+                        <div class="stat-item">
+                          <div class="stat-label">当前步骤</div>
+                          <div class="stat-value">{{ progressInfo.currentStep || '初始化中...' }}</div>
+                        </div>
+                        -->
+                        <!-- 整体进度已隐藏 -->
+                        <!--
+                        <div class="stat-item">
+                          <div class="stat-label">整体进度</div>
+                          <div class="stat-value">{{ progressInfo.progress.toFixed(1) }}%</div>
+                        </div>
+                        -->
+                        <div class="stat-item">
+                          <div class="stat-label">已用时间</div>
+                          <div class="stat-value">{{ formatTime(progressInfo.elapsedTime) }}</div>
+                        </div>
+                        <div class="stat-item">
+                          <div class="stat-label">预计剩余</div>
+                          <div class="stat-value">{{ formatTime(progressInfo.remainingTime) }}</div>
+                        </div>
+                        <div class="stat-item">
+                          <div class="stat-label">预计总时长</div>
+                          <div class="stat-value">{{ formatTime(progressInfo.totalTime) }}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 进度条 -->
+                    <div class="progress-bar-section">
+                      <el-progress
+                        :percentage="Math.round(progressInfo.progress)"
+                        :stroke-width="12"
+                        :show-text="true"
+                        :status="getProgressStatus()"
+                        class="main-progress-bar"
+                      />
+                    </div>
+
+                    <!-- 当前任务详情 -->
+                    <div class="current-task-info">
+                      <div class="task-title">
+                        <el-icon class="task-icon">
+                          <Loading />
+                        </el-icon>
+                        {{ progressInfo.currentStep || '正在初始化分析引擎...' }}
+                      </div>
+                      <div
+                        class="task-description"
+                        style="white-space: pre-wrap; line-height: 1.6;"
+                      >
+                        {{ progressInfo.currentStepDescription || progressInfo.message || 'AI正在根据您的要求重点分析相关内容' }}
+                      </div>
+                    </div>
+
+                    <!-- 分析步骤显示 - 已隐藏 -->
+                    <!--
+                    <div v-if="analysisSteps.length > 0" class="analysis-steps">
+                      <h5 class="steps-title">📋 分析步骤</h5>
+                      <div class="steps-container">
+                        <div
+                          v-for="(step, index) in analysisSteps"
+                          :key="index"
+                          class="step-item"
+                          :class="{
+                            'step-completed': step.status === 'completed',
+                            'step-current': step.status === 'current',
+                            'step-pending': step.status === 'pending'
+                          }"
+                        >
+                          <div class="step-icon">
+                            <el-icon v-if="step.status === 'completed'" class="completed-icon">
+                              <Check />
+                            </el-icon>
+                            <el-icon v-else-if="step.status === 'current'" class="current-icon rotating-icon">
+                              <Loading />
+                            </el-icon>
+                            <el-icon v-else class="pending-icon">
+                              <Clock />
+                            </el-icon>
+                          </div>
+                          <div class="step-content">
+                            <div class="step-title">{{ step.title }}</div>
+                            <div class="step-description">{{ step.description }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    -->
+                  </div>
+                </el-card>
+              </div>
+            </el-form>
+          </el-card>
+        </el-col>
+
+        <!-- 右侧：高级配置 -->
+        <el-col :span="6">
+          <el-card class="config-card" shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <h3>高级配置</h3>
+                <el-tag type="warning" size="small">可选设置</el-tag>
+              </div>
+            </template>
+
+            <div class="config-content">
+              <!-- AI模型配置 -->
+              <div class="config-section">
+                <h4 class="config-title">🤖 AI模型配置</h4>
+                <div class="model-config">
+                  <div class="model-item">
+                    <div class="model-label">
+                      <span>快速分析模型</span>
+                      <el-tooltip content="用于市场分析、新闻分析、基本面分析等" placement="top">
+                        <el-icon class="help-icon"><InfoFilled /></el-icon>
+                      </el-tooltip>
+                    </div>
+                    <el-select v-model="modelSettings.quickAnalysisModel" size="small" style="width: 100%" filterable>
+                      <el-option
+                        v-for="model in availableModels"
+                        :key="`quick-${model.provider}/${model.model_name}`"
+                        :label="model.model_display_name || model.model_name"
+                        :value="model.model_name"
+                      >
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                          <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            <!-- 能力等级徽章 -->
+                            <el-tag
+                              v-if="model.capability_level"
+                              :type="getCapabilityTagType(model.capability_level)"
+                              size="small"
+                              effect="plain"
+                            >
+                              {{ getCapabilityText(model.capability_level) }}
+                            </el-tag>
+                            <!-- 角色标签 -->
+                            <el-tag
+                              v-if="isQuickAnalysisRole(model.suitable_roles)"
+                              type="success"
+                              size="small"
+                              effect="plain"
+                            >
+                              ⚡快速
+                            </el-tag>
+                            <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
+                          </div>
+                        </div>
+                      </el-option>
+                    </el-select>
+                  </div>
+
+                  <div class="model-item">
+                    <div class="model-label">
+                      <span>深度决策模型</span>
+                      <el-tooltip content="用于研究管理者综合决策、风险管理者最终评估" placement="top">
+                        <el-icon class="help-icon"><InfoFilled /></el-icon>
+                      </el-tooltip>
+                    </div>
+                    <DeepModelSelector v-model="modelSettings.deepAnalysisModel" :available-models="availableModels" type="deep" size="small" width="100%" />
+                  </div>
+                </div>
+
+                <!-- 🆕 模型推荐提示 -->
+                <el-alert
+                  v-if="modelRecommendation"
+                  :title="modelRecommendation.title"
+                  :type="modelRecommendation.type"
+                  :closable="false"
+                  style="margin-top: 12px;"
+                >
+                  <template #default>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                      <div style="font-size: 13px; line-height: 1.8; flex: 1; white-space: pre-line;">
+                        {{ modelRecommendation.message }}
+                      </div>
+                      <el-button
+                        v-if="modelRecommendation.quickModel && modelRecommendation.deepModel"
+                        type="primary"
+                        size="small"
+                        @click="applyRecommendedModels"
+                        style="flex-shrink: 0;"
+                      >
+                        应用推荐
+                      </el-button>
+                    </div>
+                  </template>
+                </el-alert>
+              </div>
+
+              <!-- 分析选项 -->
+              <div class="config-section">
+                <h4 class="config-title">⚙️ 分析选项</h4>
+                <div class="option-list">
+                  <div class="option-item">
+                    <div class="option-info">
+                      <span class="option-name">情绪分析</span>
+                      <span class="option-desc">分析市场情绪和投资者心理</span>
+                    </div>
+                    <el-switch v-model="analysisForm.includeSentiment" />
+                  </div>
+
+                  <div class="option-item">
+                    <div class="option-info">
+                      <span class="option-name">风险评估</span>
+                      <span class="option-desc">包含详细的风险因素分析</span>
+                    </div>
+                    <el-switch v-model="analysisForm.includeRisk" />
+                  </div>
+
+                  <div class="option-item">
+                    <div class="option-info">
+                      <span class="option-name">语言偏好</span>
+                    </div>
+                    <el-select v-model="analysisForm.language" size="small" style="width: 100px">
+                      <el-option label="中文" value="zh-CN" />
+                      <el-option label="English" value="en-US" />
+                    </el-select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- 分析结果显示 -->
+      <div v-if="showResults && analysisResults" class="results-section">
+        <el-row :gutter="24">
+          <el-col :span="24">
+            <el-card class="results-card" shadow="hover">
+              <template #header>
+                <div class="results-header">
+                  <h3>📊 分析结果</h3>
+                  <div class="result-meta">
+                    <el-tag type="success">{{ analysisResults.symbol || analysisResults.stock_symbol || analysisForm.symbol || analysisForm.stockCode }}</el-tag>
+                    <el-tag>{{ analysisResults.analysis_date }}</el-tag>
+                    <el-tag v-if="analysisResults.model_info && analysisResults.model_info !== 'Unknown'" type="info">
+                      <el-icon><Cpu /></el-icon>
+                      {{ analysisResults.model_info }}
+                    </el-tag>
+                  </div>
+                </div>
+              </template>
+
+              <div class="results-content">
+                <!-- 风险提示 -->
+                <div class="risk-disclaimer">
+                  <el-alert
+                    type="warning"
+                    :closable="false"
+                    show-icon
+                  >
+                    <template #title>
+                      <div class="disclaimer-content">
+                        <el-icon class="disclaimer-icon"><WarningFilled /></el-icon>
+                        <div class="disclaimer-text">
+                          <p style="margin: 0 0 8px 0;"><strong>⚠️ 重要风险提示与免责声明</strong></p>
+                          <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                            <li><strong>工具性质：</strong>本系统为股票分析辅助工具，使用AI技术对公开市场数据进行分析，不具备证券投资咨询资质。</li>
+                            <li><strong>非投资建议：</strong>所有分析结果、评分、建议仅为技术分析参考，不构成任何买卖建议或投资决策依据。</li>
+                            <li><strong>数据局限性：</strong>分析基于历史数据和公开信息，可能存在延迟、不完整或不准确的情况，无法预测未来市场走势。</li>
+                            <li><strong>投资风险：</strong>股票投资存在市场风险、流动性风险、政策风险等多种风险，可能导致本金损失。</li>
+                            <li><strong>独立决策：</strong>投资者应基于自身风险承受能力、投资目标和财务状况独立做出投资决策。</li>
+                            <li><strong>专业咨询：</strong>重大投资决策建议咨询具有合法资质的专业投资顾问或金融机构。</li>
+                            <li><strong>责任声明：</strong>使用本工具产生的任何投资决策及其后果由投资者自行承担，本系统不承担任何责任。</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </template>
+                  </el-alert>
+                </div>
+
+                <!-- 最终决策 -->
+                <div v-if="analysisResults.decision" class="decision-section">
+                  <h4>🎯 分析参考</h4>
+                  <div class="decision-card">
+                    <div class="decision-main">
+                      <div class="decision-action">
+                        <span class="label">分析倾向:</span>
+                        <el-tag
+                          :type="getActionTagType(analysisResults.decision.action)"
+                          size="large"
+                        >
+                          {{ analysisResults.decision.action }}
+                        </el-tag>
+                        <el-tag type="info" size="small" style="margin-left: 8px;">仅供参考</el-tag>
+                      </div>
+
+                      <div class="decision-metrics">
+                        <div class="metric-item">
+                          <span class="label">参考价格:</span>
+                          <span class="value">{{ analysisResults.decision.target_price }}</span>
+                        </div>
+                        <div class="metric-item">
+                          <span class="label">模型置信度:</span>
+                          <span class="value">{{ (analysisResults.decision.confidence * 100).toFixed(1) }}%</span>
+                          <el-tooltip content="基于AI模型计算的置信度，不代表实际投资成功率" placement="top">
+                            <el-icon style="margin-left: 4px; cursor: help;"><QuestionFilled /></el-icon>
+                          </el-tooltip>
+                        </div>
+                        <div class="metric-item">
+                          <span class="label">风险评分:</span>
+                          <span class="value">{{ (analysisResults.decision.risk_score * 100).toFixed(1) }}%</span>
+                          <el-tooltip content="基于历史数据的风险评估，实际风险可能更高" placement="top">
+                            <el-icon style="margin-left: 4px; cursor: help;"><QuestionFilled /></el-icon>
+                          </el-tooltip>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="decision-reasoning">
+                      <h5>分析依据:</h5>
+                      <p>{{ analysisResults.decision.reasoning }}</p>
+                      <el-alert type="info" :closable="false" style="margin-top: 12px;">
+                        <template #default>
+                          <span style="font-size: 13px;">💡 以上分析基于AI模型对历史数据的处理，不构成投资建议，请结合自身情况独立决策。</span>
+                        </template>
+                      </el-alert>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 分析概览 -->
+                <div v-if="analysisResults" class="overview-section">
+                  <h4>📊 分析概览</h4>
+                  <div class="overview-card">
+  
+                    <div v-if="analysisResults.summary" class="overview-summary">
+                      <h5>分析摘要:</h5>
+                      <p>{{ analysisResults.summary }}</p>
+                    </div>
+
+                    <div v-if="analysisResults.recommendation" class="overview-recommendation">
+                      <h5>投资建议:</h5>
+                      <p>{{ analysisResults.recommendation }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 详细分析报告 -->
+                <div v-if="analysisResults.state || analysisResults.reports" class="reports-section">
+                  <h4>📋 详细分析报告</h4>
+
+                  <!-- 美观的标签页展示 -->
+                  <div class="analysis-tabs-container">
+                    <el-tabs
+                      v-model="activeReportTab"
+                      type="card"
+                      class="analysis-tabs"
+                      tab-position="top"
+                      :key="analysisResults?.id || 'default'"
+                    >
+                      <el-tab-pane
+                        v-for="(report, key) in getAnalysisReports(analysisResults)"
+                        :key="key"
+                        :name="key.toString()"
+                        :label="report.title"
+                        class="report-tab-pane"
+                      >
+                        <!-- 标签页内容头部 -->
+                        <div class="report-header">
+                          <div class="report-title">
+                            <span class="report-icon">{{ getReportIcon(report.title) }}</span>
+                            <span class="report-name">{{ getReportName(report.title) }}</span>
+                          </div>
+                          <div class="report-description">{{ getReportDescription(report.title) }}</div>
+                        </div>
+
+                        <!-- 报告内容 -->
+                        <div class="report-content-wrapper">
+                          <div
+                            class="report-content"
+                            v-html="formatReportContent(report.content)"
+                            v-if="report.content"
+                          ></div>
+                          <div v-else class="no-content">
+                            <el-empty description="暂无内容" />
+                          </div>
+                        </div>
+                      </el-tab-pane>
+                    </el-tabs>
+                  </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="result-actions">
+                  <el-button type="success" @click="goSimOrder">
+                    <el-icon><CreditCard /></el-icon>
+                    一键模拟下单
+                  </el-button>
+                  <el-dropdown trigger="click" @command="downloadReport">
+                    <el-button type="primary">
+                      <el-icon><Download /></el-icon>
+                      下载报告
+                      <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                    </el-button>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item command="markdown">
+                          <el-icon><document /></el-icon> Markdown
+                        </el-dropdown-item>
+                        <el-dropdown-item command="docx">
+                          <el-icon><document /></el-icon> Word 文档
+                        </el-dropdown-item>
+                        <el-dropdown-item command="pdf">

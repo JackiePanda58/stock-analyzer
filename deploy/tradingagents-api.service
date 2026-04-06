@@ -1,0 +1,19 @@
+[Unit]
+Description=TradingAgents-CN FastAPI Backend
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/stock-analyzer
+ExecStart=/usr/bin/python3 /root/stock-analyzer/api_server.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/stock-analyzer/logs/api.log
+StandardError=append:/root/stock-analyzer/logs/api.log
+Environment="PYTHONUNBUFFERED=1"
+# 限制 Python GC 频率，减少内存碎片
+Environment="PYTHONGC=MANUAL"
+
+[Install]
+WantedBy=multi-user.target

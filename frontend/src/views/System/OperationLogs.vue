@@ -284,7 +284,7 @@
 
     <!-- 空状态 -->
     <el-empty
-      v-if="!loading && logs.length === 0"
+      v-if="!loading && (logs ?? []).length === 0"
       description="暂无操作日志"
       :image-size="200"
     >
@@ -508,7 +508,7 @@ const renderCharts = () => {
   if (actionTypeChart.value) {
     const chart1 = echarts.init(actionTypeChart.value)
 
-    const pieData = Object.entries(statsData.value.action_type_distribution).map(([type, count]) => ({
+    const pieData = Object.entries(statsData.value?.action_type_distribution ?? {}).map(([type, count]) => ({
       value: count,
       name: getActionTypeName(type)
     }))
@@ -527,7 +527,7 @@ const renderCharts = () => {
   if (operationTrendChart.value) {
     const chart2 = echarts.init(operationTrendChart.value)
 
-    const hourlyData = statsData.value.hourly_distribution
+    const hourlyData = statsData.value?.hourly_distribution ?? []
     const hours = hourlyData.map(item => item.hour)
     const counts = hourlyData.map(item => item.count)
 

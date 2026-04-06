@@ -168,7 +168,7 @@ export const configApi = {
 
   // 获取所有大模型厂家
   getLLMProviders(): Promise<LLMProvider[]> {
-    return ApiClient.get('/api/config/llm/providers')
+    return ApiClient.get('/api/config/llm/providers').then((r: any) => r?.data?.providers ?? [])
   },
 
   // 添加大模型厂家
@@ -295,7 +295,30 @@ export const configApi = {
 
   // 获取所有大模型配置
   getLLMConfigs(): Promise<LLMConfig[]> {
-    return ApiClient.get('/api/config/llm')
+    return ApiClient.get('/api/config/llm').then((r: any) => {
+      const providers = r?.data?.providers ?? []
+      // 扁平化：从 providers 中提取所有模型，并补充 provider 信息
+      const configs: LLMConfig[] = []
+      for (const p of providers) {
+        for (const m of (p.models ?? [])) {
+          configs.push({
+            provider: p.provider,
+            model_name: m.name || m.id,
+            model_display_name: m.name || m.id,
+            enabled: true,  // API 中的模型默认可用的
+            api_key: '',
+            api_base: '',
+            max_tokens: 4096,
+            temperature: 0.7,
+            timeout: 60,
+            retry_times: 3,
+            description: m.description || '',
+            ...m
+          })
+        }
+      }
+      return configs
+    })
   },
 
   // 添加或更新大模型配置

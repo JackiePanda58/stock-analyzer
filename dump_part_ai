@@ -1,0 +1,2000 @@
+                </el-tag>
+                <div class="source-details">
+                  <div class="priority">优先级: {{ recommendations.primary_source.priority }}</div>
+                  <div class="reason">{{ recommendations.primary_source.reason }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 备用数据源 -->
+          <div v-if="recommendations.fallback_sources.length > 0" class="fallback-sources-section">
+            <h4 class="section-title">
+              <el-icon class="title-icon"><Connection /></el-icon>
+              备用数据源
+            </h4>
+            <div class="fallback-sources-list">
+              <div 
+                v-for="source in recommendations.fallback_sources" 
+                :key="source.name"
+                class="fallback-source-item"
+              >
+                <el-tag type="info" size="default">
+                  {{ source.name.toUpperCase() }}
+                </el-tag>
+                <span class="source-priority">优先级: {{ source.priority }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 建议列表 -->
+          <div v-if="recommendations.suggestions.length > 0" class="suggestions-section">
+            <h4 class="section-title">
+              <el-icon class="title-icon"><Promotion /></el-icon>
+              优化建议
+            </h4>
+            <div class="suggestions-list">
+              <div 
+                v-for="(suggestion, index) in recommendations.suggestions" 
+                :key="index"
+                class="suggestion-item"
+              >
+                <el-icon class="suggestion-icon"><Select /></el-icon>
+                <span class="suggestion-text">{{ suggestion }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 警告信息 -->
+          <div v-if="recommendations.warnings.length > 0" class="warnings-section">
+            <h4 class="section-title">
+              <el-icon class="title-icon"><Warning /></el-icon>
+              注意事项
+            </h4>
+            <div class="warnings-list">
+              <el-alert
+                v-for="(warning, index) in recommendations.warnings"
+                :key="index"
+                :title="warning"
+                type="warning"
+                :closable="false"
+                show-icon
+                class="warning-item"
+              />
+            </div>
+          </div>
+
+          <!-- 配置示例 -->
+          <div class="config-example-section">
+            <h4 class="section-title">
+              <el-icon class="title-icon"><Document /></el-icon>
+              配置示例
+            </h4>
+            <div class="config-example">
+              <el-collapse>
+                <el-collapse-item title="环境变量配置" name="env">
+                  <div class="code-block">
+                    <pre><code># Tushare配置（推荐）
+TUSHARE_ENABLED=true
+TUSHARE_TOKEN=your_tushare_token_here
+
+# AKShare配置
+AKSHARE_ENABLED=true
+
+# BaoStock配置
+BAOSTOCK_ENABLED=true
+
+# 默认数据源
+DEFAULT_CHINA_DATA_SOURCE={{ recommendations.primary_source?.name || 'tushare' }}</code></pre>
+                  </div>
+                </el-collapse-item>
+                
+                <el-collapse-item title="API调用示例" name="api">
+                  <div class="code-block">
+                    <pre><code># 使用默认优先级同步
+POST /api/sync/multi-source/stock_basics/run
+
+# 指定优先数据源
+POST /api/sync/multi-source/stock_basics/run?preferred_sources={{ getPreferredSourcesExample() }}
+
+# 强制同步
+POST /api/sync/multi-source/stock_basics/run?force=true</code></pre>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <el-empty description="暂无建议信息" />
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import {
+  Promotion,
+  Refresh,
+  Star,
+  Connection,
+  Select,
+  Warning,
+  Document
+} from '@element-plus/icons-vue'
+import { getSyncRecommendations, type SyncRecommendations } from '@/api/sync'
+
+// 响应式数据
+const loading = ref(false)
+const error = ref('')
+const recommendations = ref<SyncRecommendations | null>(null)
+
+// 获取同步建议
+const fetchRecommendations = async () => {
+  try {
+    loading.value = true
+    error.value = ''
+    
+    const response = await getSyncRecommendations()
+    if (response.success) {
+      recommendations.value = response.data
+    } else {
+      error.value = response.message || '获取建议失败'
+    }
+  } catch (err: any) {
+    console.error('获取同步建议失败:', err)
+    error.value = err.message || '网络请求失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取优先数据源示例
+const getPreferredSourcesExample = (): string => {
+  if (!recommendations.value) return 'tushare,akshare'
+  
+  const sources = []
+  if (recommendations.value.primary_source) {
+    sources.push(recommendations.value.primary_source.name)
+  }
+  if (recommendations.value.fallback_sources.length > 0) {
+    sources.push(recommendations.value.fallback_sources[0].name)
+  }
+  
+  return sources.join(',') || 'tushare,akshare'
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchRecommendations()
+})
+</script>
+
+<style scoped lang="scss">
+.sync-recommendations {
+  .recommendations-card {
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .header-icon {
+        margin-right: 8px;
+        color: var(--el-color-warning);
+      }
+      
+      .header-title {
+        font-weight: 600;
+        flex: 1;
+      }
+    }
+  }
+
+  .recommendations-content {
+    min-height: 200px;
+  }
+
+  .recommendations-sections {
+    .section-title {
+      display: flex;
+      align-items: center;
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      
+      .title-icon {
+        margin-right: 8px;
+      }
+    }
+
+    .primary-source-section {
+      margin-bottom: 24px;
+      
+      .primary-source-card {
+        padding: 16px;
+        border: 2px solid var(--el-color-success-light-7);
+        border-radius: 8px;
+        background-color: var(--el-color-success-light-9);
+        
+        .source-info {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          
+          .source-details {
+            .priority {
+              font-size: 14px;
+              color: var(--el-text-color-regular);
+              margin-bottom: 4px;
+            }
+            
+            .reason {
+              font-size: 14px;
+              color: var(--el-text-color-secondary);
+            }
+          }
+        }
+      }
+    }
+
+    .fallback-sources-section {
+      margin-bottom: 24px;
+      
+      .fallback-sources-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        
+        .fallback-source-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border: 1px solid var(--el-border-color-light);
+          border-radius: 6px;
+          background-color: var(--el-fill-color-lighter);
+          
+          .source-priority {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+    }
+
+    .suggestions-section {
+      margin-bottom: 24px;
+      
+      .suggestions-list {
+        .suggestion-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 12px;
+          padding: 8px 0;
+          
+          .suggestion-icon {
+            color: var(--el-color-success);
+            margin-top: 2px;
+            flex-shrink: 0;
+          }
+          
+          .suggestion-text {
+            line-height: 1.5;
+            color: var(--el-text-color-regular);
+          }
+        }
+      }
+    }
+
+    .warnings-section {
+      margin-bottom: 24px;
+      
+      .warnings-list {
+        .warning-item {
+          margin-bottom: 8px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
+
+    .config-example-section {
+      .config-example {
+        .code-block {
+          background-color: var(--el-fill-color-lighter);
+          border-radius: 6px;
+          padding: 16px;
+          
+          pre {
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--el-text-color-primary);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+          }
+        }
+      }
+    }
+  }
+
+  .error-message {
+    margin-bottom: 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sync-recommendations {
+    .recommendations-sections {
+      .fallback-sources-section {
+        .fallback-sources-list {
+          .fallback-source-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+          }
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/components/Sync/SyncControl.vue ====================
+<template>
+  <div class="sync-control">
+    <el-card class="control-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon class="header-icon"><Refresh /></el-icon>
+          <span class="header-title">同步控制</span>
+        </div>
+      </template>
+
+      <div class="control-content">
+        <!-- 当前同步状态 -->
+        <div class="sync-status-section">
+          <h4 class="section-title">当前状态</h4>
+          <div class="status-display">
+            <el-tag 
+              :type="getStatusType(syncStatus?.status)"
+              size="large"
+              class="status-tag"
+            >
+              {{ getStatusText(syncStatus?.status) }}
+            </el-tag>
+            <div v-if="syncStatus?.status === 'running'" class="progress-info">
+              <el-progress 
+                :percentage="getProgress()"
+                :status="syncStatus.errors > 0 ? 'warning' : 'success'"
+                :stroke-width="8"
+              />
+              <div class="progress-text">
+                正在同步中... {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : '' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 同步统计 -->
+        <div v-if="syncStatus && syncStatus.status !== 'never_run'" class="sync-stats-section">
+          <h4 class="section-title">同步统计</h4>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">{{ syncStatus.total }}</div>
+              <div class="stat-label">总数</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value success">{{ syncStatus.inserted }}</div>
+              <div class="stat-label">新增</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value primary">{{ syncStatus.updated }}</div>
+              <div class="stat-label">更新</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value danger">{{ syncStatus.errors }}</div>
+              <div class="stat-label">错误</div>
+            </div>
+          </div>
+          
+          <!-- 使用的数据源 -->
+          <div v-if="syncStatus.data_sources_used?.length" class="sources-used">
+            <div class="sources-label">使用的数据源:</div>
+            <div class="sources-tags">
+              <el-tag
+                v-for="source in syncStatus.data_sources_used"
+                :key="source"
+                size="small"
+                type="info"
+              >
+                {{ source }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- 最后同步时间 -->
+          <div v-if="syncStatus.finished_at" class="sync-time">
+            <div class="time-label">完成时间:</div>
+            <div class="time-value">{{ formatTime(syncStatus.finished_at) }}</div>
+          </div>
+        </div>
+
+        <!-- 同步控制 -->
+        <div class="sync-controls-section">
+          <h4 class="section-title">同步操作</h4>
+          
+          <!-- 数据源选择 -->
+          <div class="source-selection">
+            <el-form :model="syncForm" label-width="120px" size="default">
+              <el-form-item label="优先数据源:">
+                <el-select
+                  v-model="syncForm.preferred_sources"
+                  multiple
+                  placeholder="选择优先使用的数据源（可选）"
+                  style="width: 100%"
+                  clearable
+                >
+                  <el-option
+                    v-for="source in availableSources"
+                    :key="source.name"
+                    :label="source.name.toUpperCase()"
+                    :value="source.name"
+                    :disabled="!source.available"
+                  >
+                    <span>{{ source.name.toUpperCase() }}</span>
+                    <span style="float: right; color: var(--el-text-color-secondary);">
+                      优先级: {{ source.priority }}
+                    </span>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              
+              <el-form-item label="强制同步:">
+                <el-switch
+                  v-model="syncForm.force"
+                  active-text="是"
+                  inactive-text="否"
+                />
+                <div class="form-help">
+                  强制同步将忽略正在运行的同步任务
+                </div>
+              </el-form-item>
+            </el-form>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="action-buttons">
+            <el-button
+              type="primary"
+              size="large"
+              :loading="syncing || syncStatus?.status === 'running'"
+              :disabled="syncStatus?.status === 'running' && !syncForm.force"
+              @click="startSync"
+            >
+              <el-icon><Refresh /></el-icon>
+              {{ getSyncButtonText() }}
+            </el-button>
+            
+            <el-button
+              size="large"
+              :loading="refreshing"
+              @click="refreshStatus"
+            >
+              <el-icon><RefreshRight /></el-icon>
+              刷新状态
+            </el-button>
+            
+            <el-button
+              size="large"
+              type="warning"
+              :loading="clearingCache"
+              @click="clearCache"
+            >
+              <el-icon><Delete /></el-icon>
+              清空缓存
+            </el-button>
+
+            <!-- 临时测试按钮 -->
+
+
+            <el-button
+              size="large"
+              type="success"
+              :loading="syncing"
+              @click="forceSync"
+            >
+              🔄 强制重新同步
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 错误信息 -->
+        <div v-if="syncStatus?.message && syncStatus.status === 'failed'" class="error-section">
+          <el-alert
+            :title="syncStatus.message"
+            type="error"
+            :closable="false"
+            show-icon
+          />
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh, RefreshRight, Delete } from '@element-plus/icons-vue'
+import { 
+  getSyncStatus, 
+  runStockBasicsSync, 
+  clearSyncCache,
+  getDataSourcesStatus,
+  type SyncStatus, 
+  type DataSourceStatus 
+} from '@/api/sync'
+
+// Props
+interface Props {
+  autoRefresh?: boolean
+  refreshInterval?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  autoRefresh: true,
+  refreshInterval: 5000
+})
+
+// Emits
+const emit = defineEmits<{
+  syncCompleted: [status: string]
+}>()
+
+// 响应式数据
+const syncing = ref(false)
+const refreshing = ref(false)
+const clearingCache = ref(false)
+const syncStatus = ref<SyncStatus | null>(null)
+const availableSources = ref<DataSourceStatus[]>([])
+const refreshTimer = ref<NodeJS.Timeout | null>(null)
+
+// 表单数据
+const syncForm = reactive({
+  preferred_sources: [] as string[],
+  force: false
+})
+
+// 获取同步状态
+const fetchSyncStatus = async () => {
+  try {
+    const response = await getSyncStatus()
+    if (response.success) {
+      syncStatus.value = response.data
+    }
+  } catch (err: any) {
+    console.error('获取同步状态失败:', err)
+  }
+}
+
+// 获取数据源状态
+const fetchDataSources = async () => {
+  try {
+    const response = await getDataSourcesStatus()
+    if (response.success) {
+      availableSources.value = response.data.sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
+    }
+  } catch (err: any) {
+    console.error('获取数据源状态失败:', err)
+  }
+}
+
+// 开始同步
+const startSync = async () => {
+  try {
+    syncing.value = true
+    
+    const params = {
+      force: syncForm.force,
+      preferred_sources: syncForm.preferred_sources.length > 0 
+        ? syncForm.preferred_sources.join(',') 
+        : undefined
+    }
+    
+    const response = await runStockBasicsSync(params)
+    if (response.success) {
+      const responseStatus = response.data.status
+      console.log('🚀 同步任务启动成功，当前状态:', responseStatus)
+
+      syncStatus.value = response.data
+
+      if (responseStatus === 'running') {
+        ElMessage.success('同步任务已启动')
+        // 开始轮询状态
+        startStatusPolling()
+        console.log('🔄 状态轮询已启动，间隔:', props.refreshInterval, 'ms')
+      } else if (responseStatus === 'success' || responseStatus === 'success_with_errors' || responseStatus === 'failed') {
+        // 同步已经完成，直接显示结果
+        ElMessage.success('同步任务已完成')
+        console.log('✅ 同步已完成，直接显示通知')
+        showSyncCompletionNotification(responseStatus)
+      } else {
+        ElMessage.info(`同步状态: ${responseStatus}`)
+      }
+    } else {
+      ElMessage.error(`同步启动失败: ${response.message}`)
+    }
+  } catch (err: any) {
+    console.error('启动同步失败:', err)
+    ElMessage.error(`同步启动失败: ${err.message}`)
+  } finally {
+    syncing.value = false
+  }
+}
+
+// 刷新状态
+const refreshStatus = async () => {
+  refreshing.value = true
+  await fetchSyncStatus()
+  refreshing.value = false
+  ElMessage.success('状态已刷新')
+}
+
+// 清空缓存
+const clearCache = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要清空同步缓存吗？这将删除所有缓存的数据。',
+      '确认清空缓存',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    clearingCache.value = true
+    const response = await clearSyncCache()
+    if (response.success) {
+      ElMessage.success('缓存已清空')
+    } else {
+      ElMessage.error(`清空缓存失败: ${response.message}`)
+    }
+  } catch (err: any) {
+    if (err !== 'cancel') {
+      console.error('清空缓存失败:', err)
+      ElMessage.error(`清空缓存失败: ${err.message}`)
+    }
+  } finally {
+    clearingCache.value = false
+  }
+}
+
+// 开始状态轮询
+const startStatusPolling = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+  }
+
+  if (props.autoRefresh) {
+    let previousStatus = syncStatus.value?.status
+    let pollCount = 0
+    const maxPolls = 60 // 最多轮询60次（5分钟）
+
+    console.log('🔄 开始状态轮询，初始状态:', previousStatus)
+
+    refreshTimer.value = setInterval(async () => {
+      pollCount++
+      await fetchSyncStatus()
+
+      const currentStatus = syncStatus.value?.status
+      console.log(`🔍 轮询 #${pollCount}: ${previousStatus} -> ${currentStatus}`)
+
+      // 检查状态变化，提供用户反馈
+      if (previousStatus === 'running' && currentStatus && currentStatus !== 'running') {
+        // 同步完成，显示结果通知
+        console.log('🎉 检测到同步完成，状态从', previousStatus, '变为', currentStatus)
+        showSyncCompletionNotification(currentStatus)
+        stopStatusPolling()
+        return
+      }
+
+      // 更新前一个状态
+      previousStatus = currentStatus
+
+      // 如果同步完成但没有状态变化检测到，也停止轮询
+      if (currentStatus && !['running'].includes(currentStatus)) {
+        console.log('🛑 检测到非运行状态，停止轮询:', currentStatus)
+        stopStatusPolling()
+        return
+      }
+
+      // 防止无限轮询
+      if (pollCount >= maxPolls) {
+        console.log('⏰ 轮询次数达到上限，停止轮询')
+        stopStatusPolling()
+      }
+    }, props.refreshInterval)
+  }
+}
+
+// 停止状态轮询
+const stopStatusPolling = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+    refreshTimer.value = null
+  }
+}
+
+// 显示同步完成通知
+const showSyncCompletionNotification = (status: string) => {
+  console.log('📢 显示同步完成通知，状态:', status)
+
+  const stats = syncStatus.value
+  if (!stats) {
+    console.warn('⚠️ 无法获取同步统计信息')
+    return
+  }
+
+  const total = stats.total || 0
+  const inserted = stats.inserted || 0
+  const updated = stats.updated || 0
+  const errors = stats.errors || 0
+
+  console.log('📊 同步统计:', { total, inserted, updated, errors })
+
+  let title = ''
+  let message = ''
+  let type: 'success' | 'warning' | 'error' = 'success'
+
+  if (status === 'success') {
+    title = '🎉 同步完成！'
+    message = `处理了 ${total} 条记录，新增 ${inserted} 条，更新 ${updated} 条`
+    type = 'success'
+  } else if (status === 'success_with_errors') {
+    title = '⚠️ 同步完成但有错误！'
+    message = `处理了 ${total} 条记录，新增 ${inserted} 条，更新 ${updated} 条，错误 ${errors} 条`
+    type = 'warning'
+  } else if (status === 'failed') {
+    title = '❌ 同步失败！'
+    message = stats.message || '未知错误'
+    type = 'error'
+  }
+
+  // 显示页面通知
+  ElMessage({
+    message: `${title} ${message}`,
+    type,
+    duration: 8000,
+    showClose: true
+  })
+
+  // 发射同步完成事件，通知父组件
+  emit('syncCompleted', status)
+
+  // 如果有使用的数据源信息，也显示出来
+  if (stats.data_sources_used && stats.data_sources_used.length > 0) {
+    setTimeout(() => {
+      ElMessage({
+        message: `📡 使用的数据源: ${stats.data_sources_used.join(', ')}`,
+        type: 'info',
+        duration: 6000,
+        showClose: true
+      })
+    }, 1000)
+  }
+}
+
+// 获取状态类型
+const getStatusType = (status?: string) => {
+  const typeMap: Record<string, string> = {
+    idle: 'info',
+    running: 'warning',
+    success: 'success',
+    success_with_errors: 'warning',
+    failed: 'danger',
+    never_run: 'info'
+  }
+  return typeMap[status || 'never_run'] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status?: string) => {
+  const textMap: Record<string, string> = {
+    idle: '空闲',
+    running: '运行中',
+    success: '成功',
+    success_with_errors: '部分成功',
+    failed: '失败',
+    never_run: '未运行'
+  }
+  return textMap[status || 'never_run'] || '未知'
+}
+
+// 获取进度百分比
+const getProgress = () => {
+  if (!syncStatus.value || syncStatus.value.total === 0) return 0
+  return Math.round(((syncStatus.value.inserted + syncStatus.value.updated) / syncStatus.value.total) * 100)
+}
+
+// 获取同步按钮文本
+const getSyncButtonText = () => {
+  if (syncing.value) return '启动中...'
+
+  const status = syncStatus.value?.status
+  if (status === 'running') {
+    const progress = getProgress()
+    if (progress > 0) {
+      return `同步中 ${progress}%`
+    }
+    return '同步中...'
+  }
+
+  return '开始同步'
+}
+
+// 格式化时间
+const formatTime = (isoString: string) => {
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  } catch {
+    return isoString
+  }
+}
+
+
+
+// 强制重新同步
+const forceSync = async () => {
+  console.log('🔄 强制重新同步')
+
+  // 先清空当前状态
+  syncStatus.value = null
+
+  // 设置强制同步标志
+  const originalForce = syncForm.force
+  syncForm.force = true
+
+  try {
+    await startSync()
+  } finally {
+    // 恢复原始设置
+    syncForm.force = originalForce
+  }
+}
+
+// 组件挂载
+onMounted(async () => {
+  await Promise.all([
+    fetchSyncStatus(),
+    fetchDataSources()
+  ])
+  
+  // 如果正在同步，开始轮询
+  if (syncStatus.value?.status === 'running') {
+    startStatusPolling()
+  }
+})
+
+// 组件卸载
+onUnmounted(() => {
+  stopStatusPolling()
+})
+</script>
+
+<style scoped lang="scss">
+.sync-control {
+  .control-card {
+    .card-header {
+      display: flex;
+      align-items: center;
+      
+      .header-icon {
+        margin-right: 8px;
+        color: var(--el-color-primary);
+      }
+      
+      .header-title {
+        font-weight: 600;
+      }
+    }
+  }
+
+  .control-content {
+    .section-title {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+    }
+
+    .sync-status-section {
+      margin-bottom: 24px;
+      
+      .status-display {
+        .status-tag {
+          margin-bottom: 12px;
+        }
+        
+        .progress-info {
+          .progress-text {
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--el-text-color-regular);
+          }
+        }
+      }
+    }
+
+    .sync-stats-section {
+      margin-bottom: 24px;
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+        
+        .stat-item {
+          text-align: center;
+          padding: 16px;
+          border: 1px solid var(--el-border-color-light);
+          border-radius: 8px;
+          
+          .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            
+            &.success { color: var(--el-color-success); }
+            &.primary { color: var(--el-color-primary); }
+            &.danger { color: var(--el-color-danger); }
+          }
+          
+          .stat-label {
+            font-size: 14px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+      
+      .sources-used {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+
+        .sources-label {
+          font-size: 14px;
+          color: var(--el-text-color-regular);
+        }
+      }
+
+      .sync-time {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .time-label {
+          font-size: 14px;
+          color: var(--el-text-color-regular);
+        }
+
+        .time-value {
+          font-size: 14px;
+          color: var(--el-text-color-primary);
+          font-weight: 500;
+        }
+      }
+    }
+
+    .sync-controls-section {
+      margin-bottom: 24px;
+      
+      .source-selection {
+        margin-bottom: 20px;
+        
+        .form-help {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          margin-top: 4px;
+        }
+      }
+      
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+    }
+
+    .error-section {
+      margin-top: 16px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .sync-control {
+    .control-content {
+      .sync-stats-section {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      
+      .sync-controls-section {
+        .action-buttons {
+          flex-direction: column;
+          
+          .el-button {
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/components/Dashboard/MultiSourceSyncCard.vue ====================
+<template>
+  <div class="multi-source-sync-card">
+    <el-card class="sync-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <div class="header-left">
+            <el-icon class="header-icon"><Connection /></el-icon>
+            <span class="header-title">多数据源同步</span>
+          </div>
+          <div class="header-right">
+            <el-button 
+              type="primary" 
+              size="small" 
+              link
+              @click="goToSyncPage"
+            >
+              管理
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <div v-loading="loading" class="card-content">
+        <!-- 同步状态 -->
+        <div class="sync-status-section">
+          <div class="status-display">
+            <el-tag 
+              :type="getStatusType(syncStatus?.status)"
+              size="large"
+              class="status-tag"
+            >
+              {{ getStatusText(syncStatus?.status) }}
+            </el-tag>
+            
+            <div v-if="syncStatus?.status === 'running'" class="progress-display">
+              <el-progress 
+                :percentage="getProgress()"
+                :status="syncStatus.errors > 0 ? 'warning' : 'success'"
+                :stroke-width="6"
+                :show-text="false"
+              />
+              <div class="progress-text">
+                {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : '同步中...' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 数据源状态 -->
+        <div class="sources-status-section">
+          <div class="sources-header">
+            <span class="sources-title">数据源状态</span>
+            <el-button 
+              size="small" 
+              type="primary" 
+              link
+              :loading="refreshing"
+              @click="refreshStatus"
+            >
+              <el-icon><Refresh /></el-icon>
+            </el-button>
+          </div>
+          
+          <div class="sources-list">
+            <div 
+              v-for="source in dataSources" 
+              :key="source.name"
+              class="source-item"
+              :class="{ 'available': source.available }"
+            >
+              <div class="source-info">
+                <span class="source-name">{{ source.name.toUpperCase() }}</span>
+                <el-icon 
+                  :class="source.available ? 'status-success' : 'status-error'"
+                >
+                  <component :is="source.available ? 'SuccessFilled' : 'CircleCloseFilled'" />
+                </el-icon>
+              </div>
+              <div class="source-priority">优先级: {{ source.priority }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="quick-actions-section">
+          <el-button
+            type="primary"
+            size="small"
+            :loading="syncing"
+            :disabled="syncStatus?.status === 'running'"
+            @click="quickSync"
+            style="width: 100%"
+          >
+            <el-icon><Refresh /></el-icon>
+            {{ syncStatus?.status === 'running' ? '同步中...' : '快速同步' }}
+          </el-button>
+        </div>
+
+        <!-- 最近同步信息 -->
+        <div v-if="syncStatus && syncStatus.status !== 'never_run'" class="last-sync-section">
+          <div class="last-sync-info">
+            <div class="sync-stats">
+              <span class="stat-item">总数: {{ syncStatus.total }}</span>
+              <span class="stat-item success">更新: {{ syncStatus.updated }}</span>
+              <span class="stat-item danger">错误: {{ syncStatus.errors }}</span>
+            </div>
+            <div v-if="syncStatus.finished_at" class="sync-time">
+              {{ formatLastSyncTime(syncStatus.finished_at) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { 
+  Connection, 
+  ArrowRight, 
+  Refresh, 
+  SuccessFilled, 
+  CircleCloseFilled 
+} from '@element-plus/icons-vue'
+import { 
+  getSyncStatus, 
+  getDataSourcesStatus, 
+  runStockBasicsSync,
+  type SyncStatus, 
+  type DataSourceStatus 
+} from '@/api/sync'
+
+// 路由
+const router = useRouter()
+
+// 响应式数据
+const loading = ref(false)
+const refreshing = ref(false)
+const syncing = ref(false)
+const syncStatus = ref<SyncStatus | null>(null)
+const dataSources = ref<DataSourceStatus[]>([])
+const refreshTimer = ref<NodeJS.Timeout | null>(null)
+
+// 获取同步状态
+const fetchSyncStatus = async () => {
+  try {
+    const response = await getSyncStatus()
+    if (response.success) {
+      syncStatus.value = response.data
+    }
+  } catch (err: any) {
+    console.error('获取同步状态失败:', err)
+  }
+}
+
+// 获取数据源状态
+const fetchDataSources = async () => {
+  try {
+    const response = await getDataSourcesStatus()
+    if (response.success) {
+      dataSources.value = response.data
+        .sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
+        .slice(0, 3) // 只显示前3个数据源
+    }
+  } catch (err: any) {
+    console.error('获取数据源状态失败:', err)
+  }
+}
+
+// 刷新状态
+const refreshStatus = async () => {
+  refreshing.value = true
+  await Promise.all([
+    fetchSyncStatus(),
+    fetchDataSources()
+  ])
+  refreshing.value = false
+}
+
+// 快速同步
+const quickSync = async () => {
+  try {
+    syncing.value = true
+    
+    const response = await runStockBasicsSync()
+    if (response.success) {
+      ElMessage.success('同步任务已启动')
+      syncStatus.value = response.data
+      startStatusPolling()
+    } else {
+      ElMessage.error(`同步启动失败: ${response.message}`)
+    }
+  } catch (err: any) {
+    console.error('启动同步失败:', err)
+    ElMessage.error(`同步启动失败: ${err.message}`)
+  } finally {
+    syncing.value = false
+  }
+}
+
+// 跳转到同步管理页面
+const goToSyncPage = () => {
+  router.push('/settings/sync')
+}
+
+// 开始状态轮询
+const startStatusPolling = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+  }
+  
+  refreshTimer.value = setInterval(async () => {
+    await fetchSyncStatus()
+    
+    // 如果同步完成，停止轮询
+    if (syncStatus.value?.status && !['running'].includes(syncStatus.value.status)) {
+      stopStatusPolling()
+    }
+  }, 3000)
+}
+
+// 停止状态轮询
+const stopStatusPolling = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+    refreshTimer.value = null
+  }
+}
+
+// 获取状态类型
+const getStatusType = (status?: SyncStatus['status'] | string): 'success' | 'info' | 'warning' | 'danger' => {
+  const typeMap: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
+    idle: 'info',
+    running: 'warning',
+    success: 'success',
+    success_with_errors: 'warning',
+    failed: 'danger',
+    never_run: 'info'
+  }
+  return typeMap[status ?? 'never_run'] ?? 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status?: SyncStatus['status'] | string) => {
+  const textMap: Record<string, string> = {
+    idle: '空闲',
+    running: '运行中',
+    success: '成功',
+    success_with_errors: '部分成功',
+    failed: '失败',
+    never_run: '未运行'
+  }
+  return textMap[status ?? 'never_run'] ?? '未知'
+}
+
+// 获取进度百分比
+const getProgress = () => {
+  if (!syncStatus.value || syncStatus.value.total === 0) return 0
+  return Math.round(((syncStatus.value.inserted + syncStatus.value.updated) / syncStatus.value.total) * 100)
+}
+
+// 格式化最后同步时间
+const formatLastSyncTime = (timeStr: string) => {
+  const date = new Date(timeStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  if (diff < 60000) {
+    return '刚刚完成'
+  } else if (diff < 3600000) {
+    return `${Math.floor(diff / 60000)}分钟前`
+  } else if (diff < 86400000) {
+    return `${Math.floor(diff / 3600000)}小时前`
+  } else {
+    return date.toLocaleDateString('zh-CN')
+  }
+}
+
+// 组件挂载
+onMounted(async () => {
+  loading.value = true
+  await Promise.all([
+    fetchSyncStatus(),
+    fetchDataSources()
+  ])
+  loading.value = false
+  
+  // 如果正在同步，开始轮询
+  if (syncStatus.value?.status === 'running') {
+    startStatusPolling()
+  }
+})
+
+// 组件卸载
+onUnmounted(() => {
+  stopStatusPolling()
+})
+</script>
+
+<style scoped lang="scss">
+.multi-source-sync-card {
+  .sync-card {
+    height: 100%;
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .header-left {
+        display: flex;
+        align-items: center;
+        
+        .header-icon {
+          margin-right: 8px;
+          color: var(--el-color-primary);
+        }
+        
+        .header-title {
+          font-weight: 600;
+          font-size: 16px;
+        }
+      }
+    }
+  }
+
+  .card-content {
+    .sync-status-section {
+      margin-bottom: 16px;
+      
+      .status-display {
+        .status-tag {
+          margin-bottom: 8px;
+        }
+        
+        .progress-display {
+          .progress-text {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+            text-align: center;
+          }
+        }
+      }
+    }
+
+    .sources-status-section {
+      margin-bottom: 16px;
+      
+      .sources-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        
+        .sources-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+        }
+      }
+      
+      .sources-list {
+        .source-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 8px;
+          margin-bottom: 4px;
+          border-radius: 4px;
+          background-color: var(--el-fill-color-lighter);
+          
+          &.available {
+            background-color: var(--el-color-success-light-9);
+          }
+          
+          .source-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            
+            .source-name {
+              font-size: 12px;
+              font-weight: 500;
+            }
+            
+            .status-success {
+              color: var(--el-color-success);
+              font-size: 12px;
+            }
+            
+            .status-error {
+              color: var(--el-color-danger);
+              font-size: 12px;
+            }
+          }
+          
+          .source-priority {
+            font-size: 11px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+    }
+
+    .quick-actions-section {
+      margin-bottom: 16px;
+    }
+
+    .last-sync-section {
+      .last-sync-info {
+        .sync-stats {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+          
+          .stat-item {
+            font-size: 12px;
+            
+            &.success { color: var(--el-color-success); }
+            &.danger { color: var(--el-color-danger); }
+          }
+        }
+        
+        .sync-time {
+          font-size: 11px;
+          color: var(--el-text-color-secondary);
+          text-align: center;
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/layouts/BasicLayout.vue ====================
+<template>
+  <div class="basic-layout">
+    <!-- 侧边栏 -->
+    <aside
+      class="sidebar"
+      :class="{ collapsed: appStore.sidebarCollapsed }"
+      :style="{ width: appStore.actualSidebarWidth + 'px' }"
+    >
+      <div class="sidebar-header">
+        <div class="logo">
+          <img src="/logo.svg" alt="TradingAgents-CN" />
+          <span v-show="!appStore.sidebarCollapsed" class="logo-text">
+            TradingAgents-CN
+          </span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <SidebarMenu />
+      </nav>
+      
+      <div class="sidebar-footer">
+        <UserProfile />
+      </div>
+    </aside>
+
+    <!-- 点击蒙层：移动端展开时，点击空白处收起侧边栏 -->
+    <div
+      v-if="isMobile && !appStore.sidebarCollapsed"
+      class="sidebar-overlay"
+      @click="appStore.setSidebarCollapsed(true)"
+    ></div>
+
+    <!-- 主内容区 -->
+    <div class="main-container" :style="{ marginLeft: appStore.actualSidebarWidth + 'px' }" @click="handleMainClick">
+      <!-- 顶部导航栏 -->
+      <header class="header">
+        <div class="header-left">
+          <el-button
+            type="text"
+            @click.stop="appStore.toggleSidebar()"
+            class="sidebar-toggle"
+          >
+            <el-icon><Expand v-if="appStore.sidebarCollapsed" /><Fold v-else /></el-icon>
+          </el-button>
+          
+          <Breadcrumb />
+        </div>
+        
+        <div class="header-right">
+          <HeaderActions />
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <main class="main-content">
+        <div class="content-wrapper">
+          <router-view v-slot="{ Component, route }">
+            <transition
+              :name="route.meta.transition || 'fade'"
+              mode="out-in"
+              appear
+            >
+              <keep-alive :include="keepAliveComponents">
+                <component :is="Component" :key="route.fullPath" />
+              </keep-alive>
+            </transition>
+          </router-view>
+        </div>
+      </main>
+
+      <!-- 页脚 -->
+      <footer class="footer">
+        <AppFooter />
+      </footer>
+    </div>
+
+    <!-- 回到顶部 -->
+    <el-backtop :right="40" :bottom="40" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useAppStore } from '@/stores/app'
+import SidebarMenu from '@/components/Layout/SidebarMenu.vue'
+import UserProfile from '@/components/Layout/UserProfile.vue'
+import Breadcrumb from '@/components/Layout/Breadcrumb.vue'
+import HeaderActions from '@/components/Layout/HeaderActions.vue'
+import AppFooter from '@/components/Layout/AppFooter.vue'
+import { Expand, Fold } from '@element-plus/icons-vue'
+
+const appStore = useAppStore()
+const route = useRoute()
+const { width } = useWindowSize()
+
+// 需要缓存的组件
+const keepAliveComponents = computed(() => [
+  'Dashboard',
+  'StockScreening',
+  'AnalysisHistory',
+  'QueueManagement'
+])
+
+// 移动端判断
+const isMobile = computed(() => width.value < 768)
+
+// 点击主内容时，若移动端且侧边栏已展开，则收起
+const handleMainClick = () => {
+  if (isMobile.value && !appStore.sidebarCollapsed) {
+    appStore.setSidebarCollapsed(true)
+  }
+}
+
+// 监听窗口大小变化：在小屏幕上自动折叠侧边栏
+watch(width, (newWidth) => {
+  if (newWidth < 768 && !appStore.sidebarCollapsed) {
+    appStore.setSidebarCollapsed(true)
+  }
+})
+
+// 路由变化时，移动端收起侧边栏
+watch(() => route.fullPath, () => {
+  if (isMobile.value) {
+    appStore.setSidebarCollapsed(true)
+  }
+})
+</script>
+
+<style lang="scss" scoped>
+.basic-layout {
+  min-height: 100vh;
+  background-color: var(--el-bg-color-page);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 950; // 低于侧边栏(1000)，高于内容区
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background-color: var(--el-bg-color);
+  border-right: 1px solid var(--el-border-color-light);
+  transition: width 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+
+  &.collapsed {
+    width: 64px !important;
+  }
+
+  .sidebar-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      img {
+        width: 32px;
+        height: 32px;
+      }
+
+      .logo-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--el-border-color-lighter);
+    padding: 8px;
+  }
+}
+
+.main-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.3s ease;
+}
+
+.header {
+  height: 60px;
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .sidebar-toggle {
+      padding: 8px;
+      
+      .el-icon {
+        font-size: 18px;
+      }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding: 24px;
+  min-height: calc(100vh - 60px - 60px); // 减去header和footer高度
+
+  .content-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+.footer {
+  height: 60px;
+  background-color: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    
+    &:not(.collapsed) {
+      transform: translateX(0);
+    }
+  }
+
+  .main-container {
+    margin-left: 0 !important;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .header {
+    padding: 0 16px;
+  }
+}
+
+// 路由过渡动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(30px);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-30px);
+  opacity: 0;
+}
+</style>
+
+
+==================== frontend/src/stores/app.ts ====================
+import { defineStore } from 'pinia'
+import type { RouteLocationNormalized } from 'vue-router'
+import { useStorage } from '@vueuse/core'
+
+export interface AppState {
+  // 应用基础状态
+  loading: boolean
+  loadingProgress: number
+  theme: 'light' | 'dark' | 'auto'
+  language: 'zh-CN' | 'en-US'
+
+  // 网络状态
+  isOnline: boolean
+  apiConnected: boolean
+  lastApiCheck: number
+
+  // 布局状态
+  sidebarCollapsed: boolean
+  sidebarWidth: number
+
+  // 当前路由信息
+  currentRoute: RouteLocationNormalized | null
+
+  // 用户偏好
+  preferences: {
+    defaultMarket: 'A股' | '美股' | '港股'
+    defaultDepth: '1' | '2' | '3' | '4' | '5'  // 1-5级分析深度
+    autoRefresh: boolean
+    refreshInterval: number
+    showWelcome: boolean
+  }
+
+  // 系统信息
+  version: string
+  buildTime: string
+  apiVersion: string
+}
+
+export const useAppStore = defineStore('app', {
+  state: (): AppState => ({
+    loading: false,
+    loadingProgress: 0,
+    theme: (useStorage('app-theme', 'auto').value || 'auto') as 'light' | 'dark' | 'auto',
+    language: (useStorage('app-language', 'zh-CN').value || 'zh-CN') as 'zh-CN' | 'en-US',
+
+    isOnline: navigator.onLine,
+    apiConnected: false,
+    lastApiCheck: 0,
+
+    sidebarCollapsed: useStorage('sidebar-collapsed', false).value || false,
+    sidebarWidth: useStorage('sidebar-width', 240).value || 240,
+
+    currentRoute: null,
+
+    preferences: useStorage('user-preferences', {
+      defaultMarket: 'A股',
+      defaultDepth: '3',  // 3级为标准分析（推荐）
+      autoRefresh: true,
+      refreshInterval: 30,
+      showWelcome: true
+    }).value || {
+      defaultMarket: 'A股',
+      defaultDepth: '3',  // 3级为标准分析（推荐）
+      autoRefresh: true,
+      refreshInterval: 30,
+      showWelcome: true
+    },
+
+    version: '0.1.16',
+    buildTime: new Date().toISOString(),
+    apiVersion: ''
+  }),
+
+  getters: {
+    // 是否为暗色主题
+    isDarkTheme(): boolean {
+      if (this.theme === 'auto') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+      }
+      return this.theme === 'dark'
+    },
+    
+    // 侧边栏实际宽度
+    actualSidebarWidth(): number {
+      return this.sidebarCollapsed ? 64 : this.sidebarWidth
+    },
+    
+    // 当前页面标题
+    currentPageTitle(): string {
+      return this.currentRoute?.meta?.title as string || 'TradingAgents-CN'
+    },
+    
+    // 应用信息
+    appInfo(): Record<string, any> {
+      return {
+        version: this.version,
+        buildTime: this.buildTime,
+        apiVersion: this.apiVersion,
+        theme: this.theme,
+        language: this.language
+      }
+    }
+  },
+
+  actions: {
+    // 设置加载状态
+    setLoading(loading: boolean, progress = 0) {
+      this.loading = loading
+      this.loadingProgress = progress
+    },
+    
+    // 设置加载进度
+    setLoadingProgress(progress: number) {
+      this.loadingProgress = Math.max(0, Math.min(100, progress))
+    },
+    
+    // 切换主题
+    toggleTheme() {
+      const themes: Array<'light' | 'dark' | 'auto'> = ['light', 'dark', 'auto']
+      const currentIndex = themes.indexOf(this.theme)
+      this.theme = themes[(currentIndex + 1) % themes.length]
+      this.applyTheme()
+    },
+    
+    // 设置主题
+    setTheme(theme: 'light' | 'dark' | 'auto') {
+      this.theme = theme
+      this.applyTheme()
+      // 同步到 localStorage
+      localStorage.setItem('app-theme', theme)
+    },
+    
+    // 应用主题
+    applyTheme() {
+      const isDark = this.isDarkTheme
+      document.documentElement.classList.toggle('dark', isDark)
+      
+      // 更新meta标签
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', isDark ? '#1f2937' : '#409EFF')
+      }
+    },
+    
+    // 切换语言
+    setLanguage(language: 'zh-CN' | 'en-US') {
+      this.language = language
+      document.documentElement.lang = language
+      // 同步到 localStorage
+      localStorage.setItem('app-language', language)
+    },
+    
+    // 切换侧边栏
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed
+    },
+    
+    // 设置侧边栏状态
+    setSidebarCollapsed(collapsed: boolean) {
+      this.sidebarCollapsed = collapsed
+      // 同步到 localStorage
+      localStorage.setItem('sidebar-collapsed', String(collapsed))
+    },
+
+    // 设置侧边栏宽度
+    setSidebarWidth(width: number) {
+      this.sidebarWidth = Math.max(200, Math.min(400, width))
+      // 同步到 localStorage
+      localStorage.setItem('sidebar-width', String(this.sidebarWidth))
+    },
+    
+    // 设置当前路由
+    setCurrentRoute(route: RouteLocationNormalized) {
+      this.currentRoute = route
+    },
+    
+    // 更新用户偏好
+    updatePreferences(preferences: Partial<AppState['preferences']>) {
+      this.preferences = { ...this.preferences, ...preferences }
+      // 同步到 localStorage
+      localStorage.setItem('user-preferences', JSON.stringify(this.preferences))
+    },
+    
+    // 重置偏好设置
+    resetPreferences() {

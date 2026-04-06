@@ -2,6 +2,8 @@
 import logging
 import time
 import requests
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+
 import redis
 from typing import Optional, List
 
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 GLOBAL_TOKEN: Optional[str] = None
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(5), retry=retry_if_exception_type((ConnectionError, TimeoutError)))
 def get_token() -> Optional[str]:
     """
     登录获取 JWT Token，并缓存到全局变量
@@ -45,6 +48,7 @@ def get_token() -> Optional[str]:
     return None
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(10), retry=retry_if_exception_type((ConnectionError, TimeoutError, Exception)))
 def analyze_stock(stock_code: str):
     """
     调用 /api/v1/analyze，自动携带 JWT Token

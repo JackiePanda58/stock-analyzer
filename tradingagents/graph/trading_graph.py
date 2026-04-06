@@ -186,14 +186,23 @@ class TradingAgentsGraph:
             ),
         }
 
-    def propagate(self, company_name, trade_date):
-        """Run the trading agents graph for a company on a specific date."""
+    def propagate(self, company_name, trade_date, **kwargs):
+        """Run the trading agents graph for a company on a specific date.
+
+        Args:
+            company_name: Stock ticker code
+            trade_date: Date string
+            **kwargs: Extra parameters forwarded to agents via state
+                    - user_context: User context/notes
+                    - risk_level: Risk preference (low/medium/high)
+                    - selected_analysts: List of analyst types to enable
+        """
 
         self.ticker = company_name
 
         # Initialize state
         init_agent_state = self.propagator.create_initial_state(
-            company_name, trade_date
+            company_name, trade_date, **kwargs
         )
         args = self.propagator.get_graph_args()
 

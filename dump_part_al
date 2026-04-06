@@ -1,0 +1,2000 @@
+    // 根据格式设置文件扩展名
+    const ext = getFileExtension(format)
+    a.download = `${report.value.stock_symbol}_分析报告_${report.value.analysis_date}.${ext}`
+
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    ElMessage.success(`${getFormatName(format)}报告下载成功`)
+  } catch (error: any) {
+    console.error('下载报告失败:', error)
+
+    // 显示详细错误信息
+    if (error.message && error.message.includes('pandoc')) {
+      ElMessage.error({
+        message: 'PDF/Word 导出需要安装 pandoc 工具',
+        duration: 5000
+      })
+    } else {
+      ElMessage.error(`下载报告失败: ${error.message || '未知错误'}`)
+    }
+  }
+}
+
+// 辅助函数：获取格式名称
+const getFormatName = (format: string): string => {
+  const names: Record<string, string> = {
+    'markdown': 'Markdown',
+    'docx': 'Word',
+    'pdf': 'PDF',
+    'json': 'JSON'
+  }
+  return names[format] || format
+}
+
+// 辅助函数：获取文件扩展名
+const getFileExtension = (format: string): string => {
+  const extensions: Record<string, string> = {
+    'markdown': 'md',
+    'docx': 'docx',
+    'pdf': 'pdf',
+    'json': 'json'
+  }
+  return extensions[format] || 'txt'
+}
+
+// 判断是否可以应用到交易
+const canApplyToTrading = computed(() => {
+  if (!report.value) return false
+  const rec = report.value.recommendation || ''
+  // 检查是否包含买入或卖出建议
+  return rec.includes('买入') || rec.includes('卖出') || rec.toLowerCase().includes('buy') || rec.toLowerCase().includes('sell')
+})
+
+// 解析投资建议
+const parseRecommendation = () => {
+  if (!report.value) return null
+
+  const rec = report.value.recommendation || ''
+  const traderPlan = report.value.reports?.trader_investment_plan || ''
+
+  // 解析操作类型
+  let action: 'buy' | 'sell' | null = null
+  if (rec.includes('买入') || rec.toLowerCase().includes('buy')) {
+    action = 'buy'
+  } else if (rec.includes('卖出') || rec.toLowerCase().includes('sell')) {
+    action = 'sell'
+  }
+
+  if (!action) return null
+
+  // 解析目标价格（从recommendation或trader_investment_plan中提取）
+  let targetPrice: number | null = null
+  const priceMatch = rec.match(/目标价[格]?[：:]\s*([0-9.]+)/) ||
+                     traderPlan.match(/目标价[格]?[：:]\s*([0-9.]+)/)
+  if (priceMatch) {
+    targetPrice = parseFloat(priceMatch[1])
+  }
+
+  return {
+    action,
+    targetPrice,
+    confidence: report.value.confidence_score || 0,
+    riskLevel: report.value.risk_level || '中等'
+  }
+}
+
+// 辅助函数：根据股票代码获取对应货币的现金金额
+const getCashByCurrency = (account: any, stockSymbol: string): number => {
+  const cash = account.cash
+
+  // 兼容旧格式（单一数字）
+  if (typeof cash === 'number') {
+    return cash
+  }
+
+  // 新格式（多货币对象）
+  if (typeof cash === 'object' && cash !== null) {
+    // 根据股票代码判断市场类型
+    const marketType = getMarketByStockCode(stockSymbol)
+
+    // 映射市场类型到货币
+    const currencyMap: Record<string, keyof CurrencyAmount> = {
+      'A股': 'CNY',
+      '港股': 'HKD',
+      '美股': 'USD'
+    }
+
+    const currency = currencyMap[marketType] || 'CNY'
+    return cash[currency] || 0
+  }
+
+  return 0
+}
+
+// 应用到模拟交易
+const applyToTrading = async () => {
+  const recommendation = parseRecommendation()
+  if (!recommendation) {
+    ElMessage.warning('无法解析投资建议，请检查报告内容')
+    return
+  }
+
+  try {
+    // 获取账户信息
+    const accountRes = await paperApi.getAccount()
+    if (!accountRes.success || !accountRes.data) {
+      ElMessage.error('获取账户信息失败')
+      return
+    }
+
+    const account = accountRes.data.account
+    const positions = accountRes.data.positions
+
+    // 查找当前持仓
+    const currentPosition = positions.find(p => p.code === report.value.stock_symbol)
+
+    // 获取当前实时价格
+    let currentPrice = 10 // 默认价格
+    try {
+      const quoteRes = await stocksApi.getQuote(report.value.stock_symbol)
+      if (quoteRes.success && quoteRes.data && quoteRes.data.price) {
+        currentPrice = quoteRes.data.price
+      }
+    } catch (error) {
+      console.warn('获取实时价格失败，使用默认价格')
+    }
+
+    // 获取对应货币的可用资金
+    const availableCash = getCashByCurrency(account, report.value.stock_symbol)
+
+    // 计算建议交易数量
+    let suggestedQuantity = 0
+    let maxQuantity = 0
+
+    if (recommendation.action === 'buy') {
+      // 买入：根据可用资金和当前价格计算
+      maxQuantity = Math.floor(availableCash / currentPrice / 100) * 100 // 100股为单位
+      const suggested = Math.floor(maxQuantity * 0.2) // 建议使用20%资金
+      suggestedQuantity = Math.floor(suggested / 100) * 100 // 向下取整到100的倍数
+      suggestedQuantity = Math.max(100, suggestedQuantity) // 至少100股
+    } else {
+      // 卖出：根据当前持仓计算
+      if (!currentPosition || currentPosition.quantity === 0) {
+        ElMessage.warning('当前没有持仓，无法卖出')
+        return
+      }
+      maxQuantity = currentPosition.quantity
+      suggestedQuantity = Math.floor(maxQuantity / 100) * 100 // 向下取整到100的倍数
+      suggestedQuantity = Math.max(100, suggestedQuantity) // 至少100股
+    }
+
+    // 用户可修改的价格和数量（使用reactive）
+    const tradeForm = reactive({
+      price: currentPrice,
+      quantity: suggestedQuantity
+    })
+
+    // 显示可编辑的确认对话框
+    const actionText = recommendation.action === 'buy' ? '买入' : '卖出'
+    const actionColor = recommendation.action === 'buy' ? '#67C23A' : '#F56C6C'
+
+    // 创建一个响应式的消息组件
+    const MessageComponent = {
+      setup() {
+        // 计算预计金额
+        const estimatedAmount = computed(() => {
+          return (tradeForm.price * tradeForm.quantity).toFixed(2)
+        })
+
+        return () => h('div', { style: 'line-height: 2;' }, [
+          // 风险提示横幅
+          h('div', {
+            style: 'background-color: #FEF0F0; border: 1px solid #F56C6C; border-radius: 4px; padding: 12px; margin-bottom: 16px;'
+          }, [
+            h('div', { style: 'color: #F56C6C; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center;' }, [
+              h('span', { style: 'font-size: 16px; margin-right: 6px;' }, '⚠️'),
+              h('span', '风险提示')
+            ]),
+            h('div', { style: 'color: #606266; font-size: 12px; line-height: 1.6;' }, [
+              h('p', { style: 'margin: 4px 0;' }, '• 本交易基于AI分析结果，仅供参考，不构成投资建议'),
+              h('p', { style: 'margin: 4px 0;' }, '• 模拟交易使用虚拟资金，与实盘存在显著差异'),
+              h('p', { style: 'margin: 4px 0;' }, '• 股票投资存在市场风险，可能导致本金损失'),
+              h('p', { style: 'margin: 4px 0;' }, '• 请勿将模拟结果作为实盘投资决策依据')
+            ])
+          ]),
+          h('p', [
+            h('strong', '股票代码：'),
+            h('span', report.value.stock_symbol)
+          ]),
+          h('p', [
+            h('strong', '操作类型：'),
+            h('span', { style: `color: ${actionColor}; font-weight: bold;` }, actionText)
+          ]),
+          recommendation.targetPrice ? h('p', [
+            h('strong', '目标价格：'),
+            h('span', { style: 'color: #E6A23C;' }, `${recommendation.targetPrice.toFixed(2)}元`),
+            h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(仅供参考)')
+          ]) : null,
+          h('p', [
+            h('strong', '当前价格：'),
+            h('span', `${currentPrice.toFixed(2)}元`)
+          ]),
+          h('div', { style: 'margin: 16px 0;' }, [
+            h('p', { style: 'margin-bottom: 8px;' }, [
+              h('strong', '交易价格：'),
+              h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(可修改)')
+            ]),
+            h(ElInputNumber, {
+              modelValue: tradeForm.price,
+              'onUpdate:modelValue': (val: number) => { tradeForm.price = val },
+              min: 0.01,
+              max: 9999,
+              precision: 2,
+              step: 0.01,
+              style: 'width: 200px;',
+              controls: true
+            })
+          ]),
+          h('div', { style: 'margin: 16px 0;' }, [
+            h('p', { style: 'margin-bottom: 8px;' }, [
+              h('strong', '交易数量：'),
+              h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(可修改，100股为单位)')
+            ]),
+            h(ElInputNumber, {
+              modelValue: tradeForm.quantity,
+              'onUpdate:modelValue': (val: number) => { tradeForm.quantity = val },
+              min: 100,
+              max: maxQuantity,
+              step: 100,
+              style: 'width: 200px;',
+              controls: true
+            })
+          ]),
+          h('p', [
+            h('strong', '预计金额：'),
+            h('span', { style: 'color: #409EFF; font-weight: bold;' }, `${estimatedAmount.value}元`)
+          ]),
+          h('p', [
+            h('strong', '模型置信度：'),
+            h('span', `${(recommendation.confidence * 100).toFixed(1)}%`),
+            h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(不代表实际成功率)')
+          ]),
+          h('p', [
+            h('strong', '风险评估：'),
+            h('span', recommendation.riskLevel),
+            h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(实际风险可能更高)')
+          ]),
+          recommendation.action === 'buy' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
+            `可用资金：${availableCash.toFixed(2)}元，最大可买：${maxQuantity}股`
+          ) : null,
+          recommendation.action === 'sell' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
+            `当前持仓：${maxQuantity}股`
+          ) : null
+        ])
+      }
+    }
+
+    await ElMessageBox({
+      title: '确认交易',
+      message: h(MessageComponent),
+      confirmButtonText: '确认下单',
+      cancelButtonText: '取消',
+      type: 'warning',
+      beforeClose: (action, instance, done) => {
+        if (action === 'confirm') {
+          // 验证输入
+          if (tradeForm.quantity < 100 || tradeForm.quantity % 100 !== 0) {
+            ElMessage.error('交易数量必须是100的整数倍')
+            return
+          }
+          if (tradeForm.quantity > maxQuantity) {
+            ElMessage.error(`交易数量不能超过${maxQuantity}股`)
+            return
+          }
+          if (tradeForm.price <= 0) {
+            ElMessage.error('交易价格必须大于0')
+            return
+          }
+
+          // 检查资金是否充足
+          if (recommendation.action === 'buy') {
+            const totalAmount = tradeForm.price * tradeForm.quantity
+            if (totalAmount > account.cash) {
+              ElMessage.error('可用资金不足')
+              return
+            }
+          }
+        }
+        done()
+      }
+    })
+
+    // 执行交易
+    const orderRes = await paperApi.placeOrder({
+      code: report.value.stock_symbol,
+      side: recommendation.action,
+      quantity: tradeForm.quantity,
+      analysis_id: report.value.analysis_id || report.value.id
+    })
+
+    if (orderRes.success) {
+      ElMessage.success(`${actionText}订单已提交成功！`)
+      // 可选：跳转到模拟交易页面
+      setTimeout(() => {
+        router.push({ name: 'PaperTradingHome' })
+      }, 1500)
+    } else {
+      ElMessage.error(orderRes.message || '下单失败')
+    }
+
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('应用到交易失败:', error)
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
+}
+
+// 返回列表
+const goBack = () => {
+  router.push('/reports')
+}
+
+// 工具函数
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    completed: '已完成',
+    processing: '生成中',
+    failed: '失败'
+  }
+  return statusMap[status] || status
+}
+
+const formatTime = (time: string) => {
+  return new Date(time).toLocaleString('zh-CN')
+}
+
+// 将分析师英文名称转换为中文
+const formatAnalysts = (analysts: string[]) => {
+  const analystNameMap: Record<string, string> = {
+    'market': '市场分析师',
+    'fundamentals': '基本面分析师',
+    'news': '新闻分析师',
+    'social': '社媒分析师',
+    'sentiment': '情绪分析师',
+    'technical': '技术分析师'
+  }
+
+  return analysts.map(analyst => analystNameMap[analyst] || analyst).join('、')
+}
+
+// 获取模型的详细描述（从后端配置中获取）
+const getModelDescription = (modelInfo: string) => {
+  if (!modelInfo || modelInfo === 'Unknown') {
+    return '未知模型'
+  }
+
+  // 1. 优先从后端配置中查找精确匹配
+  const config = llmConfigs.value.find(c => c.model_name === modelInfo)
+  if (config?.description) {
+    return config.description
+  }
+
+  // 2. 尝试模糊匹配（处理版本号等变化）
+  const fuzzyConfig = llmConfigs.value.find(c =>
+    modelInfo.toLowerCase().includes(c.model_name.toLowerCase()) ||
+    c.model_name.toLowerCase().includes(modelInfo.toLowerCase())
+  )
+  if (fuzzyConfig?.description) {
+    return fuzzyConfig.description
+  }
+
+  // 3. 根据模型名称前缀提供通用描述
+  const modelLower = modelInfo.toLowerCase()
+  if (modelLower.includes('gpt')) {
+    return `OpenAI ${modelInfo} - 强大的语言模型`
+  } else if (modelLower.includes('claude')) {
+    return `Anthropic ${modelInfo} - 高性能推理模型`
+  } else if (modelLower.includes('qwen')) {
+    return `阿里通义千问 ${modelInfo} - 中文优化模型`
+  } else if (modelLower.includes('glm')) {
+    return `智谱 ${modelInfo} - 综合性能优秀`
+  } else if (modelLower.includes('deepseek')) {
+    return `DeepSeek ${modelInfo} - 高性价比模型`
+  } else if (modelLower.includes('ernie')) {
+    return `百度文心 ${modelInfo} - 中文能力强`
+  } else if (modelLower.includes('spark')) {
+    return `讯飞星火 ${modelInfo} - 专业模型`
+  } else if (modelLower.includes('moonshot')) {
+    return `Moonshot ${modelInfo} - 长上下文模型`
+  } else if (modelLower.includes('yi')) {
+    return `零一万物 ${modelInfo} - 高性能模型`
+  }
+
+  // 4. 默认返回
+  return `${modelInfo} - AI 大语言模型`
+}
+
+const getModuleDisplayName = (moduleName: string) => {
+  // 统一与单股分析的中文标签映射（完整的13个报告）
+  const nameMap: Record<string, string> = {
+    // 分析师团队 (4个)
+    market_report: '📈 市场技术分析',
+    sentiment_report: '💭 市场情绪分析',
+    news_report: '📰 新闻事件分析',
+    fundamentals_report: '💰 基本面分析',
+
+    // 研究团队 (3个)
+    bull_researcher: '🐂 多头研究员',
+    bear_researcher: '🐻 空头研究员',
+    research_team_decision: '🔬 研究经理决策',
+
+    // 交易团队 (1个)
+    trader_investment_plan: '💼 交易员计划',
+
+    // 风险管理团队 (4个)
+    risky_analyst: '⚡ 激进分析师',
+    safe_analyst: '🛡️ 保守分析师',
+    neutral_analyst: '⚖️ 中性分析师',
+    risk_management_decision: '👔 投资组合经理',
+
+    // 最终决策 (1个)
+    final_trade_decision: '🎯 最终交易决策',
+
+    // 兼容旧字段
+    investment_plan: '📋 投资建议',
+    investment_debate_state: '🔬 研究团队决策（旧）',
+    risk_debate_state: '⚖️ 风险管理团队（旧）',
+    detailed_analysis: '📄 详细分析'
+  }
+  // 未匹配到时，做一个友好的回退：下划线转空格
+  return nameMap[moduleName] || moduleName.replace(/_/g, ' ')
+}
+
+const renderMarkdown = (content: string) => {
+  if (!content) return ''
+  try {
+    return marked.parse(content) as string
+  } catch (e) {
+    return `<pre style="white-space: pre-wrap; font-family: inherit;">${content}</pre>`
+  }
+}
+
+// 置信度评分相关函数
+// 将后端返回的 0-1 小数转换为 0-100 的百分制
+const normalizeConfidenceScore = (score: number) => {
+  // 如果已经是 0-100 的范围，直接返回
+  if (score > 1) {
+    return Math.round(score)
+  }
+  // 如果是 0-1 的小数，转换为百分制
+  return Math.round(score * 100)
+}
+
+const getConfidenceColor = (score: number) => {
+  if (score >= 80) return '#67C23A' // 较高 - 绿色
+  if (score >= 60) return '#409EFF' // 中上 - 蓝色
+  if (score >= 40) return '#E6A23C' // 中等 - 橙色
+  return '#F56C6C' // 较低 - 红色
+}
+
+const getConfidenceLabel = (score: number) => {
+  if (score >= 80) return '较高'
+  if (score >= 60) return '中上'
+  if (score >= 40) return '中等'
+  return '较低'
+}
+
+// 风险等级相关函数
+const getRiskStars = (riskLevel: string) => {
+  const riskMap: Record<string, number> = {
+    '低': 1,
+    '中低': 2,
+    '中等': 3,
+    '中高': 4,
+    '高': 5
+  }
+  return riskMap[riskLevel] || 3
+}
+
+const getRiskColor = (riskLevel: string) => {
+  const colorMap: Record<string, string> = {
+    '低': '#67C23A',      // 绿色
+    '中低': '#95D475',    // 浅绿色
+    '中等': '#E6A23C',    // 橙色
+    '中高': '#F56C6C',    // 红色
+    '高': '#F56C6C'       // 深红色
+  }
+  return colorMap[riskLevel] || '#E6A23C'
+}
+
+const getRiskDescription = (riskLevel: string) => {
+  const descMap: Record<string, string> = {
+    '低': '风险较小，适合稳健投资者',
+    '中低': '风险可控，适合大多数投资者',
+    '中等': '风险适中，需要谨慎评估',
+    '中高': '风险较高，需要密切关注',
+    '高': '风险很高，建议谨慎投资'
+  }
+  return descMap[riskLevel] || '请根据自身风险承受能力决策'
+}
+
+// 生命周期
+onMounted(() => {
+  fetchLLMConfigs() // 先加载模型配置
+  fetchReportDetail() // 再加载报告详情
+})
+</script>
+
+<style lang="scss" scoped>
+.report-detail {
+  .loading-container {
+    padding: 24px;
+  }
+
+  .report-content {
+    .report-header {
+      margin-bottom: 24px;
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        .title-section {
+          .report-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+            margin: 0 0 12px 0;
+          }
+
+          .report-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+
+            .meta-item {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              color: var(--el-text-color-regular);
+              font-size: 14px;
+            }
+          }
+        }
+
+        .action-section {
+          display: flex;
+          gap: 8px;
+        }
+      }
+    }
+
+    /* 风险提示样式 */
+    .risk-disclaimer {
+      margin-bottom: 24px;
+      animation: fadeInDown 0.5s ease-out;
+    }
+
+    .risk-disclaimer :deep(.el-alert) {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+      border: 2px solid #ffc107;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+    }
+
+    .risk-disclaimer :deep(.el-alert__icon) {
+      font-size: 24px;
+      color: #ff6b00;
+    }
+
+    .disclaimer-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .disclaimer-icon {
+      font-size: 24px;
+      color: #ff6b00;
+      flex-shrink: 0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .disclaimer-text {
+      color: #856404;
+      flex: 1;
+    }
+
+    .disclaimer-text strong {
+      color: #d63031;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .summary-card,
+    .metrics-card,
+    .modules-card {
+      margin-bottom: 24px;
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+    }
+
+    .summary-content {
+      line-height: 1.6;
+      color: var(--el-text-color-primary);
+    }
+
+    .metrics-content {
+      .metric-item {
+        text-align: center;
+        padding: 24px;
+        border: 1px solid var(--el-border-color-light);
+        border-radius: 12px;
+        background: var(--el-fill-color-blank);
+        transition: all 0.3s ease;
+
+        &:hover {
+          box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
+        }
+
+        .metric-label {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 15px;
+          font-weight: 500;
+          color: var(--el-text-color-regular);
+          margin-bottom: 16px;
+
+          .el-icon {
+            font-size: 18px;
+          }
+        }
+
+        .metric-value {
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--el-color-primary);
+        }
+
+        .recommendation-value {
+          font-size: 16px;
+          line-height: 1.6;
+          color: var(--el-text-color-primary);
+        }
+      }
+
+      // 置信度评分样式
+      .confidence-item {
+        .confidence-display {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+
+          .el-progress {
+            margin-bottom: 8px;
+          }
+
+          .confidence-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1;
+
+            .confidence-number {
+              font-size: 32px;
+              font-weight: 700;
+            }
+
+            .confidence-unit {
+              font-size: 14px;
+              margin-top: 4px;
+              opacity: 0.8;
+            }
+          }
+
+          .confidence-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+          }
+        }
+      }
+
+      // 风险等级样式
+      .risk-item {
+        .risk-display {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+
+          .risk-stars {
+            display: flex;
+            gap: 8px;
+            font-size: 28px;
+
+            .star-icon {
+              color: #DCDFE6;
+              transition: all 0.3s ease;
+
+              &.active {
+                color: #F7BA2A;
+                animation: starPulse 0.6s ease-in-out;
+              }
+            }
+          }
+
+          .risk-label {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+          }
+
+          .risk-description {
+            font-size: 13px;
+            color: var(--el-text-color-secondary);
+            text-align: center;
+            line-height: 1.4;
+            max-width: 200px;
+          }
+        }
+      }
+
+      .key-points {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--el-border-color-lighter);
+
+        h4 {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 16px 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--el-text-color-primary);
+
+          .el-icon {
+            font-size: 18px;
+            color: var(--el-color-primary);
+          }
+        }
+
+        ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+
+          li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--el-fill-color-light);
+            border-radius: 8px;
+            line-height: 1.6;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: var(--el-fill-color);
+            }
+
+            .point-icon {
+              flex-shrink: 0;
+              margin-top: 2px;
+              font-size: 16px;
+              color: var(--el-color-success);
+            }
+          }
+        }
+      }
+    }
+
+    // 星星脉冲动画
+    @keyframes starPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+    }
+
+    .module-content {
+      .markdown-content {
+        line-height: 1.6;
+        
+        :deep(h1), :deep(h2), :deep(h3) {
+          margin: 16px 0 8px 0;
+          color: var(--el-text-color-primary);
+        }
+
+        :deep(h1) { font-size: 24px; }
+        :deep(h2) { font-size: 20px; }
+        :deep(h3) { font-size: 16px; }
+      }
+
+      .json-content {
+        pre {
+          background: var(--el-fill-color-light);
+          padding: 16px;
+          border-radius: 8px;
+          overflow-x: auto;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+      }
+    }
+  }
+
+  .error-container {
+    padding: 48px 24px;
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Reports/index.vue ====================
+<template>
+  <div class="reports">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1 class="page-title">
+        <el-icon><Document /></el-icon>
+        分析报告
+      </h1>
+      <p class="page-description">
+        查看和管理股票分析报告，支持多种格式导出
+      </p>
+    </div>
+
+    <!-- 筛选和操作栏 -->
+    <el-card class="filter-card" shadow="never">
+      <el-row :gutter="16" align="middle">
+        <el-col :span="6">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索股票代码或名称"
+            clearable
+            @input="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        
+        <el-col :span="4">
+          <el-select v-model="marketFilter" placeholder="市场筛选" clearable @change="handleMarketChange">
+            <el-option label="A股" value="A股" />
+            <el-option label="港股" value="港股" />
+            <el-option label="美股" value="美股" />
+          </el-select>
+        </el-col>
+        
+        <el-col :span="6">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            @change="handleDateChange"
+          />
+        </el-col>
+        
+        <el-col :span="8">
+          <div class="action-buttons">
+            <el-button @click="exportSelected" :disabled="selectedReports.length === 0">
+              <el-icon><Download /></el-icon>
+              批量导出
+            </el-button>
+            <el-button @click="refreshReports">
+              <el-icon><Refresh /></el-icon>
+              刷新
+            </el-button>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- 报告列表 -->
+    <el-card class="reports-list-card" shadow="never">
+      <el-table
+        :data="filteredReports"
+        @selection-change="handleSelectionChange"
+        v-loading="loading"
+        style="width: 100%"
+      >
+        <el-table-column type="selection" width="55" />
+        
+        <el-table-column prop="title" label="报告标题" min-width="200">
+          <template #default="{ row }">
+            <div class="report-title">
+              <el-link type="primary" @click="viewReport(row)">
+                {{ row.title }}
+              </el-link>
+              <div class="report-subtitle">
+                {{ row.stock_code }} - {{ row.stock_name }}
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="type" label="报告类型" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getTypeColor(row.type)">
+              {{ getTypeText(row.type) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="format" label="格式" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" effect="plain">
+              {{ row.format.toUpperCase() }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="model_info" label="分析模型" width="180">
+          <template #default="{ row }">
+            <el-tag v-if="row.model_info && row.model_info !== 'Unknown'" type="info" size="small">
+              {{ row.model_info }}
+            </el-tag>
+            <span v-else class="text-gray">-</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="created_at" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatTime(row.created_at) }}
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="250" fixed="right">
+          <template #default="{ row }">
+            <el-button type="text" size="small" @click="viewReport(row)">
+              查看
+            </el-button>
+            <el-dropdown
+              v-if="row.status === 'completed'"
+              trigger="click"
+              @command="(format) => downloadReport(row, format)"
+            >
+              <el-button type="text" size="small">
+                下载 <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="markdown">
+                    <el-icon><document /></el-icon> Markdown
+                  </el-dropdown-item>
+                  <el-dropdown-item command="docx">
+                    <el-icon><document /></el-icon> Word 文档
+                  </el-dropdown-item>
+                  <el-dropdown-item command="pdf">
+                    <el-icon><document /></el-icon> PDF
+                  </el-dropdown-item>
+                  <el-dropdown-item command="json" divided>
+                    <el-icon><document /></el-icon> JSON (原始数据)
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <el-button
+              type="text"
+              size="small"
+              @click="deleteReport(row)"
+              style="color: var(--el-color-danger)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[20, 50, 100]"
+          :total="totalReports"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  Document,
+  Search,
+  Download,
+  Refresh,
+  ArrowDown
+} from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+
+// 使用路由和认证store
+const router = useRouter()
+const authStore = useAuthStore()
+
+// 响应式数据
+const loading = ref(false)
+const searchKeyword = ref('')
+const marketFilter = ref('')
+const dateRange = ref<[string, string] | null>(null)
+const selectedReports = ref([])
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalReports = ref(0)
+
+const reports = ref([])
+
+// 计算属性
+const filteredReports = computed(() => {
+  // 现在数据直接从API获取，不需要前端筛选
+  return reports.value
+})
+
+// API调用函数
+const fetchReports = async () => {
+  loading.value = true
+  try {
+    const params = new URLSearchParams({
+      page: currentPage.value.toString(),
+      page_size: pageSize.value.toString()
+    })
+
+    if (searchKeyword.value) {
+      params.append('search_keyword', searchKeyword.value)
+    }
+    if (marketFilter.value) {
+      params.append('market_filter', marketFilter.value)
+    }
+    if (dateRange.value) {
+      params.append('start_date', dateRange.value[0])
+      params.append('end_date', dateRange.value[1])
+    }
+
+    const response = await fetch(`/api/reports/list?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    if (result.success) {
+      reports.value = result.data.reports
+      totalReports.value = result.data.total
+    } else {
+      throw new Error(result.message || '获取报告列表失败')
+    }
+  } catch (error) {
+    console.error('获取报告列表失败:', error)
+    ElMessage.error('获取报告列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 方法
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchReports()
+}
+
+const handleDateChange = () => {
+  currentPage.value = 1
+  fetchReports()
+}
+
+const handleMarketChange = () => {
+  currentPage.value = 1
+  fetchReports()
+}
+
+const handleSelectionChange = (selection: any[]) => {
+  selectedReports.value = selection
+}
+
+const viewReport = (report: any) => {
+  // 跳转到报告详情页面
+  router.push(`/reports/view/${report.id}`)
+}
+
+const downloadReport = async (report: any, format: string = 'markdown') => {
+  try {
+    // 显示加载提示
+    const loadingMsg = ElMessage({
+      message: `正在生成${getFormatName(format)}格式报告...`,
+      type: 'info',
+      duration: 0
+    })
+
+    const response = await fetch(`/api/reports/${report.id}/download?format=${format}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    loadingMsg.close()
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(errorText || `HTTP ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+
+    // 根据格式设置文件扩展名
+    const ext = getFileExtension(format)
+    a.download = `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
+
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    ElMessage.success(`${getFormatName(format)}报告下载成功`)
+  } catch (error: any) {
+    console.error('下载报告失败:', error)
+
+    // 显示详细错误信息
+    if (error.message && error.message.includes('pandoc')) {
+      ElMessage.error({
+        message: 'PDF/Word 导出需要安装 pandoc 工具',
+        duration: 5000
+      })
+    } else {
+      ElMessage.error(`下载报告失败: ${error.message || '未知错误'}`)
+    }
+  }
+}
+
+// 辅助函数：获取格式名称
+const getFormatName = (format: string): string => {
+  const names: Record<string, string> = {
+    'markdown': 'Markdown',
+    'docx': 'Word',
+    'pdf': 'PDF',
+    'json': 'JSON'
+  }
+  return names[format] || format
+}
+
+// 辅助函数：获取文件扩展名
+const getFileExtension = (format: string): string => {
+  const extensions: Record<string, string> = {
+    'markdown': 'md',
+    'docx': 'docx',
+    'pdf': 'pdf',
+    'json': 'json'
+  }
+  return extensions[format] || 'txt'
+}
+
+const deleteReport = async (report: any) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除报告 "${report.title}" 吗？`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    // 调用删除API
+    const response = await fetch(`/api/reports/${report.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    if (result.success) {
+      ElMessage.success('报告已删除')
+      refreshReports()
+    } else {
+      throw new Error(result.message || '删除失败')
+    }
+  } catch (error) {
+    if (error.message !== 'cancel') {
+      console.error('删除报告失败:', error)
+      ElMessage.error('删除报告失败')
+    }
+  }
+}
+
+const exportSelected = () => {
+  ElMessage.info('批量导出功能开发中...')
+}
+
+const refreshReports = () => {
+  fetchReports()
+}
+
+const getTypeColor = (type: string) => {
+  const colorMap: Record<string, string> = {
+    single: 'primary',
+    batch: 'success',
+    portfolio: 'warning'
+  }
+  return colorMap[type] || 'info'
+}
+
+const getTypeText = (type: string) => {
+  const textMap: Record<string, string> = {
+    single: '单股分析',
+    batch: '批量分析',
+    portfolio: '投资组合'
+  }
+  return textMap[type] || type
+}
+
+const getStatusType = (status: string) => {
+  const statusMap: Record<string, string> = {
+    completed: 'success',
+    processing: 'warning',
+    failed: 'danger'
+  }
+  return statusMap[status] || 'info'
+}
+
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    completed: '已完成',
+    processing: '生成中',
+    failed: '失败'
+  }
+  return statusMap[status] || status
+}
+
+import { formatDateTime } from '@/utils/datetime'
+
+const formatTime = (time: string) => {
+  return formatDateTime(time)
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchReports()
+}
+
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+  fetchReports()
+}
+
+// 生命周期
+onMounted(() => {
+  fetchReports()
+})
+</script>
+
+<style lang="scss" scoped>
+.reports {
+  .page-header {
+    margin-bottom: 24px;
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      margin: 0 0 8px 0;
+    }
+
+    .page-description {
+      color: var(--el-text-color-regular);
+      margin: 0;
+    }
+  }
+
+  .filter-card {
+    margin-bottom: 24px;
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+  }
+
+  .reports-list-card {
+    .report-title {
+      .report-subtitle {
+        font-size: 12px;
+        color: var(--el-text-color-placeholder);
+        margin-top: 2px;
+      }
+    }
+
+    .pagination-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: 24px;
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Stocks/Detail.vue ====================
+<template>
+  <div class="stock-detail">
+    <!-- 顶部：代码 / 名称 / 操作 -->
+    <div class="header">
+      <div class="title">
+        <div class="code">{{ code }}</div>
+        <div class="name">{{ stockName || '-' }}</div>
+        <el-tag size="small">{{ market || '-' }}</el-tag>
+      </div>
+      <div class="actions">
+        <el-button @click="onToggleFavorite">
+          <el-icon><Star /></el-icon> {{ isFav ? '已自选' : '加自选' }}
+        </el-button>
+        <!-- 🔥 港股和美股不显示"同步数据"按钮 -->
+        <el-button
+          v-if="market !== 'HK' && market !== 'US'"
+          type="primary"
+          @click="showSyncDialog"
+          :loading="syncLoading"
+        >
+          <el-icon><Refresh /></el-icon> 同步数据
+        </el-button>
+        <el-button type="warning" @click="clearCache" :loading="clearCacheLoading">
+          <el-icon><Delete /></el-icon> 清除缓存
+        </el-button>
+        <el-button type="success" @click="goPaperTrading">
+          <el-icon><CreditCard /></el-icon> 模拟交易
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 报价条 -->
+    <el-card class="quote-card" shadow="hover">
+      <div class="quote">
+        <div class="price-row">
+          <div class="price" :class="changeClass">{{ fmtPrice(quote.price) }}</div>
+          <div class="change" :class="changeClass">
+            <span>{{ fmtPercent(quote.changePercent) }}</span>
+          </div>
+          <el-tag type="info" size="small">{{ refreshText }}</el-tag>
+          <el-button text size="small" @click="refreshMockQuote" :icon="Refresh">刷新</el-button>
+        </div>
+        <div class="stats">
+          <div class="item"><span>今开</span><b>{{ fmtPrice(quote.open) }}</b></div>
+          <div class="item"><span>最高</span><b>{{ fmtPrice(quote.high) }}</b></div>
+          <div class="item"><span>最低</span><b>{{ fmtPrice(quote.low) }}</b></div>
+          <div class="item"><span>昨收</span><b>{{ fmtPrice(quote.prevClose) }}</b></div>
+          <div class="item">
+            <span>成交量</span>
+            <b>
+              {{ fmtVolume(quote.volume) }}
+              <el-tooltip v-if="quote.tradeDate && !isToday(quote.tradeDate)" :content="`数据日期: ${quote.tradeDate}`" placement="top">
+                <el-tag size="small" type="warning" style="margin-left: 4px;">{{ formatDateTag(quote.tradeDate) }}</el-tag>
+              </el-tooltip>
+            </b>
+          </div>
+          <div class="item">
+            <span>成交额</span>
+            <b>
+              {{ fmtAmount(quote.amount) }}
+              <el-tooltip v-if="quote.tradeDate && !isToday(quote.tradeDate)" :content="`数据日期: ${quote.tradeDate}`" placement="top">
+                <el-tag size="small" type="warning" style="margin-left: 4px;">{{ formatDateTag(quote.tradeDate) }}</el-tag>
+              </el-tooltip>
+            </b>
+          </div>
+          <div class="item">
+            <span>换手率</span>
+            <b>
+              {{ fmtPercent(quote.turnover) }}
+              <el-tooltip v-if="quote.turnoverDate && !isToday(quote.turnoverDate)" :content="`数据日期: ${quote.turnoverDate}`" placement="top">
+                <el-tag size="small" type="warning" style="margin-left: 4px;">{{ formatDateTag(quote.turnoverDate) }}</el-tag>
+              </el-tooltip>
+            </b>
+          </div>
+          <div class="item">
+            <span>振幅</span>
+            <b>
+              {{ Number.isFinite(quote.amplitude) ? quote.amplitude.toFixed(2) + '%' : '-' }}
+              <el-tooltip v-if="quote.amplitudeDate && !isToday(quote.amplitudeDate)" :content="`数据日期: ${quote.amplitudeDate}`" placement="top">
+                <el-tag size="small" type="warning" style="margin-left: 4px;">{{ formatDateTag(quote.amplitudeDate) }}</el-tag>
+              </el-tooltip>
+            </b>
+          </div>
+        </div>
+        <!-- 同步状态提示 -->
+        <div class="sync-status" v-if="quote.updatedAt || syncStatus">
+          <el-icon><Clock /></el-icon>
+          <span class="sync-info">
+            <!-- 🔥 优先显示股票自己的更新时间 -->
+            <template v-if="quote.updatedAt">
+              数据更新: {{ formatQuoteUpdateTime(quote.updatedAt) }}
+            </template>
+            <template v-else-if="syncStatus">
+              后端同步: {{ formatSyncTime(syncStatus.last_sync_time) }}
+              <span v-if="syncStatus.interval_seconds">{{ formatSyncInterval(syncStatus.interval_seconds) }}</span>
+            </template>
+            <el-tag
+              v-if="syncStatus?.data_source"
+              size="small"
+              type="success"
+              style="margin-left: 4px"
+            >
+              {{ syncStatus.data_source }}
+            </el-tag>
+          </span>
+        </div>
+      </div>
+    </el-card>
+
+    <el-row :gutter="16" class="body">
+      <el-col :span="18">
+        <!-- K线蜡烛图 -->
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-hd">
+              <div>价格K线</div>
+              <div class="periods">
+                <el-segmented v-model="period" :options="periodOptions" size="small" />
+              </div>
+            </div>
+          </template>
+          <div class="kline-container">
+            <v-chart class="k-chart" :option="kOption" autoresize />
+            <div class="legend">当前周期：{{ period }} · 数据源：{{ klineSource || '-' }} · 最近：{{ lastKTime || '-' }} · 收：{{ fmtPrice(lastKClose) }}</div>
+          </div>
+        </el-card>
+
+        <!-- 详细分析结果（方案B）：仅在进行中或有结果时显示 -->
+        <el-card v-if="analysisStatus==='running' || lastAnalysis" shadow="hover" class="analysis-detail-card" id="analysis-detail">
+          <template #header><div class="card-hd">详细分析结果</div></template>
+          <div v-if="analysisStatus==='running'" class="running">
+            <el-progress :percentage="analysisProgress" :text-inside="true" style="width:100%" />
+            <div class="hint">{{ analysisMessage || '正在生成分析报告…' }}</div>
+          </div>
+          <div v-else class="detail">
+            <!-- 分析时间和信心度 -->
+            <div class="analysis-meta">
+              <span class="analysis-time">
+                <el-icon><Clock /></el-icon>
+                分析时间：{{ formatAnalysisTime(lastTaskInfo?.end_time) }}
+              </span>
+              <span class="confidence">
+                <el-icon><TrendCharts /></el-icon>
+                信心度：{{ fmtConf(lastAnalysis?.confidence_score ?? lastAnalysis?.overall_score) }}
+              </span>
+            </div>
+
+            <!-- 投资建议 - 重点突出 -->
+            <div class="recommendation-box">
+              <div class="recommendation-header">
+                <el-icon class="icon"><TrendCharts /></el-icon>
+                <span class="title">投资建议</span>
+              </div>
+              <div class="recommendation-content">
+                <div class="recommendation-text">
+                  {{ lastAnalysis?.recommendation || '-' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 分析摘要 -->
+            <div class="summary-section">
+              <div class="summary-title">
+                <el-icon><Reading /></el-icon>
+                分析摘要
+              </div>
+              <div class="summary-text markdown-body" v-html="renderMarkdown(lastAnalysis?.summary || '-')"></div>
+            </div>
+
+            <!-- 详细报告展示 -->
+            <div v-if="lastAnalysis?.reports && Object.keys(lastAnalysis.reports).length > 0" class="reports-section">
+              <el-divider />
+              <div class="reports-header">
+                <span class="reports-title">📊 详细分析报告 ({{ Object.keys(lastAnalysis.reports).length }})</span>
+                <el-button
+                  type="primary"
+                  plain
+                  @click="showReportsDialog = true"
+                  :icon="Document"
+                >
+                  查看完整报告
+                </el-button>
+              </div>
+
+              <!-- 报告列表预览 -->
+              <div class="reports-preview">
+                <el-tag
+                  v-for="(content, key) in lastAnalysis.reports"
+                  :key="key"
+                  size="small"
+                  effect="plain"
+                  class="report-tag"
+                  @click="openReport(key)"
+                >
+                  {{ formatReportName(key) }}
+                </el-tag>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- 新闻与公告：位于详细分析结果下方 -->
+        <el-card shadow="hover" class="news-card">
+          <template #header>
+            <div class="card-hd">
+              <div>近期新闻与公告</div>
+              <el-select v-model="newsFilter" size="small" style="width: 160px">
+                <el-option label="全部" value="all" />
+                <el-option label="新闻" value="news" />
+                <el-option label="公告" value="announcement" />
+              </el-select>
+            </div>
+          </template>
+          <el-empty v-if="newsItems.length === 0" description="暂无新闻" />
+          <div v-else class="news-list">
+            <div v-for="(n, i) in filteredNews" :key="i" class="news-item">
+              <div class="row">
+                <div class="left">
+                  <el-tag size="small" effect="plain" :type="n.type==='announcement' ? 'warning' : 'info'" class="tag">{{ n.type==='announcement' ? '公告' : '新闻' }}</el-tag>
+                  <div class="title">
+                    <template v-if="n.url && n.url !== '#'">
+                      <a :href="n.url" target="_blank" rel="noopener">{{ n.title || '查看详情' }}</a>
+                      <el-icon class="ext"><Link /></el-icon>
+                    </template>
+                    <template v-else>
+                      <span>{{ n.title || '（无标题）' }}</span>
+                    </template>
+                  </div>
+                </div>
+                <div class="right">{{ formatNewsTime(n.time) }}</div>
+              </div>
+              <div class="meta">{{ n.source || '-' }} · {{ newsSource || '-' }}</div>
+            </div>
+          </div>
+        </el-card>
+
+
+
+
+      </el-col>
+
+      <el-col :span="6">
+        <!-- 基本面快照 -->
+        <el-card shadow="hover">
+          <template #header><div class="card-hd">基本面快照</div></template>
+          <div class="facts">
+            <div class="fact"><span>行业</span><b>{{ basics.industry }}</b></div>
+            <div class="fact"><span>板块</span><b>{{ basics.sector }}</b></div>
+            <div class="fact"><span>总市值</span><b>{{ fmtAmount(basics.marketCap) }}</b></div>
+            <div class="fact">
+              <span>PE(TTM)</span>
+              <b>
+                {{ Number.isFinite(basics.pe) ? basics.pe.toFixed(2) : '-' }}
+                <el-tag v-if="basics.peIsRealtime" type="success" size="small" style="margin-left: 4px">实时</el-tag>
+              </b>
+            </div>
+            <div class="fact">
+              <span>PB(市净率)</span>
+              <b>
+                {{ Number.isFinite(basics.pb) ? basics.pb.toFixed(2) : '-' }}
+                <el-tag v-if="basics.peIsRealtime" type="success" size="small" style="margin-left: 4px">实时</el-tag>
+              </b>
+            </div>
+            <div class="fact"><span>PS(TTM)</span><b>{{ Number.isFinite(basics.ps) ? basics.ps.toFixed(2) : '-' }}</b></div>
+            <div class="fact"><span>ROE</span><b>{{ fmtPercent(basics.roe) }}</b></div>
+            <div class="fact"><span>负债率</span><b>{{ fmtPercent(basics.debtRatio) }}</b></div>
+          </div>
+        </el-card>
+
+
+
+        <!-- 快捷操作 -->
+        <el-card shadow="hover" class="actions-card">
+          <template #header><div class="card-hd">快捷操作</div></template>
+          <div class="quick-actions">
+            <el-button type="primary" @click="onAnalyze" :icon="TrendCharts" plain>发起分析</el-button>
+            <el-button @click="onToggleFavorite" :icon="Star">{{ isFav ? '移出自选' : '加入自选' }}</el-button>
+            <el-button type="success" :icon="CreditCard" @click="goPaperTrading">模拟交易</el-button>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 详细报告对话框 -->
+    <el-dialog
+      v-model="showReportsDialog"
+      title="📊 详细分析报告"
+      width="80%"
+      :close-on-click-modal="false"
+      class="reports-dialog"
+    >
+      <el-tabs v-model="activeReportTab" type="border-card">
+        <el-tab-pane
+          v-for="(content, key) in lastAnalysis?.reports"
+          :key="key"
+          :label="formatReportName(key)"
+          :name="key"
+        >
+          <div class="report-content">
+            <el-scrollbar height="500px">
+              <div class="markdown-body" v-html="renderMarkdown(content)"></div>
+            </el-scrollbar>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+
+      <template #footer>
+        <el-button @click="showReportsDialog = false">关闭</el-button>
+        <el-button type="primary" @click="exportReport">导出报告</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 数据同步对话框 -->
+    <el-dialog
+      v-model="syncDialogVisible"
+      title="同步股票数据"
+      width="500px"
+    >
+      <el-form :model="syncForm" label-width="120px">
+        <el-form-item label="股票代码">
+          <el-input v-model="code" disabled />
+        </el-form-item>
+        <el-form-item label="股票名称">
+          <el-input v-model="stockName" disabled />
+        </el-form-item>
+        <el-form-item label="同步内容">
+          <el-checkbox-group v-model="syncForm.syncTypes">
+            <el-checkbox label="realtime">实时行情</el-checkbox>
+            <el-checkbox label="historical">历史行情数据</el-checkbox>
+            <el-checkbox label="financial">财务数据</el-checkbox>
+            <el-checkbox label="basic">基础数据</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="数据源">
+          <el-radio-group v-model="syncForm.dataSource">
+            <el-radio label="tushare">Tushare</el-radio>
+            <el-radio label="akshare">AKShare</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="历史数据天数" v-if="syncForm.syncTypes.includes('historical')">
+          <el-input-number v-model="syncForm.days" :min="1" :max="3650" />
+          <span style="margin-left: 10px; color: #909399; font-size: 12px;">
+            (最多3650天，约10年)
+          </span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSync" :loading="syncLoading">
+          开始同步
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { TrendCharts, Star, Refresh, Link, Document, Clock, Reading, CreditCard, Delete } from '@element-plus/icons-vue'
+import { marked } from 'marked'
+import { stocksApi } from '@/api/stocks'
+import { analysisApi } from '@/api/analysis'
+import { ApiClient } from '@/api/request'
+import { stockSyncApi } from '@/api/stockSync'
+import { clearAllCache } from '@/api/cache'
+import { use as echartsUse } from 'echarts/core'
+import { CandlestickChart } from 'echarts/charts'
+
+import { GridComponent, TooltipComponent, DataZoomComponent, LegendComponent, TitleComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import VChart from 'vue-echarts'
+import type { EChartsOption } from 'echarts'
+import { favoritesApi } from '@/api/favorites'
+import { useNotificationStore } from '@/stores/notifications'
+
+
+echartsUse([CandlestickChart, GridComponent, TooltipComponent, DataZoomComponent, LegendComponent, TitleComponent, CanvasRenderer])
+
+const route = useRoute()
+const router = useRouter()
+
+
+// 分析状态
+const analysisStatus = ref<'idle' | 'running' | 'completed' | 'failed'>('idle')
+const analysisProgress = ref(0)
+const analysisMessage = ref('')
+const currentTaskId = ref<string | null>(null)
+const lastAnalysis = ref<any | null>(null)
+const lastTaskInfo = ref<any | null>(null) // 保存任务信息（包含 end_time 等）
+
+// 报告对话框
+const showReportsDialog = ref(false)
+const activeReportTab = ref('')
+
+const notifStore = useNotificationStore()
+
+const lastAnalysisTagType = computed(() => {
+  const reco = String(lastAnalysis.value?.recommendation || '').toLowerCase()
+  if (reco.includes('买') || reco.includes('buy') || reco.includes('增持') || reco.includes('强')) return 'success'
+  if (reco.includes('卖') || reco.includes('sell')) return 'danger'
+  if (reco.includes('减持') || reco.includes('谨慎')) return 'warning'
+  return 'info'
+})
+
+// 股票代码（从路由参数获取）
+const code = computed(() => {
+  const routeCode = String(route.params.code || '').toUpperCase()
+  if (!routeCode) {
+    ElMessage.error('股票代码不能为空')
+    router.push({ name: 'Dashboard' })
+    return ''
+  }
+  return routeCode
+})
+const symbol = computed(() => code.value.split('.')[0])  // 提取6位代码
+const stockName = ref('')
+const market = ref('')
+const isFav = ref(false)
+
+// ECharts K线配置
+const kOption = ref<EChartsOption>({
+  grid: { left: 40, right: 20, top: 20, bottom: 40 },
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: { type: 'cross' }
+  },
+  xAxis: {
+    type: 'category',
+    data: [],
+    boundaryGap: true,
+    axisLine: { onZero: false }
+  },
+  yAxis: {
+    scale: true,
+    type: 'value'
+  },
+  dataZoom: [
+    { type: 'inside', start: 70, end: 100 },
+    { start: 70, end: 100 }
+  ],
+  series: [
+    {
+      type: 'candlestick',
+      name: 'K线',
+      data: [],
+      itemStyle: {
+        color: '#ef4444',
+        color0: '#16a34a',
+        borderColor: '#ef4444',
+        borderColor0: '#16a34a'
+      }
+    }
+  ]
+})
+const lastKTime = ref<string | null>(null)
+const lastKClose = ref<number | null>(null)
+
+// 报价（初始化）
+const quote = reactive({
+  price: NaN,
+  changePercent: NaN,
+  open: NaN,
+  high: NaN,
+  low: NaN,
+  prevClose: NaN,
+  volume: NaN,
+  amount: NaN,
+  turnover: NaN,
+  amplitude: NaN,  // 振幅（替代量比）
+  tradeDate: null as string | null,  // 交易日期（用于成交量、成交额）
+  turnoverDate: null as string | null,  // 换手率数据日期
+  amplitudeDate: null as string | null,  // 振幅数据日期
+  updatedAt: null as string | null  // 🔥 数据更新时间
+})
+
+const lastRefreshAt = ref<Date | null>(null)
+const refreshText = computed(() => lastRefreshAt.value ? `已刷新 ${lastRefreshAt.value.toLocaleTimeString()}` : '未刷新')
+const changeClass = computed(() => quote.changePercent > 0 ? 'up' : quote.changePercent < 0 ? 'down' : '')
+
+// 🔥 日期判断和格式化函数
+function isToday(dateStr: string | null): boolean {
+  if (!dateStr) return false
+  const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
+  const targetDate = dateStr.replace(/-/g, '')
+  return today === targetDate
+}
+
+function formatDateTag(dateStr: string | null): string {
+  if (!dateStr) return ''
+  // 将 YYYYMMDD 或 YYYY-MM-DD 格式转换为 MM-DD
+  const cleaned = dateStr.replace(/-/g, '')
+  if (cleaned.length === 8) {
+    return `${cleaned.substring(4, 6)}-${cleaned.substring(6, 8)}`
+  }
+  return dateStr
+}
+
+// 同步状态
+const syncStatus = ref<any>(null)
+
+// 数据同步对话框
+const syncDialogVisible = ref(false)
+const syncLoading = ref(false)
+const syncForm = reactive({
+  syncTypes: ['realtime'],  // 默认选中实时行情
+  dataSource: 'tushare' as 'tushare' | 'akshare',
+  days: 365
+})
+
+// 清除缓存
+const clearCacheLoading = ref(false)
+
+// 显示同步对话框
+function showSyncDialog() {
+  syncDialogVisible.value = true
+}
+
+// 执行同步
+async function handleSync() {
+  if (syncForm.syncTypes.length === 0) {
+    ElMessage.warning('请至少选择一种同步内容')
+    return
+  }
+
+  syncLoading.value = true
+  try {
+    const res = await stockSyncApi.syncSingle({
+      symbol: code.value,
+      sync_realtime: syncForm.syncTypes.includes('realtime'),
+      sync_historical: syncForm.syncTypes.includes('historical'),
+      sync_financial: syncForm.syncTypes.includes('financial'),
+      sync_basic: syncForm.syncTypes.includes('basic'),
+      data_source: syncForm.dataSource,
+      days: syncForm.days
+    })
+
+    if (res.success) {
+      const data = res.data
+      let message = `股票 ${code.value} 数据同步完成\n`
+
+      if (data.realtime_sync) {
+        if (data.realtime_sync.success) {
+          // 🔥 如果切换了数据源，显示提示信息
+          if (data.realtime_sync.data_source_used && data.realtime_sync.data_source_used !== syncForm.dataSource) {
+            message += `✅ 实时行情同步成功（已自动切换到 ${data.realtime_sync.data_source_used.toUpperCase()} 数据源）\n`
+          } else {
+            message += `✅ 实时行情同步成功\n`
+          }
+        } else {
+          message += `❌ 实时行情同步失败: ${data.realtime_sync.error || '未知错误'}\n`
+        }
+      }
+
+      if (data.historical_sync) {
+        if (data.historical_sync.success) {
+          message += `✅ 历史数据: ${data.historical_sync.records || 0} 条记录\n`
+        } else {
+          message += `❌ 历史数据同步失败: ${data.historical_sync.error || '未知错误'}\n`
+        }
+      }
+
+      if (data.financial_sync) {
+        if (data.financial_sync.success) {
+          message += `✅ 财务数据同步成功\n`
+        } else {
+          message += `❌ 财务数据同步失败: ${data.financial_sync.error || '未知错误'}\n`
+        }
+      }
+
+      if (data.basic_sync) {
+        if (data.basic_sync.success) {
+          message += `✅ 基础数据同步成功\n`
+        } else {
+          message += `❌ 基础数据同步失败: ${data.basic_sync.error || '未知错误'}\n`
+        }
+      }
+
+      ElMessage.success(message)
+      syncDialogVisible.value = false
+
+      // 刷新页面数据
+      await fetchQuote()
+      await fetchFundamentals()
+    } else {
+      ElMessage.error(res.message || '同步失败')
+    }
+  } catch (error: any) {
+    console.error('同步失败:', error)
+    ElMessage.error(error.message || '同步失败，请稍后重试')
+  } finally {
+    syncLoading.value = false

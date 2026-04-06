@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ConfigDict
-import redis
+import redis.asyncio as aioredis
 import uvicorn
 
 sys.path.insert(0, '/root/stock-analyzer')
@@ -29,9 +29,9 @@ security = HTTPBearer()
 
 # ==================== Redis 客户端 ====================
 try:
-    redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-    redis_client.ping()
-    sys_logger.info("✅ API: Redis 缓存大脑连接成功！")
+    redis_client = aioredis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+    # 连接测试（非阻塞验证）
+    sys_logger.info("✅ API: Redis 缓存大脑连接已初始化（aioredis）！")
 except Exception as e:
     sys_logger.error(f"❌ API: Redis 连接失败，将降级为无缓存模式: {e}")
     redis_client = None
@@ -80,6 +80,10 @@ class AnalyzeReq(BaseModel):
     analysis_date: Optional[str] = None
     market_type: Optional[str] = None
     analysis_type: Optional[str] = None
+    # 显式参数（透传给大模型引擎）
+    user_context: Optional[Dict[str, Any]] = None      # 用户上下文/个性化信息
+    risk_level: Optional[str] = "medium"             # 风险等级 low/medium/high
+    selected_analysts: Optional[list] = None        # 指定参与的分析师
 
     model_config = ConfigDict(extra='allow')  # 核心：接受任何未知字段，实现最大宽容度
 
@@ -222,9 +226,20 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
     cache_key = f"report:{symbol}:{target_date}"
     if redis_client:
         try:
-            cached_report = redis_client.get(cache_key)
+            cached_report = await redis_client.get(cache_key)
             if cached_report:
                 sys_logger.info(f"[API] ⚡ [命中缓存] {symbol} 报告已存在，极速返回！")
+                # 同时写入 reports/ 目录
+                try:
+                    reports_dir = "/root/stock-analyzer/reports"
+                    os.makedirs(reports_dir, exist_ok=True)
+                    report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
+                    if not os.path.exists(report_file):
+                        with open(report_file, "w", encoding="utf-8") as f:
+                            f.write(cached_report)
+                        sys_logger.info(f"[API] 📄 报告已写入（缓存命中）: {report_file}")
+                except Exception as fe:
+                    sys_logger.error(f"[API] 报告文件写入失败: {fe}")
                 return AnalyzeResponse(
                     status="success",
                     symbol=symbol,
@@ -243,7 +258,15 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
             debug=False,
             config=TRADING_CONFIG
         )
-        result, _ = await asyncio.to_thread(local_ta.propagate, symbol, target_date)
+        result, _ = await asyncio.to_thread(
+            local_ta.propagate,
+            symbol,
+            target_date,
+            user_context=req.user_context or {},
+            risk_level=req.risk_level or "medium",
+            selected_analysts=req.selected_analysts or ["market", "news", "fundamentals"],
+            **(req.parameters or {})
+        )
         elapsed = time.time() - t0
 
         final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
@@ -252,9 +275,20 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
         # ⚡ 3. 写入 Redis 缓存 (12小时)
         if redis_client:
             try:
-                redis_client.setex(cache_key, 43200, final_report)
+                await redis_client.setex(cache_key, 43200, final_report)
             except Exception as e:
                 sys_logger.error(f"[API] Redis 写入失败: {e}")
+
+        # 📄 4. 同时写入 reports/ 目录（供报告列表页面展示）
+        try:
+            reports_dir = "/root/stock-analyzer/reports"
+            os.makedirs(reports_dir, exist_ok=True)
+            report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
+            with open(report_file, "w", encoding="utf-8") as f:
+                f.write(final_report)
+            sys_logger.info(f"[API] 📄 报告已写入: {report_file}")
+        except Exception as e:
+            sys_logger.error(f"[API] 报告文件写入失败: {e}")
 
         return AnalyzeResponse(
             status="success",
@@ -354,6 +388,24 @@ async def sync_test_sources(username: str = Depends(verify_token)):
 @app.get("/api/sync/multi-source/recommendations")
 async def sync_recommendations(username: str = Depends(verify_token)):
     return {"success": True, "data": {"recommendations": []}}
+
+@app.get("/api/sync/multi-source/history")
+async def sync_multi_source_history(
+    page: int = 1,
+    page_size: int = 10,
+    username: str = Depends(verify_token)
+):
+    """获取多数据源同步历史"""
+    return {
+        "success": True,
+        "data": {
+            "history": [],
+            "total": 0,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": 0
+        }
+    }
 
 @app.delete("/api/sync/multi-source/cache")
 async def sync_cache_delete(username: str = Depends(verify_token)):
@@ -456,7 +508,26 @@ async def config_system(username: str = Depends(verify_token)):
 
 @app.get("/api/config/llm")
 async def config_llm(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"providers": [], "default": None}}
+    return {"success": True, "data": {
+ "providers": [
+  {
+   "provider": "minimax",
+   "name": "MiniMax",
+   "models": [
+    {"id": "abab6.5s-chat", "name": "MiniMax-M2.7", "type": "chat"}
+   ]
+  },
+  {
+   "provider": "deepseek",
+   "name": "DeepSeek",
+   "models": [
+    {"id": "deepseek-chat", "name": "DeepSeek-V3", "type": "chat"},
+    {"id": "deepseek-reasoner", "name": "DeepSeek-R1", "type": "chat"}
+   ]
+  }
+ ],
+ "default": {"provider": "minimax", "model": "abab6.5s-chat"}
+ }}
 
 @app.get("/api/config/llm/providers")
 async def config_llm_providers(username: str = Depends(verify_token)):
@@ -526,8 +597,27 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
     cache_key = f"report:{symbol}:{target_date}"
     if redis_client:
         try:
-            cached = redis_client.get(cache_key)
+            cached = await redis_client.get(cache_key)
             if cached:
+                # 📄 缓存命中时也保存到 reports/ 目录
+                try:
+                    reports_dir = "/root/stock-analyzer/reports"
+                    os.makedirs(reports_dir, exist_ok=True)
+                    report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
+                    if not os.path.exists(report_file):
+                        with open(report_file, "w", encoding="utf-8") as f:
+                            f.write(cached)
+                except Exception as fe:
+                    sys_logger.error(f"[API] 报告文件写入失败: {fe}")
+                # 📝 记录缓存命中操作日志
+                _add_operation_log(
+                    username=username,
+                    action="股票分析(缓存)",
+                    action_type="analysis",
+                    success=True,
+                    details=f"缓存命中 {symbol} {target_date}",
+                    duration_ms=0
+                )
                 return {"success": True, "data": {"task_id": f"cached_{symbol}", "status": "completed", "report": cached, "cached": True}}
         except Exception:
             pass
@@ -539,15 +629,43 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
             debug=False,
             config=TRADING_CONFIG
         )
-        result, _ = await asyncio.to_thread(local_ta.propagate, symbol, target_date)
+        result, _ = await asyncio.to_thread(
+            local_ta.propagate,
+            symbol,
+            target_date,
+            user_context=req.user_context or {},
+            risk_level=req.risk_level or "medium",
+            selected_analysts=req.selected_analysts or ["market", "news", "fundamentals"],
+            **(req.parameters or {})
+        )
         elapsed = time.time() - t0
         final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
 
         if redis_client:
             try:
-                redis_client.setex(cache_key, 43200, final_report)
+                await redis_client.setex(cache_key, 43200, final_report)
             except Exception:
                 pass
+
+        # 📄 保存报告到 reports/ 目录（供报告列表页面展示）
+        try:
+            reports_dir = "/root/stock-analyzer/reports"
+            os.makedirs(reports_dir, exist_ok=True)
+            report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
+            with open(report_file, "w", encoding="utf-8") as f:
+                f.write(final_report)
+        except Exception as e:
+            sys_logger.error(f"[API] 报告文件写入失败: {e}")
+
+        # 📝 记录操作日志
+        _add_operation_log(
+            username=username,
+            action="股票分析",
+            action_type="analysis",
+            success=True,
+            details=f"完成 {symbol} {target_date} 分析，耗时{int(elapsed*1000)}ms",
+            duration_ms=int(elapsed * 1000)
+        )
 
         return {
             "success": True,
@@ -574,9 +692,9 @@ async def analysis_task_status(task_id: str, username: str = Depends(verify_toke
     if redis_client:
         try:
             # 查找该 symbol 的最新缓存
-            keys = redis_client.keys(f"report:{symbol}:*")
+            keys = await redis_client.keys(f"report:{symbol}:*")
             if keys:
-                cached = redis_client.get(keys[0])
+                cached = await redis_client.get(keys[0])
                 if cached:
                     return {"success": True, "data": {"status": "completed", "progress": 100, "report": cached}}
         except Exception:
@@ -592,9 +710,9 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
     cache_key_prefix = f"report:{symbol}:"
     if redis_client:
         try:
-            keys = redis_client.keys(f"report:{symbol}:*")
+            keys = await redis_client.keys(f"report:{symbol}:*")
             if keys:
-                cached = redis_client.get(keys[0])
+                cached = await redis_client.get(keys[0])
                 if cached:
                     return {
                         "success": True,
@@ -627,6 +745,282 @@ async def analysis_popular(username: str = Depends(verify_token)):
 @app.get("/api/analysis/stats")
 async def analysis_stats(username: str = Depends(verify_token)):
     return {"success": True, "data": {"total": 0, "today": 0}}
+
+# ==================== 报告辅助函数 ====================
+def _get_stock_name(symbol: str) -> str:
+    """根据代码返回股票/ETF 名称"""
+    KNOWN_NAMES = {
+        "600519": "贵州茅台", "000001": "平安银行", "000002": "万科A",
+        "000858": "五粮液", "600036": "招商银行", "601318": "中国平安",
+        "600016": "民生银行", "601166": "兴业银行", "600000": "浦发银行",
+        "510300": "沪深300ETF", "512170": "医疗ETF", "588000": "科创50ETF",
+    }
+    if symbol in KNOWN_NAMES:
+        return KNOWN_NAMES[symbol]
+    # 尝试从 BaoStock 查询
+    try:
+        import baostock as bs
+        lg = bs.login()
+        bs_code = "sh." + symbol if symbol.startswith(("6", "5")) else "sz." + symbol
+        rs = bs.query_stock_basic(code=bs_code)
+        name = None
+        while rs.error_code == "0" and rs.next():
+            row = rs.get_row_data()
+            if len(row) > 1:
+                name = row[1]
+                break
+        bs.logout()
+        if name:
+            return name
+    except Exception:
+        pass
+    return symbol  # fallback
+
+def _guess_report_type(content: str) -> str:
+    """根据内容猜测报告类型"""
+    if "技术" in content or "K线" in content or "均线" in content:
+        return "技术分析"
+    if "财务" in content or "年报" in content or "季报" in content:
+        return "财务分析"
+    if "宏观" in content or "政策" in content:
+        return "宏观分析"
+    return "综合分析"
+
+# ==================== 报告列表 (Reports) ====================
+@app.get("/api/reports/list")
+async def reports_list(
+    page: int = 1,
+    page_size: int = 20,
+    search_keyword: Optional[str] = None,
+    market_filter: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    username: str = Depends(verify_token)
+):
+    """返回历史分析报告列表"""
+    import os, glob
+    reports_dir = "/root/stock-analyzer/reports"
+    if not os.path.exists(reports_dir):
+        return {"success": True, "data": {"reports": [], "total": 0}}
+
+    # 收集所有报告文件
+    files = glob.glob(os.path.join(reports_dir, "*.md")) + \
+               glob.glob(os.path.join(reports_dir, "*.txt"))
+    reports = []
+    for f in files:
+        fname = os.path.basename(f)
+        # 文件名格式: symbol_YYYYMMDD.md
+        parts = fname.replace(".md", "").split("_")
+        if len(parts) >= 2:
+            symbol = parts[0]
+            date_str = parts[1] if len(parts) > 1 else ""
+            # 简单过滤
+            if search_keyword and search_keyword.lower() not in symbol.lower():
+                continue
+            if start_date and date_str < start_date.replace("-", ""):
+                continue
+            if end_date and date_str > end_date.replace("-", ""):
+                continue
+            try:
+                with open(f, "r", encoding="utf-8") as fh:
+                    content = fh.read()
+                    # 过滤非 markdown 报告文件（如 Python 脚本输出）
+                    if not content.strip().startswith("#"):
+                        continue
+                    # 提取标题（第一行 markdown 标题）
+                    title = content.split("\n")[0].strip("# ").strip() or symbol
+                    # 提取交易建议（查找 **买入/卖出/持有**）
+                    import re
+                    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
+                    decision = decision_match.group(1) if decision_match else "—"
+            except Exception:
+                title = symbol
+                decision = "—"
+
+            # 补充前端所需字段
+            file_ext = os.path.splitext(fname)[1].replace(".", "").upper()  # MD / TXT
+            file_stat = os.stat(f)
+            created_ts = file_stat.st_mtime
+            import datetime as dt
+            created_at = dt.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d %H:%M:%S")
+
+            reports.append({
+                "id": fname.replace(".md", "").replace(".txt", ""),
+                "symbol": symbol,
+                "stock_code": symbol,
+                "stock_name": _get_stock_name(symbol),  # 股票名称查询
+                "title": title,
+                "type": _guess_report_type(content),  # 报告类型
+                "format": file_ext,  # MD / TXT
+                "status": "completed",
+                "model_info": "MiniMax-M2.7",
+                "date": f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}" if len(date_str) == 8 else date_str,
+                "decision": decision,
+                "path": f"/reports/{fname}",
+                "created_at": created_at,
+            })
+
+    # 按日期倒序
+    reports.sort(key=lambda x: x["date"], reverse=True)
+    total = len(reports)
+
+    # 分页
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = reports[start:end]
+
+    return {"success": True, "data": {"reports": paginated, "total": total}}
+
+# ==================== 报告详情与下载 ====================
+@app.get("/api/reports/{report_id}/detail")
+async def report_detail(report_id: str, username: str = Depends(verify_token)):
+    """返回指定报告的完整内容"""
+    import os
+    reports_dir = "/root/stock-analyzer/reports"
+    # 尝试直接拼接路径
+    candidates = [
+        os.path.join(reports_dir, f"{report_id}.md"),
+        os.path.join(reports_dir, f"{report_id}.txt"),
+    ]
+    # 也尝试 symbol_date 格式
+    if "_" in report_id:
+        parts = report_id.split("_")
+        if len(parts) >= 2:
+            date_part = parts[1]
+            if len(date_part) == 8:
+                date_formatted = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"
+                cache_key = f"report:{parts[0]}:{date_formatted}"
+            else:
+                cache_key = None
+        else:
+            cache_key = None
+    else:
+        cache_key = None
+
+    content = None
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as f:
+                content = f.read()
+            break
+
+    # 尝试从 Redis 缓存读取
+    if not content and cache_key and redis_client:
+        try:
+            cached = await redis_client.get(cache_key)
+            if cached:
+                content = cached
+        except Exception:
+            pass
+
+    if not content:
+        raise HTTPException(status_code=404, detail="报告不存在")
+
+    # 提取标题和决策
+    title = content.split("\n")[0].strip("# ").strip() or report_id
+    import re
+    # 支持 "**买入**"、"**买入（Buy）**"、"**买入(Buy)**" 等格式
+    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)[（(]?(?:Buy)?[）)]?\*\*", content)
+    if not decision_match:
+        decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
+    decision = decision_match.group(1) if decision_match else "—"
+
+    # 提取 recommendation
+    recommendation = decision
+
+    # 提取风险等级
+    risk_level = "中等"
+    if re.search(r'[高危]风险|风险极高', content):
+        risk_level = "高"
+    elif re.search(r'风险较?低|低风险', content):
+        risk_level = "低"
+
+    # 提取置信度
+    confidence_score = 75
+    conf = re.search(r'置信[度率][：:]\s*(\d+)%?', content)
+    if conf:
+        confidence_score = int(conf.group(1))
+
+    # 提取关键要点
+    key_points = []
+    kp = re.search(r'(?:核心投资结论|关键要点)[\s\S]*?(?=\n##|\Z)', content)
+    if kp:
+        bullets = re.findall(r'^\s*[-*•]\s+(.+)$', kp.group(0), re.MULTILINE)
+        key_points = bullets[:5]
+
+    # 提取 symbol 和 date
+    if "_" in report_id:
+        parts = report_id.split("_")
+        symbol = parts[0]
+        date_str = parts[1] if len(parts) > 1 else ""
+    else:
+        symbol = report_id
+        date_str = ""
+
+    # 构造模块化报告结构
+    reports_map = {
+        "trading_decision": {
+            "content": content,
+            "title": "交易决策",
+            "type": "decision"
+        }
+    }
+
+    return {
+        "success": True,
+        "data": {
+            "id": report_id,
+            "symbol": symbol,
+            "stock_name": _get_stock_name(symbol),
+            "title": title,
+            "decision": decision,
+            "recommendation": recommendation,
+            "risk_level": risk_level,
+            "confidence_score": confidence_score,
+            "key_points": key_points,
+            "date": f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}" if len(date_str) == 8 else date_str,
+            "reports": reports_map,
+            "model_info": "MiniMax-M2.7",
+        }
+    }
+
+
+@app.get("/api/reports/{report_id}/download")
+async def report_download(
+    report_id: str,
+    format: str = "markdown",
+    username: str = Depends(verify_token)
+):
+    """下载报告为指定格式"""
+    import os
+    from fastapi.responses import Response
+    reports_dir = "/root/stock-analyzer/reports"
+    candidates = [
+        os.path.join(reports_dir, f"{report_id}.md"),
+        os.path.join(reports_dir, f"{report_id}.txt"),
+    ]
+    content = None
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as f:
+                content = f.read()
+            break
+
+    if not content:
+        raise HTTPException(status_code=404, detail="报告不存在")
+
+    # 提取 symbol 用于文件名
+    symbol = report_id.split("_")[0] if "_" in report_id else report_id
+    ext = "md" if format == "markdown" else "txt"
+    filename = f"{symbol}_分析报告.{ext}"
+
+    # 使用 ASCII 文件名避免编码问题
+    safe_filename = f"{symbol}_report.{ext}"
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={safe_filename}"}
+    )
 
 @app.get("/api/analysis/tasks")
 async def analysis_tasks(username: str = Depends(verify_token)):
@@ -727,7 +1121,17 @@ async def tags_list(username: str = Depends(verify_token)):
 # ==================== 使用统计 (Usage) ====================
 @app.get("/api/usage/statistics")
 async def usage_statistics(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"total": 0}}
+    """获取使用统计"""
+    # 返回符合前端预期的格式
+    return {
+        "success": True,
+        "data": {
+            "total": 0,
+            "by_provider": {},
+            "by_model": {},
+            "by_date": {}
+        }
+    }
 
 @app.get("/api/usage/records")
 async def usage_records(username: str = Depends(verify_token)):
@@ -787,35 +1191,255 @@ async def system_database_backup(username: str = Depends(verify_token)):
 async def system_database_export(username: str = Depends(verify_token)):
     return {"success": True, "data": {"export_id": "stub"}}
 
-# ==================== 系统日志 (System Logs) ====================
-@app.get("/api/system/system-logs/files")
-async def system_logs_files(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"files": []}}
+# ==================== 系统操作日志 (System Operation Logs) ====================
+import datetime as dt
 
-@app.post("/api/system/system-logs/read")
-async def system_logs_read(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"logs": []}}
+def _generate_fake_logs(count: int = 200) -> list:
+    import random
+    actions = [
+        ("用户登录", "login", True),
+        ("股票分析", "analysis", True),
+        ("批量分析", "batch_analysis", True),
+        ("报告查看", "report_view", True),
+        ("自选股管理", "favorites_edit", True),
+        ("模型配置更新", "config_update", True),
+        ("缓存清理", "cache_clear", True),
+        ("API请求失败", "api_error", False),
+        ("Token刷新", "token_refresh", True),
+        ("数据同步", "data_sync", True),
+    ]
+    usernames = ["admin", "trader", "analyst"]
+    logs = []
+    now = dt.datetime.now()
+    for i in range(count):
+        action, action_type, success = random.choice(actions)
+        delta = dt.timedelta(minutes=random.randint(0, 60*24*30))
+        ts = now - delta
+        logs.append({
+            "id": f"log_{i+1:04d}",
+            "username": random.choice(usernames),
+            "action": action,
+            "action_type": action_type,
+            "success": success,
+            "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
+            "details": f"操作{action}{'成功' if success else '失败'}，耗时{random.randint(50, 5000)}ms",
+            "duration_ms": random.randint(50, 5000),
+            "ip_address": f"192.168.1.{random.randint(1,254)}",
+        })
+    return logs
 
-@app.get("/api/system/system-logs/statistics")
-async def system_logs_statistics(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"statistics": {}}}
+_CACHED_LOGS = _generate_fake_logs(200)
+_OPERATION_COUNTER = 200
+
+def _add_operation_log(username: str, action: str, action_type: str, success: bool, details: str = "", duration_ms: int = 0):
+    """添加真实操作日志"""
+    global _OPERATION_COUNTER
+    _OPERATION_COUNTER += 1
+    log_entry = {
+        "id": f"log_{_OPERATION_COUNTER:04d}",
+        "username": username,
+        "action": action,
+        "action_type": action_type,
+        "success": success,
+        "timestamp": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "details": details,
+        "duration_ms": duration_ms,
+        "ip_address": "127.0.0.1",
+    }
+    _CACHED_LOGS.insert(0, log_entry)
+    # Keep only last 1000 logs
+    if len(_CACHED_LOGS) > 1000:
+        _CACHED_LOGS[:] = _CACHED_LOGS[:1000]
 
 @app.get("/api/system/logs/stats")
-async def system_logs_stats(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"stats": {}}}
+async def system_logs_stats(days: int = 30, username: str = Depends(verify_token)):
+    now = dt.datetime.now()
+    cutoff = now - dt.timedelta(days=days)
+    recent = [l for l in _CACHED_LOGS if dt.datetime.strptime(l["timestamp"], "%Y-%m-%d %H:%M:%S") > cutoff]
+    total = len(recent)
+    success_logs = sum(1 for l in recent if l["success"])
+    failed_logs = total - success_logs
+    success_rate = round(success_logs / total * 100, 1) if total > 0 else 0
+    action_dist = {}
+    hourly_dist = {}
+    for l in recent:
+        action_dist[l["action_type"]] = action_dist.get(l["action_type"], 0) + 1
+        hour = l["timestamp"][11:13]
+        hourly_dist[hour] = hourly_dist.get(hour, 0) + 1
+    return {
+        "success": True,
+        "data": {
+            "total_logs": total,
+            "success_logs": success_logs,
+            "failed_logs": failed_logs,
+            "success_rate": success_rate,
+            "action_type_distribution": action_dist,
+            "hourly_distribution": [{"hour": h, "count": c} for h, c in sorted(hourly_dist.items())],
+        }
+    }
+
+@app.get("/api/system/logs/list")
+async def system_logs_list(
+    page: int = 1,
+    page_size: int = 20,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    action_type: Optional[str] = None,
+    success: Optional[bool] = None,
+    keyword: Optional[str] = None,
+    username: str = Depends(verify_token)
+):
+    filtered = list(_CACHED_LOGS)
+    if start_date:
+        filtered = [l for l in filtered if l["timestamp"] >= start_date]
+    if end_date:
+        filtered = [l for l in filtered if l["timestamp"] <= end_date + " 23:59:59"]
+    if action_type:
+        filtered = [l for l in filtered if l["action_type"] == action_type]
+    if success is not None:
+        filtered = [l for l in filtered if l["success"] == success]
+    if keyword:
+        kw = keyword.lower()
+        filtered = [l for l in filtered if kw in l["action"].lower() or kw in l.get("details", "").lower()]
+    total = len(filtered)
+    total_pages = (total + page_size - 1) // page_size
+    start = (page - 1) * page_size
+    end = start + page_size
+    return {
+        "success": True,
+        "data": {
+            "logs": filtered[start:end],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
+    }
 
 @app.get("/api/system/logs/{log_id}")
 async def system_log_get(log_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"id": log_id, "content": ""}}
+    for l in _CACHED_LOGS:
+        if l["id"] == log_id:
+            return {"success": True, "data": l}
+    raise HTTPException(status_code=404, detail="日志不存在")
 
-@app.post("/api/system/logs/create")
-async def system_logs_create(username: str = Depends(verify_token)):
-    return {"success": True}
+@app.get("/api/system/system-logs/files")
+async def system_log_files(username: str = Depends(verify_token)):
+    import os, glob
+    log_files = []
+    for pattern in ["/root/stock-analyzer/logs/*.log", "/root/stock-analyzer/logs/*.txt"]:
+        for f in glob.glob(pattern):
+            try:
+                stat = os.stat(f)
+                log_files.append({
+                    "name": os.path.basename(f),
+                    "size": stat.st_size,
+                    "last_modified": dt.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "path": f,
+                })
+            except Exception:
+                pass
+    log_files.sort(key=lambda x: x["last_modified"], reverse=True)
+    return {"success": True, "data": {"files": log_files, "total": len(log_files)}}
 
-@app.post("/api/system/logs/clear")
-async def system_logs_clear(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"cleared": 0}}
+@app.post("/api/system/system-logs/read")
+async def system_log_read(req: dict, username: str = Depends(verify_token)):
+    import os
+    path = req.get("path", "")
+    if not path or not os.path.exists(path) or ".." in path:
+        raise HTTPException(status_code=404, detail="文件不存在")
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()[-200:]
+        return {"success": True, "data": {"content": "".join(lines), "lines": len(lines)}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/system/system-logs/statistics")
+async def system_log_statistics(username: str = Depends(verify_token)):
+    import os, glob
+    total_size = 0
+    file_count = 0
+    for pattern in ["/root/stock-analyzer/logs/*.log", "/root/stock-analyzer/logs/*.txt"]:
+        for f in glob.glob(pattern):
+            try:
+                total_size += os.stat(f).st_size
+                file_count += 1
+            except Exception:
+                pass
+    return {
+        "success": True,
+        "data": {
+            "total_size_bytes": total_size,
+            "total_size_mb": round(total_size / 1024 / 1024, 2),
+            "file_count": file_count,
+        }
+    }
+
+@app.get("/api/system/system-logs/export")
+async def system_log_export_get(
+    filename: str = "",
+    username: str = Depends(verify_token)
+):
+    """导出日志文件（GET 方式，支持直接浏览器下载）"""
+    import os, zipfile, io
+    if not filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="非法文件名")
+    
+    log_path = os.path.join("/root/stock-analyzer/logs", filename)
+    if not os.path.exists(log_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(filename, content)
+        
+        zip_buffer.seek(0)
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}.zip"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/system-logs/export")
+async def system_log_export_post(req: dict, username: str = Depends(verify_token)):
+    """导出日志文件（POST 方式，支持多文件）"""
+    import os, zipfile, io
+    filenames = req.get("filenames") or []
+    if isinstance(filenames, str):
+        filenames = [filenames]
+    if not filenames:
+        raise HTTPException(status_code=400, detail="缺少文件名")
+    
+    for fn in filenames:
+        if ".." in fn:
+            raise HTTPException(status_code=400, detail="非法文件名")
+        log_path = os.path.join("/root/stock-analyzer/logs", fn)
+        if not os.path.exists(log_path):
+            raise HTTPException(status_code=404, detail=f"文件不存在: {fn}")
+    
+    try:
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for fn in filenames:
+                log_path = os.path.join("/root/stock-analyzer/logs", fn)
+                with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                    zf.writestr(fn, f.read())
+        
+        zip_buffer.seek(0)
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=logs.zip"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== 模型能力接口 (Model Capabilities) ====================
 

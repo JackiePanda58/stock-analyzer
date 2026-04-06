@@ -1,0 +1,2000 @@
+  }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+  }
+}
+
+
+==================== frontend/src/test-import.js ====================
+// 测试导入
+console.log('Testing imports...')
+
+try {
+  console.log('✅ Test completed')
+} catch (error) {
+  console.error('❌ Import error:', error)
+}
+
+
+==================== frontend/src/main.ts ====================
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
+
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
+
+import App from './App.vue'
+import router from './router'
+import { setupGlobalComponents } from './components'
+import { useAuthStore } from './stores/auth'
+import { useAppStore } from './stores/app'
+import { setupTokenRefreshTimer } from './utils/auth'
+import './styles/index.scss'
+import './styles/dark-theme.scss'
+
+// 创建应用实例
+const app = createApp(App)
+
+// 注册Element Plus图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+
+// 使用插件
+const pinia = createPinia()
+app.use(pinia)
+app.use(router)
+// 设置全局中文 locale（Element Plus）
+dayjs.locale('zh-cn')
+app.use(ElementPlus, {
+  size: 'default',
+  zIndex: 3000,
+  locale: zhCn,
+  // 配置消息提示
+  message: {
+    max: 3, // 最多同时显示3个消息
+    grouping: true, // 启用消息分组，相同内容的消息不会重复显示
+    duration: 3000, // 默认显示时长3秒
+  },
+})
+
+// 注册全局组件
+setupGlobalComponents(app)
+
+// 全局错误处理
+app.config.errorHandler = (err, vm, info) => {
+  console.error('全局错误:', err, info)
+
+  // 检查是否是认证错误
+  if (err && typeof err === 'object') {
+    const error = err as any
+    // 检查错误消息或状态码
+    if (
+      error.message?.includes('认证失败') ||
+      error.message?.includes('登录已过期') ||
+      error.message?.includes('Token') ||
+      error.response?.status === 401 ||
+      error.code === 401
+    ) {
+      console.log('🔒 全局错误处理：检测到认证错误，跳转登录页')
+      const authStore = useAuthStore()
+      authStore.clearAuthInfo()
+      router.push('/login')
+    }
+  }
+
+  // 这里可以集成错误监控服务
+}
+
+// 全局警告处理
+app.config.warnHandler = (msg, vm, trace) => {
+  console.warn('全局警告:', msg, trace)
+}
+
+// 初始化认证状态
+const initApp = async () => {
+  try {
+    const authStore = useAuthStore()
+    const appStore = useAppStore()
+
+    console.log('🔄 初始化应用状态...')
+
+    // 应用主题
+    appStore.applyTheme()
+    console.log('🎨 主题已应用:', appStore.theme)
+
+    // 设置网络状态监听
+    window.addEventListener('online', () => {
+      console.log('🌐 网络已连接')
+      appStore.setOnlineStatus(true)
+      appStore.checkApiConnection()
+    })
+
+    window.addEventListener('offline', () => {
+      console.log('📱 网络已断开')
+      appStore.setOnlineStatus(false)
+      appStore.setApiConnected(false)
+    })
+
+    // 检查API连接状态
+    console.log('🔍 检查API连接状态...')
+    const apiConnected = await appStore.checkApiConnection()
+
+    if (apiConnected) {
+      console.log('✅ API连接正常，检查认证状态...')
+      // 检查本地存储的认证信息（设置较短的超时时间）
+      const checkPromise = authStore.checkAuthStatus()
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('认证检查超时')), 5000) // 5秒超时
+      })
+
+      await Promise.race([checkPromise, timeoutPromise])
+      console.log('✅ 认证状态初始化完成')
+
+      // 如果用户已登录，启动 token 自动刷新定时器
+      if (authStore.isAuthenticated) {
+        setupTokenRefreshTimer()
+      }
+    } else {
+      console.log('⚠️ API连接失败，跳过认证检查')
+    }
+  } catch (error) {
+    console.warn('⚠️ 应用初始化失败，但应用将继续启动:', error)
+    // 如果是网络错误，不影响应用启动
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      console.log('📱 离线模式：应用将在没有后端连接的情况下启动')
+    }
+  } finally {
+    // 无论认证状态如何，都挂载应用
+    app.mount('#app')
+    console.log('🚀 应用已挂载')
+  }
+}
+
+// 启动应用
+initApp()
+
+// 开发环境下的调试信息
+if (import.meta.env.DEV) {
+  console.log('🚀 TradingAgents-CN v1.0.0-preview 前端应用已启动')
+  console.log('📊 当前环境:', import.meta.env.MODE)
+  console.log('🔗 API地址:', import.meta.env.VITE_API_BASE_URL || '/api')
+}
+
+
+==================== frontend/src/App.vue ====================
+<template>
+  <div id="app" class="app-container">
+    <!-- 网络状态指示器 -->
+    <NetworkStatus />
+
+    <!-- 主要内容区域 -->
+    <router-view v-slot="{ Component, route }">
+      <transition
+        :name="(route?.meta?.transition as string) || 'fade'"
+        mode="out-in"
+        appear
+      >
+        <keep-alive :include="keepAliveComponents">
+          <component :is="Component" :key="route?.fullPath || 'default'" />
+        </keep-alive>
+      </transition>
+    </router-view>
+
+    <!-- 配置向导 -->
+    <ConfigWizard
+      v-model="showConfigWizard"
+      @complete="handleWizardComplete"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import NetworkStatus from '@/components/NetworkStatus.vue'
+import axios from 'axios'
+import { configApi } from '@/api/config'
+
+// 需要缓存的组件
+const keepAliveComponents = computed(() => [
+  'Dashboard',
+  'StockScreening',
+  'AnalysisHistory'
+])
+
+// 配置向导
+const showConfigWizard = ref(false)
+
+// 检查是否需要显示配置向导
+const checkFirstTimeSetup = async () => {
+  try {
+    // 检查是否已经完成过配置向导
+    const wizardCompleted = localStorage.getItem('config_wizard_completed')
+    if (wizardCompleted === 'true') {
+      return
+    }
+
+    // 验证配置完整性
+    const response = await axios.get('/api/system/config/validate')
+    if (response.data.success) {
+      const result = response.data.data
+
+      // 如果有缺少的必需配置，显示配置向导
+      if (!result.success && result.missing_required?.length > 0) {
+        // 延迟显示，等待页面加载完成
+        setTimeout(() => {
+          showConfigWizard.value = true
+        }, 1000)
+      }
+    }
+  } catch (error) {
+    console.error('检查配置失败:', error)
+  }
+}
+
+// 配置向导完成处理
+const handleWizardComplete = async (data: any) => {
+  try {
+    console.log('配置向导数据:', data)
+
+    // 1. 保存大模型配置
+    if (data.llm?.provider && data.llm?.apiKey) {
+      try {
+        // 先添加厂家（如果不存在）
+        const providerMap: Record<string, { name: string; base_url?: string }> = {
+          deepseek: { name: 'DeepSeek', base_url: 'https://api.deepseek.com' },
+          dashscope: { name: '通义千问', base_url: 'https://dashscope.aliyuncs.com/api/v1' },
+          openai: { name: 'OpenAI', base_url: 'https://api.openai.com/v1' },
+          google: { name: 'Google Gemini', base_url: 'https://generativelanguage.googleapis.com/v1' }
+        }
+
+        const providerInfo = providerMap[data.llm.provider]
+        if (providerInfo) {
+          // 尝试添加厂家（如果已存在会失败，但不影响后续流程）
+          try {
+            await configApi.addLLMProvider({
+              id: data.llm.provider,
+              name: data.llm.provider,
+              display_name: providerInfo.name,
+              default_base_url: providerInfo.base_url,
+              is_active: true,
+              supported_features: ['chat', 'completion'] // 添加默认支持的功能
+            })
+          } catch (e) {
+            // 厂家可能已存在，忽略错误
+            console.log('厂家可能已存在:', e)
+          }
+
+          // 添加大模型配置
+          if (data.llm.modelName) {
+            await configApi.updateLLMConfig({
+              provider: data.llm.provider,
+              model_name: data.llm.modelName,
+              enabled: true
+            })
+
+            // 设置为默认大模型
+            await configApi.setDefaultLLM(data.llm.modelName)
+          }
+        }
+      } catch (error) {
+        console.error('保存大模型配置失败:', error)
+        ElMessage.warning('大模型配置保存失败，请稍后在配置管理中手动配置')
+      }
+    }
+
+    // 2. 保存数据源配置
+    if (data.datasource?.type) {
+      try {
+        const dsConfig: any = {
+          name: data.datasource.type,
+          type: data.datasource.type,
+          enabled: true
+        }
+
+        // 根据数据源类型添加认证信息
+        if (data.datasource.type === 'tushare' && data.datasource.token) {
+          dsConfig.api_key = data.datasource.token
+        } else if (data.datasource.type === 'finnhub' && data.datasource.apiKey) {
+          dsConfig.api_key = data.datasource.apiKey
+        }
+
+        await configApi.addDataSourceConfig(dsConfig)
+        await configApi.setDefaultDataSource(data.datasource.type)
+      } catch (error) {
+        console.error('保存数据源配置失败:', error)
+        ElMessage.warning('数据源配置保存失败，请稍后在配置管理中手动配置')
+      }
+    }
+
+    // 3. 数据库配置（MongoDB 和 Redis）
+    // 注意：数据库配置通常在 .env 文件中，这里只是记录用户的选择
+    // 实际的数据库连接需要在后端 .env 文件中配置
+    if (data.mongodb || data.redis) {
+      console.log('数据库配置（需要在 .env 文件中设置）:', {
+        mongodb: data.mongodb,
+        redis: data.redis
+      })
+    }
+
+    // 标记配置向导已完成
+    localStorage.setItem('config_wizard_completed', 'true')
+
+    ElMessage.success({
+      message: '配置完成！欢迎使用 TradingAgents-CN',
+      duration: 3000
+    })
+  } catch (error) {
+    console.error('保存配置失败:', error)
+    ElMessage.error('保存配置失败，请稍后重试')
+  }
+}
+
+// 生命周期
+onMounted(() => {
+  // 检查是否需要显示配置向导
+  checkFirstTimeSetup()
+})
+</script>
+
+<style lang="scss">
+.app-container {
+  min-height: 100vh;
+  background-color: var(--el-bg-color-page);
+  transition: background-color 0.3s ease;
+}
+
+.global-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(90deg, #409EFF 0%, #67C23A 100%);
+  height: 2px;
+}
+
+// 路由过渡动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(30px);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-30px);
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  transform: translateY(30px);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(-30px);
+  opacity: 0;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0;
+  }
+}
+</style>
+
+
+==================== frontend/src/api/request.ts ====================
+import axios from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
+import router from '@/router'
+
+// API响应接口
+export interface ApiResponse<T = any> {
+  success: boolean
+  data: T
+  message: string
+  code?: number
+  timestamp?: string
+  request_id?: string
+}
+
+// 请求配置接口
+export interface RequestConfig extends AxiosRequestConfig {
+  skipAuth?: boolean
+  skipAuthError?: boolean  // 跳过 401 错误的自动处理（用于登录等接口）
+  skipErrorHandler?: boolean
+  showLoading?: boolean
+  loadingText?: string
+  retryCount?: number  // 重试次数
+  retryDelay?: number  // 重试延迟（毫秒）
+}
+
+// 消息去重：记录最近显示的错误消息
+const recentMessages = new Map<string, number>()
+const MESSAGE_THROTTLE_TIME = 3000 // 3秒内相同消息不重复显示
+
+// 401 错误处理标志（避免多个请求同时触发登录跳转）
+let isHandling401 = false
+
+// 显示错误消息（带去重）
+const showErrorMessage = (message: string) => {
+  const now = Date.now()
+  const lastTime = recentMessages.get(message)
+
+  // 如果3秒内已经显示过相同消息，则跳过
+  if (lastTime && now - lastTime < MESSAGE_THROTTLE_TIME) {
+    console.log('⏭️ 跳过重复消息:', message)
+    return
+  }
+
+  // 记录消息显示时间
+  recentMessages.set(message, now)
+
+  // 清理过期的消息记录（保持Map不会无限增长）
+  if (recentMessages.size > 50) {
+    const entries = Array.from(recentMessages.entries())
+    entries.sort((a, b) => a[1] - b[1])
+    // 删除最旧的25条记录
+    entries.slice(0, 25).forEach(([key]) => recentMessages.delete(key))
+  }
+
+  ElMessage.error(message)
+}
+
+// 处理 401 错误（带防抖）
+const handle401Error = (authStore: any, message: string = '登录已过期，请重新登录') => {
+  // 如果正在处理 401 错误，跳过
+  if (isHandling401) {
+    console.log('⏭️ 正在处理 401 错误，跳过重复处理')
+    return
+  }
+
+  isHandling401 = true
+
+  // 清除认证信息并跳转到登录页
+  console.log('🔒 处理 401 错误：清除认证信息并跳转登录页')
+  authStore.clearAuthInfo()
+  router.push('/login')
+  showErrorMessage(message)
+
+  // 3秒后重置标志
+  setTimeout(() => {
+    isHandling401 = false
+  }, 3000)
+}
+
+// 创建axios实例
+const createAxiosInstance = (): AxiosInstance => {
+  const instance = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL || '',
+    timeout: 60000, // 增加超时时间到60秒（数据同步等长时间操作）
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',  // 禁用客户端缓存
+      'Pragma': 'no-cache'
+    }
+  })
+
+  // 请求拦截器
+  instance.interceptors.request.use(
+    (config: any) => {
+      const authStore = useAuthStore()
+      const appStore = useAppStore()
+
+      // 添加认证头（总是覆盖为最新Token；支持localStorage兜底，避免早期请求丢Token）
+      if (!config.skipAuth) {
+        const token = authStore.token || localStorage.getItem('auth-token')
+        if (token) {
+          config.headers = config.headers || {}
+          config.headers.Authorization = `Bearer ${token}`
+          console.log('🔐 已设置Authorization头:', {
+            hasToken: !!token,
+            tokenLength: token?.length || 0,
+            tokenPrefix: token?.substring(0, 20) || 'None',
+            authHeader: config.headers.Authorization?.substring(0, 30) || 'None'
+          })
+        } else {
+          console.log('⚠️ 未设置Authorization头:', {
+            skipAuth: config.skipAuth,
+            hasToken: !!authStore.token,
+            localStored: !!localStorage.getItem('auth-token'),
+            url: config.url
+          })
+        }
+      }
+
+      // 添加请求ID
+      config.headers['X-Request-ID'] = generateRequestId()
+
+      // 添加语言头
+      config.headers['Accept-Language'] = appStore.language
+
+      // 显示加载状态
+      if (config.showLoading) {
+        appStore.setLoading(true, 0)
+      }
+
+      // 端点兼容守卫：阻止/修正误用的 /api/stocks/quote（缺少路径参数 {code}）
+      try {
+        const rawUrl = String(config.url || '')
+        const pathOnly = rawUrl.split('?')[0].replace(/\/+$|^\s+|\s+$/g, '')
+        if (pathOnly === '/api/stocks/quote' || pathOnly === '/api/stocks/quote/') {
+          const code = (config.params && (config.params.code || (config as any).params?.stock_code)) ?? undefined
+          if (code) {
+            const codeStr = String(code)
+            config.url = `/api/stocks/${codeStr}/quote`
+            if (config.params) {
+              delete (config.params as any).code
+              delete (config.params as any).stock_code
+            }
+            console.warn('🔧 已自动重写遗留端点为 /api/stocks/{code}/quote', { code: codeStr })
+          } else {
+            console.error('❌ 误用端点: /api/stocks/quote 缺少 code。请改用 /api/stocks/{code}/quote', { stack: new Error().stack })
+            return Promise.reject(new Error('前端误用端点：缺少 code，请改用 /api/stocks/{code}/quote'))
+          }
+        }
+      } catch (e) {
+        console.warn('端点兼容检查异常', e)
+      }
+
+      console.log(`🚀 API请求: ${config.method?.toUpperCase()} ${config.url}`, {
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        params: config.params,
+        data: config.data,
+        headers: config.headers,
+        timeout: config.timeout
+      })
+
+      return config
+    },
+    (error) => {
+      console.error('❌ 请求拦截器错误:', error)
+      return Promise.reject(error)
+    }
+  )
+
+  // 响应拦截器
+  instance.interceptors.response.use(
+    (response: AxiosResponse) => {
+      const appStore = useAppStore()
+      const authStore = useAuthStore()
+      const config = response.config as RequestConfig
+
+      // 隐藏加载状态
+      if (config.showLoading) {
+        appStore.setLoading(false)
+      }
+
+      console.log(`✅ API响应: ${response.status} ${response.config.url}`, response.data)
+
+      // 检查业务状态码
+      const data = response.data as ApiResponse
+      if (data && typeof data === 'object' && 'success' in data) {
+        if (!data.success) {
+          // 检查是否是认证错误（优先处理，不依赖 skipErrorHandler）
+          const code = data.code
+          if (code === 401 || code === 40101 || code === 40102 || code === 40103) {
+            // 如果请求标记为跳过认证错误处理（如登录请求），不自动处理
+            if (!config.skipAuthError) {
+              console.log('🔒 业务错误：认证失败 (HTTP 200)')
+              handle401Error(authStore, data.message || '登录已过期，请重新登录')
+            }
+            return Promise.reject(new Error(data.message || '认证失败'))
+          }
+
+          // 其他业务错误
+          if (!config.skipErrorHandler) {
+            handleBusinessError(data)
+            return Promise.reject(new Error(data.message || '请求失败'))
+          }
+        }
+      }
+
+      // 返回 response.data 而不是 response，这样调用方可以直接访问 ApiResponse
+      return response.data
+    },
+    async (error) => {
+      const appStore = useAppStore()
+      const authStore = useAuthStore()
+      const config = error.config as RequestConfig
+
+      // 隐藏加载状态
+      if (config?.showLoading) {
+        appStore.setLoading(false)
+      }
+
+      console.error(`❌ API错误: ${error.response?.status} ${error.config?.url}`, {
+        error: error,
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        request: error.request,
+        config: error.config,
+        stack: error.stack
+      })
+
+      // 处理HTTP状态码错误
+      if (error.response) {
+        const { status, data } = error.response
+
+        switch (status) {
+          case 401:
+            // 如果请求标记为跳过认证错误处理（如登录请求），直接返回错误
+            if (config?.skipAuthError) {
+              console.log('⏭️ 跳过 401 错误自动处理（skipAuthError=true）')
+              break
+            }
+
+            // 如果是refresh请求本身失败，不要再次尝试刷新（避免无限循环）
+            if (config?.url?.includes('/auth/refresh')) {
+              console.error('❌ Refresh token请求失败')
+              handle401Error(authStore, '登录已过期，请重新登录')
+              break
+            }
+
+            // 未授权，尝试刷新token
+            if (!config?.skipAuth && authStore.refreshToken) {
+              try {
+                console.log('🔄 401错误，尝试刷新token...')
+                const success = await authStore.refreshAccessToken()
+                if (success) {
+                  console.log('✅ Token刷新成功，重试原请求')
+                  // 重新发送原请求
+                  return instance.request(config)
+                } else {
+                  console.log('❌ Token刷新失败')
+                }
+              } catch (refreshError) {
+                console.error('❌ Token刷新异常:', refreshError)
+              }
+            }
+
+            // 清除认证信息并跳转到登录页
+            handle401Error(authStore, '登录已过期，请重新登录')
+            break
+
+          case 403:
+            showErrorMessage('权限不足，无法访问该资源')
+            break
+
+          case 400:
+            // 参数错误，显示详细的错误信息
+            if (!config?.skipErrorHandler) {
+              const message = data?.detail || data?.message || error.message || '请求参数错误'
+              showErrorMessage(message)
+            }
+            break
+
+          case 404:
+            showErrorMessage('请求的资源不存在')
+            break
+
+          case 429:
+            showErrorMessage('请求过于频繁，请稍后重试')
+            break
+
+          case 500:
+            showErrorMessage('服务器内部错误，请稍后重试')
+            break
+
+          case 502:
+          case 503:
+          case 504:
+            showErrorMessage('服务暂时不可用，请稍后重试')
+            break
+
+          default:
+            if (!config?.skipErrorHandler) {
+              const message = data?.detail || data?.message || error.message || '网络请求失败'
+              showErrorMessage(message)
+            }
+        }
+      } else if (error.code === 'ECONNABORTED') {
+        console.error('🔍 [REQUEST] 请求超时错误:', {
+          code: error.code,
+          message: error.message,
+          timeout: config?.timeout,
+          url: config?.url
+        })
+
+        // 尝试重试
+        if (await shouldRetry(config, error)) {
+          return retryRequest(instance, config)
+        }
+
+        showErrorMessage('请求超时，请检查网络连接')
+      } else if (error.message === 'Network Error') {
+        console.error('🔍 [REQUEST] 网络连接错误:', {
+          message: error.message,
+          code: error.code,
+          url: config?.url,
+          baseURL: config?.baseURL
+        })
+
+        // 尝试重试
+        if (await shouldRetry(config, error)) {
+          return retryRequest(instance, config)
+        }
+
+        showErrorMessage('网络连接失败，请检查网络设置')
+      } else if (error.message.includes('Failed to fetch')) {
+        console.error('🔍 [REQUEST] Fetch失败错误:', {
+          message: error.message,
+          code: error.code,
+          url: config?.url,
+          baseURL: config?.baseURL
+        })
+
+        // 尝试重试
+        if (await shouldRetry(config, error)) {
+          return retryRequest(instance, config)
+        }
+
+        showErrorMessage('网络请求失败，请检查服务器连接')
+      } else if (!config?.skipErrorHandler) {
+        console.error('🔍 [REQUEST] 其他错误:', {
+          message: error.message,
+          code: error.code,
+          name: error.name,
+          url: config?.url
+        })
+        showErrorMessage(error.message || '未知错误')
+      }
+
+      return Promise.reject(error)
+    }
+  )
+
+  return instance
+}
+
+// 处理业务错误
+const handleBusinessError = (data: ApiResponse) => {
+  const { code, message } = data
+  const authStore = useAuthStore()
+
+  switch (code) {
+    case 401:
+    case 40101:  // 未授权
+    case 40102:  // Token 无效
+    case 40103:  // Token 过期
+      console.log('🔒 业务错误：认证失败')
+      handle401Error(authStore, message || '登录已过期，请重新登录')
+      break
+    case 40001:
+      showErrorMessage('参数错误')
+      break
+    case 403:
+    case 40003:
+      showErrorMessage('权限不足')
+      break
+    case 40004:
+      showErrorMessage('资源不存在')
+      break
+    case 40005:
+      showErrorMessage('操作失败')
+      break
+    case 50001:
+      showErrorMessage('服务器错误')
+      break
+    default:
+      if (message) {
+        showErrorMessage(message)
+      }
+  }
+}
+
+// 生成请求ID
+const generateRequestId = (): string => {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
+// 判断是否应该重试
+const shouldRetry = async (config: RequestConfig | undefined, error: any): Promise<boolean> => {
+  if (!config) return false
+
+  // 获取重试配置（默认重试 2 次）
+  let retryCount = 2
+  if (config.retryCount !== undefined) {
+    retryCount = config.retryCount
+  }
+  const currentRetry = (config as any).__retryCount || 0
+
+  // 如果已经重试过指定次数，不再重试
+  if (currentRetry >= retryCount) {
+    console.log(`🔄 已达到最大重试次数 (${retryCount})，停止重试`)
+    return false
+  }
+
+  // 只对网络错误和超时错误重试
+  const shouldRetryError =
+    error.code === 'ECONNABORTED' ||
+    error.message === 'Network Error' ||
+    error.message.includes('Failed to fetch') ||
+    (error.response && [502, 503, 504].includes(error.response.status))
+
+  return shouldRetryError
+}
+
+// 重试请求
+const retryRequest = async (instance: AxiosInstance, config: RequestConfig): Promise<any> => {
+  const currentRetry = (config as any).__retryCount || 0
+  // 使用显式的默认值处理
+  let retryDelay = 1000
+  if (config.retryDelay !== undefined) {
+    retryDelay = config.retryDelay
+  }
+
+  // 增加重试计数
+  (config as any).__retryCount = currentRetry + 1
+
+  console.log(`🔄 第 ${currentRetry + 1} 次重试请求: ${config.url}`)
+
+  // 延迟后重试
+  await new Promise(resolve => setTimeout(resolve, retryDelay * (currentRetry + 1)))
+
+  return instance.request(config)
+}
+
+// 创建请求实例
+const request = createAxiosInstance()
+
+// 测试API连接
+export const testApiConnection = async (): Promise<boolean> => {
+  try {
+    console.log('🔍 [API_TEST] 开始测试API连接')
+    console.log('🔍 [API_TEST] 基础URL:', import.meta.env.VITE_API_BASE_URL || '使用代理')
+    console.log('🔍 [API_TEST] 代理目标:', 'http://localhost:8000 (根据vite.config.ts)')
+
+    const response = await request.get('/api/health', {
+      timeout: 5000,
+      skipErrorHandler: true
+    })
+
+    console.log('🔍 [API_TEST] 健康检查成功:', response.data)
+    return true
+  } catch (error: any) {
+    console.error('🔍 [API_TEST] 健康检查失败:', error)
+
+    if (error.code === 'ECONNABORTED') {
+      console.error('🔍 [API_TEST] 连接超时 - 后端服务可能未启动')
+    } else if (error.message === 'Network Error' || error.message.includes('Failed to fetch')) {
+      console.error('🔍 [API_TEST] 网络错误 - 后端服务可能未在 http://localhost:8000 运行')
+    } else if (error.response?.status === 404) {
+      console.error('🔍 [API_TEST] 404错误 - /api/health 端点不存在')
+    } else {
+      console.error('🔍 [API_TEST] 其他错误:', error.message)
+    }
+
+    return false
+  }
+}
+
+// 请求方法封装
+export class ApiClient {
+  // GET请求
+  static async get<T = any>(
+    url: string,
+    params?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.get(url, { params, ...config })
+  }
+
+  // POST请求
+  static async post<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.post(url, data, config)
+  }
+
+  // PUT请求
+  static async put<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.put(url, data, config)
+  }
+
+  // DELETE请求
+  static async delete<T = any>(
+    url: string,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.delete(url, config)
+  }
+
+  // PATCH请求
+  static async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.patch(url, data, config)
+  }
+
+  // 上传文件
+  static async upload<T = any>(
+    url: string,
+    file: File,
+    onProgress?: (progress: number) => void,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // 响应拦截器已经返回 response.data，所以这里直接返回
+    return await request.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(progress)
+        }
+      },
+      ...config
+    })
+  }
+
+  // 下载文件
+  static async download(
+    url: string,
+    filename?: string,
+    config?: RequestConfig
+  ): Promise<void> {
+    // 对于 blob 响应，响应拦截器返回的就是 blob 数据
+    const blobData = await request.get(url, {
+      responseType: 'blob',
+      ...config
+    })
+
+    const blob = new Blob([blobData])
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename || 'download'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  }
+}
+
+export default request
+export { request }
+
+
+==================== frontend/src/api/tags.ts ====================
+import { ApiClient } from './request'
+import type { ApiResponse } from './request'
+
+export interface TagItem {
+  id: string
+  name: string
+  color: string
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateTagDto {
+  name: string
+  color?: string
+  sort_order?: number
+}
+
+export interface UpdateTagDto {
+  name?: string
+  color?: string
+  sort_order?: number
+}
+
+export const tagsApi = {
+  async list(): Promise<ApiResponse<TagItem[]>> {
+    return await ApiClient.get<TagItem[]>('/api/tags/')
+  },
+  async create(payload: CreateTagDto): Promise<ApiResponse<TagItem>> {
+    return await ApiClient.post<TagItem>('/api/tags/', payload)
+  },
+  async update(id: string, payload: UpdateTagDto): Promise<ApiResponse<{ id: string }>> {
+    return await ApiClient.put<{ id: string }>(`/api/tags/${id}`, payload)
+  },
+  async remove(id: string): Promise<ApiResponse<{ id: string }>> {
+    return await ApiClient.delete<{ id: string }>(`/api/tags/${id}`)
+  }
+}
+
+
+
+==================== frontend/src/api/news.ts ====================
+import { ApiClient } from './request'
+
+/**
+ * 新闻数据接口
+ */
+export interface NewsItem {
+  id?: string
+  title: string
+  content?: string
+  summary?: string
+  source?: string
+  publish_time: string
+  url?: string
+  symbol?: string
+  category?: string
+  sentiment?: string
+  importance?: number
+  data_source?: string
+}
+
+/**
+ * 最新新闻响应
+ */
+export interface LatestNewsResponse {
+  symbol?: string
+  limit: number
+  hours_back: number
+  total_count: number
+  news: NewsItem[]
+}
+
+/**
+ * 新闻查询响应
+ */
+export interface NewsQueryResponse {
+  symbol: string
+  hours_back: number
+  total_count: number
+  news: NewsItem[]
+}
+
+/**
+ * 新闻同步响应
+ */
+export interface NewsSyncResponse {
+  sync_type: string
+  symbol?: string
+  data_sources?: string[]
+  hours_back: number
+  max_news_per_source: number
+}
+
+/**
+ * 新闻API
+ */
+export const newsApi = {
+  /**
+   * 获取最新新闻
+   * @param symbol 股票代码，为空则获取市场新闻
+   * @param limit 返回数量限制
+   * @param hours_back 回溯小时数
+   */
+  async getLatestNews(symbol?: string, limit: number = 10, hours_back: number = 24) {
+    const params: any = { limit, hours_back }
+    if (symbol) {
+      params.symbol = symbol
+    }
+    return ApiClient.get<LatestNewsResponse>('/api/news-data/latest', params)
+  },
+
+  /**
+   * 查询股票新闻
+   * @param symbol 股票代码
+   * @param hours_back 回溯小时数
+   * @param limit 返回数量限制
+   */
+  async queryStockNews(symbol: string, hours_back: number = 24, limit: number = 20) {
+    return ApiClient.get<NewsQueryResponse>(`/api/news-data/query/${symbol}`, {
+      hours_back,
+      limit
+    })
+  },
+
+  /**
+   * 同步市场新闻（后台任务）
+   * @param hours_back 回溯小时数
+   * @param max_news_per_source 每个数据源最大新闻数量
+   */
+  async syncMarketNews(hours_back: number = 24, max_news_per_source: number = 50) {
+    return ApiClient.post<NewsSyncResponse>('/api/news-data/sync/start', {
+      symbol: null,
+      data_sources: null,
+      hours_back,
+      max_news_per_source
+    })
+  }
+}
+
+
+
+==================== frontend/src/api/notifications.ts ====================
+import { request } from './request'
+
+export interface NotificationItem {
+  id: string
+  title: string
+  content?: string
+  type: 'analysis' | 'alert' | 'system'
+  status: 'unread' | 'read'
+  created_at: string
+  link?: string
+  source?: string
+}
+
+export interface NotificationListResponse {
+  items: NotificationItem[]
+  total?: number
+  page?: number
+  page_size?: number
+}
+
+export const notificationsApi = {
+  async getUnreadCount(): Promise<{ success: boolean; data: { count: number } }> {
+    // 后端尚未提供时兜底为0
+    try {
+      return await request.get('/api/notifications/unread_count')
+    } catch {
+      return { success: true, data: { count: 0 } }
+    }
+  },
+
+  async getList(params?: { status?: 'unread' | 'all'; page?: number; page_size?: number; type?: string }): Promise<{ success: boolean; data: NotificationListResponse }> {
+    const query = new URLSearchParams()
+    if (params?.status) query.set('status', params.status)
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.page_size) query.set('page_size', String(params.page_size))
+    if (params?.type) query.set('type', params.type)
+    const url = query.toString() ? `/api/notifications?${query.toString()}` : '/api/notifications'
+    try {
+      return await request.get(url)
+    } catch {
+      return { success: true, data: { items: [], total: 0, page: params?.page ?? 1, page_size: params?.page_size ?? 20 } }
+    }
+  },
+
+  async markRead(id: string): Promise<{ success: boolean }> {
+    try {
+      return await request.post(`/api/notifications/${id}/read`)
+    } catch {
+      return { success: true }
+    }
+  },
+
+  async markAllRead(): Promise<{ success: boolean }> {
+    try {
+      return await request.post('/api/notifications/read_all')
+    } catch {
+      return { success: true }
+    }
+  }
+}
+
+
+
+==================== frontend/src/api/paper.ts ====================
+import { ApiClient, type ApiResponse } from './request'
+
+export interface CurrencyAmount {
+  CNY: number
+  HKD: number
+  USD: number
+}
+
+export interface PaperAccountSummary {
+  cash: CurrencyAmount | number  // 支持新旧格式
+  realized_pnl: CurrencyAmount | number  // 支持新旧格式
+  positions_value: CurrencyAmount
+  equity: CurrencyAmount | number  // 支持新旧格式
+  updated_at?: string
+}
+
+export interface PaperPositionItem {
+  code: string
+  quantity: number
+  avg_cost: number
+  last_price?: number | null
+  market_value?: number
+  unrealized_pnl?: number | null
+}
+
+export interface PaperOrderItem {
+  user_id?: string
+  code: string
+  side: 'buy' | 'sell'
+  quantity: number
+  price: number
+  amount: number
+  status: 'filled' | 'rejected' | string
+  created_at: string
+  filled_at?: string
+}
+
+export interface GetAccountResponse {
+  account: PaperAccountSummary
+  positions: PaperPositionItem[]
+}
+
+export interface PlaceOrderPayload {
+  code: string
+  side: 'buy' | 'sell'
+  quantity: number
+  analysis_id?: string
+}
+
+export const paperApi = {
+  async getAccount() {
+    return ApiClient.get<GetAccountResponse>('/api/paper/account')
+  },
+  async placeOrder(data: PlaceOrderPayload) {
+    return ApiClient.post<{ order: PaperOrderItem }>('/api/paper/order', data, { showLoading: true })
+  },
+  async getPositions() {
+    return ApiClient.get<{ items: PaperPositionItem[] }>('/api/paper/positions')
+  },
+  async getOrders(limit = 50) {
+    return ApiClient.get<{ items: PaperOrderItem[] }>(`/api/paper/orders`, { limit })
+  },
+  async resetAccount() {
+    // 后端要求 confirm=true
+    return ApiClient.post<{ message: string; cash: number }>(`/api/paper/reset?confirm=true`)
+  }
+}
+
+==================== frontend/src/api/stockSync.ts ====================
+/**
+ * 股票数据同步 API
+ */
+
+import { ApiClient } from './request'
+
+export interface SingleStockSyncRequest {
+  symbol: string
+  sync_realtime?: boolean
+  sync_historical: boolean
+  sync_financial: boolean
+  sync_basic?: boolean
+  data_source: 'tushare' | 'akshare'
+  days: number
+}
+
+export interface BatchStockSyncRequest {
+  symbols: string[]
+  sync_historical: boolean
+  sync_financial: boolean
+  sync_basic?: boolean
+  data_source: 'tushare' | 'akshare'
+  days: number
+}
+
+export interface SyncResult {
+  success: boolean
+  records?: number
+  message?: string
+  error?: string
+}
+
+export interface SingleStockSyncResponse {
+  symbol: string
+  realtime_sync: SyncResult | null
+  historical_sync: SyncResult | null
+  financial_sync: SyncResult | null
+  basic_sync: SyncResult | null
+}
+
+export interface BatchStockSyncResponse {
+  total: number
+  symbols: string[]
+  historical_sync: {
+    success_count: number
+    error_count: number
+    total_records: number
+    message: string
+  } | null
+  financial_sync: {
+    success_count: number
+    error_count: number
+    total_symbols: number
+    message: string
+  } | null
+  basic_sync: {
+    success_count: number
+    error_count: number
+    total_symbols: number
+    message: string
+  } | null
+}
+
+export interface StockSyncStatus {
+  symbol: string
+  historical_data: {
+    last_sync: string | null
+    last_date: string | null
+    total_records: number
+  }
+  financial_data: {
+    last_sync: string | null
+    last_report_period: string | null
+    total_records: number
+  }
+}
+
+export const stockSyncApi = {
+  /**
+   * 同步单个股票数据
+   */
+  syncSingle(request: SingleStockSyncRequest) {
+    return ApiClient.post<SingleStockSyncResponse>('/api/stock-sync/single', request, {
+      timeout: 120000 // 2分钟超时
+    })
+  },
+
+  /**
+   * 批量同步股票数据
+   */
+  syncBatch(request: BatchStockSyncRequest) {
+    return ApiClient.post<BatchStockSyncResponse>('/api/stock-sync/batch', request, {
+      timeout: 300000 // 5分钟超时
+    })
+  },
+
+  /**
+   * 获取股票同步状态
+   */
+  getStatus(symbol: string) {
+    return ApiClient.get<StockSyncStatus>(`/api/stock-sync/status/${symbol}`)
+  }
+}
+
+
+
+==================== frontend/src/api/modelCapabilities.ts ====================
+/**
+ * 模型能力管理 API
+ */
+
+import { request } from './request'
+
+/**
+ * 模型能力信息
+ */
+export interface ModelCapabilityInfo {
+  model_name: string
+  capability_level: number
+  suitable_roles: string[]
+  features: string[]
+  recommended_depths: string[]
+  performance_metrics?: {
+    speed: number
+    cost: number
+    quality: number
+  }
+  description?: string
+}
+
+/**
+ * 模型推荐响应
+ */
+export interface ModelRecommendationResponse {
+  quick_model: string
+  deep_model: string
+  quick_model_info: ModelCapabilityInfo
+  deep_model_info: ModelCapabilityInfo
+  reason: string
+}
+
+/**
+ * 模型验证响应
+ */
+export interface ModelValidationResponse {
+  valid: boolean
+  warnings: string[]
+  recommendations: string[]
+}
+
+/**
+ * 徽章样式
+ */
+export interface BadgeStyle {
+  text: string
+  color: string
+  icon: string
+}
+
+/**
+ * 所有徽章样式
+ */
+export interface AllBadges {
+  capability_levels: Record<string, BadgeStyle>
+  roles: Record<string, BadgeStyle>
+  features: Record<string, BadgeStyle>
+}
+
+/**
+ * 分析深度要求
+ */
+export interface DepthRequirement {
+  min_capability: number
+  quick_model_min: number
+  deep_model_min: number
+  required_features: string[]
+  description: string
+}
+
+/**
+ * 获取所有默认模型能力配置
+ */
+export function getDefaultModelConfigs() {
+  return request({
+    url: '/api/model-capabilities/default-configs',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取分析深度要求
+ */
+export function getDepthRequirements() {
+  return request({
+    url: '/api/model-capabilities/depth-requirements',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取能力等级描述
+ */
+export function getCapabilityDescriptions() {
+  return request({
+    url: '/api/model-capabilities/capability-descriptions',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取所有徽章样式
+ */
+export function getAllBadges() {
+  return request({
+    url: '/api/model-capabilities/badges',
+    method: 'get'
+  })
+}
+
+/**
+ * 推荐模型
+ * @param researchDepth 研究深度：快速/基础/标准/深度/全面
+ */
+export function recommendModels(researchDepth: string) {
+  return request({
+    url: '/api/model-capabilities/recommend',
+    method: 'post',
+    data: {
+      research_depth: researchDepth
+    }
+  })
+}
+
+/**
+ * 验证模型对
+ * @param quickModel 快速模型
+ * @param deepModel 深度模型
+ * @param researchDepth 研究深度
+ */
+export function validateModels(quickModel: string, deepModel: string, researchDepth: string) {
+  return request({
+    url: '/api/model-capabilities/validate',
+    method: 'post',
+    data: {
+      quick_model: quickModel,
+      deep_model: deepModel,
+      research_depth: researchDepth
+    }
+  })
+}
+
+/**
+ * 批量初始化模型能力
+ * @param overwrite 是否覆盖已有配置
+ */
+export function batchInitCapabilities(overwrite: boolean = false) {
+  return request({
+    url: '/api/model-capabilities/batch-init',
+    method: 'post',
+    data: {
+      overwrite
+    }
+  })
+}
+
+/**
+ * 获取指定模型的能力信息
+ * @param modelName 模型名称
+ */
+export function getModelCapability(modelName: string) {
+  return request({
+    url: `/api/model-capabilities/model/${modelName}`,
+    method: 'get'
+  })
+}
+
+
+
+==================== frontend/src/api/scheduler.ts ====================
+/**
+ * 定时任务管理 API
+ */
+
+import { ApiClient } from './request'
+
+export interface Job {
+  id: string
+  name: string
+  next_run_time: string | null
+  paused: boolean
+  trigger: string
+  display_name?: string
+  description?: string
+  func?: string
+  args?: any[]
+  kwargs?: Record<string, any>
+  misfire_grace_time?: number
+  max_instances?: number
+}
+
+export interface JobHistory {
+  job_id: string
+  action: string
+  status: string
+  error_message?: string
+  timestamp: string
+}
+
+export interface JobExecution {
+  _id: string
+  job_id: string
+  job_name: string
+  status: 'running' | 'success' | 'failed' | 'missed'
+  scheduled_time: string
+  execution_time?: number
+  timestamp: string
+  return_value?: string
+  error_message?: string
+  traceback?: string
+  progress?: number
+  progress_message?: string
+  current_item?: string
+  total_items?: number
+  processed_items?: number
+  updated_at?: string
+  is_manual?: boolean
+  cancel_requested?: boolean
+}
+
+export interface JobExecutionStats {
+  total: number
+  success: number
+  failed: number
+  missed: number
+  avg_execution_time: number
+  last_execution?: {
+    status: string
+    timestamp: string
+    execution_time?: number
+  }
+}
+
+export interface SchedulerStats {
+  total_jobs: number
+  running_jobs: number
+  paused_jobs: number
+  scheduler_running: boolean
+  scheduler_state: number
+}
+
+export interface SchedulerHealth {
+  status: string
+  running: boolean
+  state: number
+  timestamp: string
+}
+
+/**
+ * 获取所有定时任务列表
+ */
+export function getJobs() {
+  return ApiClient.get<Job[]>('/api/scheduler/jobs')
+}
+
+/**
+ * 获取任务详情
+ */
+export function getJobDetail(jobId: string) {
+  return ApiClient.get<Job>(`/api/scheduler/jobs/${jobId}`)
+}
+
+/**
+ * 暂停任务
+ */
+export function pauseJob(jobId: string) {
+  return ApiClient.post<void>(`/api/scheduler/jobs/${jobId}/pause`)
+}
+
+/**
+ * 恢复任务
+ */
+export function resumeJob(jobId: string) {
+  return ApiClient.post<void>(`/api/scheduler/jobs/${jobId}/resume`)
+}
+
+/**
+ * 手动触发任务
+ */
+export function triggerJob(jobId: string, force: boolean = true) {
+  return ApiClient.post<void>(`/api/scheduler/jobs/${jobId}/trigger?force=${force}`)
+}
+
+/**
+ * 获取任务执行历史
+ */
+export function getJobHistory(jobId: string, params?: { limit?: number; offset?: number }) {
+  return ApiClient.get<{
+    history: JobHistory[]
+    total: number
+    limit: number
+    offset: number
+  }>(`/api/scheduler/jobs/${jobId}/history`, params)
+}
+
+/**
+ * 获取所有任务执行历史
+ */
+export function getAllHistory(params?: {
+  limit?: number
+  offset?: number
+  job_id?: string
+  status?: string
+}) {
+  return ApiClient.get<{
+    history: JobHistory[]
+    total: number
+    limit: number
+    offset: number
+  }>('/api/scheduler/history', params)
+}
+
+/**
+ * 获取调度器统计信息
+ */
+export function getSchedulerStats() {
+  return ApiClient.get<SchedulerStats>('/api/scheduler/stats')
+}
+
+/**
+ * 调度器健康检查
+ */
+export function getSchedulerHealth() {
+  return ApiClient.get<SchedulerHealth>('/api/scheduler/health')
+}
+
+/**
+ * 更新任务元数据（触发器名称和备注）
+ */
+export function updateJobMetadata(
+  jobId: string,
+  data: { display_name?: string; description?: string }
+) {
+  return ApiClient.put<void>(`/api/scheduler/jobs/${jobId}/metadata`, data)
+}
+
+/**
+ * 获取任务执行历史
+ */
+export function getJobExecutions(params?: {
+  job_id?: string
+  status?: 'success' | 'failed' | 'missed' | 'running'
+  is_manual?: boolean
+  limit?: number
+  offset?: number
+}) {
+  return ApiClient.get<{
+    items: JobExecution[]
+    total: number
+    limit: number
+    offset: number
+  }>('/api/scheduler/executions', params)
+}
+
+/**
+ * 获取指定任务的执行历史
+ */
+export function getSingleJobExecutions(
+  jobId: string,
+  params?: {
+    status?: 'success' | 'failed' | 'missed' | 'running'
+    is_manual?: boolean
+    limit?: number
+    offset?: number
+  }
+) {
+  return ApiClient.get<{
+    items: JobExecution[]
+    total: number
+    limit: number
+    offset: number
+  }>(`/api/scheduler/jobs/${jobId}/executions`, params)
+}
+
+/**
+ * 获取任务执行统计信息
+ */
+export function getJobExecutionStats(jobId: string) {
+  return ApiClient.get<JobExecutionStats>(`/api/scheduler/jobs/${jobId}/execution-stats`)
+}
+
+/**
+ * 取消/终止任务执行
+ */
+export function cancelExecution(executionId: string) {
+  return ApiClient.post<void>(`/api/scheduler/executions/${executionId}/cancel`)
+}
+
+/**
+ * 标记执行记录为失败
+ */
+export function markExecutionFailed(executionId: string, reason?: string) {
+  return ApiClient.post<void>(`/api/scheduler/executions/${executionId}/mark-failed`, null, {
+    params: { reason: reason || '用户手动标记为失败' }
+  })
+}
+
+/**
+ * 删除执行记录
+ */
+export function deleteExecution(executionId: string) {
+  return ApiClient.delete<void>(`/api/scheduler/executions/${executionId}`)
+}
+
+
+==================== frontend/src/api/config.ts ====================
+/**
+ * 配置管理API
+ */
+
+import { ApiClient } from './request'
+
+// 配置相关类型定义
+
+// 大模型厂家
+export interface LLMProvider {
+  id: string
+  name: string
+  display_name: string
+  description?: string
+  website?: string
+  api_doc_url?: string
+  logo_url?: string
+  is_active: boolean
+  supported_features: string[]
+  default_base_url?: string
+  extra_config?: {
+    has_api_key?: boolean
+    source?: 'environment' | 'database'
+    [key: string]: any
+  }
+  // 🆕 聚合渠道支持
+  is_aggregator?: boolean
+  aggregator_type?: string
+  model_name_format?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface LLMConfig {
+  provider: string
+  model_name: string
+  model_display_name?: string  // 新增：模型显示名称
+  api_key?: string  // 可选，优先从厂家配置获取
+  api_base?: string
+  max_tokens: number
+  temperature: number
+  timeout: number
+  retry_times: number
+  enabled: boolean
+  description?: string
+  // 定价配置
+  input_price_per_1k?: number
+  output_price_per_1k?: number
+  currency?: string
+  // 高级配置
+  enable_memory?: boolean
+  enable_debug?: boolean
+  priority?: number
+  model_category?: string
+  // 🆕 模型能力分级系统
+  capability_level?: number  // 模型能力等级(1-5): 1=基础, 2=标准, 3=高级, 4=专业, 5=旗舰
+  suitable_roles?: string[]  // 适用角色: quick_analysis(快速分析), deep_analysis(深度分析), both(两者都适合)
+  features?: string[]  // 模型特性: tool_calling, long_context, reasoning, vision, fast_response, cost_effective
+  recommended_depths?: string[]  // 推荐的分析深度级别: 快速, 基础, 标准, 深度, 全面
+  performance_metrics?: {  // 性能指标
+    speed?: number  // 速度(1-5)
+    cost?: number  // 成本(1-5)
+    quality?: number  // 质量(1-5)
+  }
+}
+
+export interface DataSourceConfig {
+  name: string
+  type: string
+  api_key?: string
+  api_secret?: string
+  endpoint?: string
+  timeout: number
+  rate_limit: number
+  enabled: boolean
+  priority: number
+  config_params: Record<string, any>
+  description?: string
+  // 新增字段：支持市场分类
+  market_categories?: string[]  // 所属市场分类列表
+  display_name?: string         // 显示名称
+  provider?: string            // 数据提供商
+  created_at?: string
+  updated_at?: string
+}
+
+// 市场分类配置
+export interface MarketCategory {
+  id: string
+  name: string
+  display_name: string
+  description?: string
+  enabled: boolean
+  sort_order: number
+  created_at?: string
+  updated_at?: string
+}
+
+// 数据源分组关系
+export interface DataSourceGrouping {
+  data_source_name: string
+  market_category_id: string
+  priority: number              // 在该分类中的优先级
+  enabled: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DatabaseConfig {
+  name: string
+  type: string
+  host: string
+  port: number
+  username?: string
+  password?: string
+  database?: string
+  connection_params: Record<string, any>
+  pool_size: number
+  max_overflow: number
+  enabled: boolean
+  description?: string
+}
+
+export interface SystemConfig {
+  config_name: string
+  config_type: string
+  llm_configs: LLMConfig[]
+  default_llm?: string
+  data_source_configs: DataSourceConfig[]
+  default_data_source?: string
+  database_configs: DatabaseConfig[]
+  system_settings: Record<string, any>
+  created_at: string
+  updated_at: string
+  version: number
+  is_active: boolean
+}
+
+export interface ConfigTestRequest {
+  config_type: 'llm' | 'datasource' | 'database'
+  config_data: Record<string, any>
+}
+
+export interface ConfigTestResponse {
+  success: boolean
+  message: string
+  details?: Record<string, any>
+}
+
+
+// 系统设置元数据
+export interface SettingMeta {
+  key: string
+  sensitive: boolean
+  editable: boolean
+  source: 'environment' | 'database' | 'default'
+  has_value: boolean
+}
+
+// 配置管理API
+export const configApi = {
+  // 获取系统配置
+  getSystemConfig(): Promise<SystemConfig> {
+    return ApiClient.get('/api/config/system')
+  },
+
+  // ========== 大模型厂家管理 ==========
+
+  // 获取所有大模型厂家
+  getLLMProviders(): Promise<LLMProvider[]> {
+    return ApiClient.get('/api/config/llm/providers')
+  },
+
+  // 添加大模型厂家
+  addLLMProvider(provider: Partial<LLMProvider>): Promise<{ message: string; id: string }> {
+    return ApiClient.post('/api/config/llm/providers', provider)
+  },
+
+  // 更新大模型厂家
+  updateLLMProvider(id: string, provider: Partial<LLMProvider>): Promise<{ message: string }> {
+    return ApiClient.put(`/api/config/llm/providers/${id}`, provider)
+  },
+
+  // 删除大模型厂家
+  deleteLLMProvider(id: string): Promise<{ message: string }> {
+    return ApiClient.delete(`/api/config/llm/providers/${id}`)
+  },
+
+  // 启用/禁用大模型厂家
+  toggleLLMProvider(id: string, isActive: boolean): Promise<{ message: string }> {
+    return ApiClient.patch(`/api/config/llm/providers/${id}/toggle`, { is_active: isActive })
+  },
+
+  // 迁移环境变量到厂家管理
+  migrateEnvToProviders(): Promise<{ message: string; data: any }> {
+    return ApiClient.post('/api/config/llm/providers/migrate-env')
+  },
+
+  // 🆕 初始化聚合渠道厂家配置
+  initAggregatorProviders(): Promise<{ success: boolean; message: string; data: { added_count: number; skipped_count: number } }> {
+    return ApiClient.post('/api/config/llm/providers/init-aggregators')

@@ -243,7 +243,7 @@ const filteredLogFiles = computed(() => {
 const loadLogFiles = async () => {
   loading.value = true
   try {
-    logFiles.value = await LogsApi.listLogFiles()
+    const res = (await LogsApi.listLogFiles()).data; logFiles.value = (res.files || []).map((f: any) => ({ ...f, size_mb: f.size ? f.size / 1024 / 1024 : 0, modified_at: f.last_modified }))
     ElMessage.success('日志文件列表加载成功')
   } catch (error: any) {
     ElMessage.error(`加载失败: ${error.message || error}`)
@@ -254,7 +254,7 @@ const loadLogFiles = async () => {
 
 const loadStatistics = async () => {
   try {
-    statistics.value = await LogsApi.getStatistics(7)
+    statistics.value = (await LogsApi.getStatistics(7)).data || {}
   } catch (error: any) {
     ElMessage.error(`加载统计失败: ${error.message || error}`)
   }
@@ -271,12 +271,12 @@ const loadLogContent = async () => {
   
   viewLoading.value = true
   try {
-    logContent.value = await LogsApi.readLogFile({
+    logContent.value = (await LogsApi.readLogFile({
       filename: currentLogFile.value.name,
       lines: viewFilter.value.lines,
       level: viewFilter.value.level as any,
       keyword: viewFilter.value.keyword || undefined
-    })
+    })).data || {}
   } catch (error: any) {
     ElMessage.error(`加载日志内容失败: ${error.message || error}`)
   } finally {
@@ -286,11 +286,19 @@ const loadLogContent = async () => {
 
 const downloadLog = async (file: LogFileInfo) => {
   try {
-    const blob = await LogsApi.exportLogs({
-      filenames: [file.name],
-      format: 'zip'
+    ElMessage.info('正在下载...')
+    // 使用 fetch 直接下载，携带 auth token
+    const token = localStorage.getItem('token') || ''
+    const response = await fetch('/api/system/system-logs/export', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ filenames: [file.name] })
     })
-    
+    if (!response.ok) throw new Error('下载失败')
+    const blob = await response.blob()
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -299,7 +307,6 @@ const downloadLog = async (file: LogFileInfo) => {
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
-    
     ElMessage.success('日志下载成功')
   } catch (error: any) {
     ElMessage.error(`下载失败: ${error.message || error}`)

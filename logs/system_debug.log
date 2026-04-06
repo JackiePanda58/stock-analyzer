@@ -569,3 +569,914 @@ TypeError: TradingAgentsGraph.__init__() got an unexpected keyword argument 'dee
 2026-04-03 14:06:20,795 [INFO] [api_server.py:250] - [API] [512400] ✅ 分析顺利完成，耗时: 379秒
 2026-04-03 14:06:50,823 [INFO] [api_server.py:219] - [API] 👉 收到分析请求，目标代码: 513180 | 日期: 2026-04-03 | 用户: admin
 2026-04-03 14:13:01,018 [INFO] [api_server.py:250] - [API] [513180] ✅ 分析顺利完成，耗时: 370秒
+2026-04-06 13:56:22,763 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-06 13:56:22,765 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 13:57:09,441 [INFO] [app.py:23] - === Web UI 服务启动 ===
+2026-04-06 13:57:09,446 [INFO] [app.py:29] - ✅ Redis 缓存大脑连接成功！
+2026-04-06 13:59:10,345 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 13:59:25,145 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 13:59:25,156 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 13:59:46,890 [WARNING] [api_server.py:152] - ❌ [登录失败] 用户名或密码错误: admin
+2026-04-06 14:00:02,303 [INFO] [api_server.py:191] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:00:02,307 [INFO] [api_server.py:219] - [API] 👉 收到分析请求，目标代码: 512400 | 日期: 2026-04-06 | 用户: admin
+2026-04-06 14:00:18,133 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:00:54,539 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:01:34,594 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:01:37,169 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:03:02,276 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-06 14:03:02,277 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 14:03:16,679 [INFO] [api_server.py:219] - [API] 👉 收到分析请求，目标代码: 513180 | 日期: 2026-04-06 | 用户: admin
+2026-04-06 14:03:33,009 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:04:24,831 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:08:16,303 [INFO] [api_server.py:250] - [API] [513180] ✅ 分析顺利完成，耗时: 300秒
+2026-04-06 14:32:00,167 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-06 14:32:00,167 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 14:32:37,018 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:32:42,658 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:36:41,070 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-06 14:36:41,070 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 14:37:22,060 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:37:28,989 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:39:42,738 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:42:24,465 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接成功！
+2026-04-06 14:42:24,466 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 14:45:29,363 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 14:45:47,085 [INFO] [api_server.py:141] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 15:32:13,597 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 15:32:13,598 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 15:34:03,602 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 15:34:09,539 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 15:35:53,391 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 15:35:53,391 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 15:36:25,061 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 15:46:55,836 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 15:51:07,597 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 15:51:07,597 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 15:51:40,862 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:04:19,826 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:06:37,993 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:06:37,994 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:07:42,530 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:21:54,691 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:21:54,691 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:22:25,623 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:22:57,789 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:22:57,790 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:23:27,201 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:23:48,069 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:24:22,999 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:29:25,342 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:29:25,343 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:30:13,535 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:32:19,569 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:32:19,569 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:33:13,983 [INFO] [api_server.py:195] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:43:43,049 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:44:34,372 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:44:34,373 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:45:13,264 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:47:38,713 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:47:38,714 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:48:13,217 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:50:04,778 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 16:50:51,436 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 16:50:51,436 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 16:51:21,950 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:07:55,273 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:07:55,274 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:08:27,369 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:23:58,486 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:27:50,831 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:27:50,832 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:28:15,030 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:28:15,031 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:29:17,299 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:29:17,300 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:29:45,916 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:30:41,796 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:30:41,798 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:30:54,321 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:34:10,060 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:34:46,619 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:56:50,034 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 17:56:50,036 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 17:57:24,894 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:59:14,685 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 17:59:46,513 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 18:00:11,478 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 20:08:16,533 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 20:08:16,533 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 20:09:29,588 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 20:54:17,316 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:13:05,724 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:13:05,725 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:14:17,665 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:14:17,666 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:14:26,599 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:14:26,599 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:14:37,462 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:14:37,463 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:14:46,613 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:14:46,613 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:14:47,188 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:14:56,712 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:14:56,713 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:15:06,653 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:15:06,653 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:15:16,690 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:15:16,691 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:15:26,609 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:15:26,609 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:15:36,705 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:15:36,706 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:15:56,793 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:15:56,794 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:04,516 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:16:06,788 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:06,788 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:16,645 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:16,646 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:26,658 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:26,659 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:38,334 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:38,335 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:40,242 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:40,242 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:16:48,811 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:16:48,812 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:17:06,063 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:17:06,064 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:17:11,884 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:30:12,411 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:30:18,506 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:32:06,809 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:32:32,541 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:33:31,042 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:33:31,042 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:33:31,043 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:33:31,043 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:33:36,908 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:33:36,908 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:33:46,981 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:33:46,981 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:33:51,358 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:33:56,909 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:33:56,910 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:06,920 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:06,920 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:16,867 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:16,868 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:27,287 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:27,288 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:36,893 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:36,893 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:46,908 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:46,908 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:34:56,909 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:34:56,909 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:06,906 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:06,906 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:16,937 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:16,938 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:26,960 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:26,961 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:36,953 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:36,954 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:47,173 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:47,173 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:35:57,046 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:35:57,047 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:06,999 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:07,000 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:16,956 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:16,957 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:26,970 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:26,970 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:37,047 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:37,047 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:46,969 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:46,970 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:36:57,039 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:36:57,039 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:07,014 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:07,014 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:17,030 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:17,030 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:27,004 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:27,004 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:38,222 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:38,222 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:47,018 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:47,019 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:37:57,111 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:37:57,111 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:07,134 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:07,135 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:17,150 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:17,150 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:27,057 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:27,058 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:37,054 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:37,054 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:47,055 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:47,055 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:38:57,155 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:38:57,155 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:07,081 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:07,082 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:17,199 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:17,199 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:27,096 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:27,097 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:37,192 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:37,193 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:47,110 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:47,111 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:39:57,209 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:39:57,210 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:07,185 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:07,186 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:17,165 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:17,165 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:27,162 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:27,162 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:37,167 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:37,167 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:47,157 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:47,158 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:40:57,294 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:40:57,295 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:07,228 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:07,229 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:17,174 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:17,175 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:27,236 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:27,236 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:37,208 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:37,209 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:47,253 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:47,253 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:41:57,235 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:41:57,236 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:07,200 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:07,201 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:17,202 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:17,203 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:27,227 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:27,227 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:37,268 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:37,269 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:47,225 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:47,225 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:42:57,227 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:42:57,228 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:07,236 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:07,237 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:17,319 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:17,319 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:27,268 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:27,268 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:37,237 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:37,237 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:47,252 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:47,252 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:43:57,299 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:43:57,300 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:07,328 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:07,329 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:17,255 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:17,256 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:27,283 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:27,284 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:37,297 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:37,298 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:47,306 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:47,306 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:44:57,441 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:44:57,442 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:07,327 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:07,328 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:17,289 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:17,289 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:27,300 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:27,301 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:37,386 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:37,387 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:47,343 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:47,344 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:45:57,464 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:45:57,465 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:07,362 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:07,362 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:17,406 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:17,407 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:27,350 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:27,351 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:37,364 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:37,364 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:47,346 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:47,346 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:46:57,428 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:46:57,429 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:07,382 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:07,382 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:17,410 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:17,411 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:27,400 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:27,400 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:37,390 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:37,390 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:47,450 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:47,450 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:47:57,434 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:47:57,435 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:08,438 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:08,438 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:17,598 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:17,598 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:27,504 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:27,505 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:30,372 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:48:37,542 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:37,543 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:47,520 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:47,520 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:48:57,481 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:48:57,481 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:07,456 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:07,456 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:11,640 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:49:17,455 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:49:17,519 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:17,519 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:23,696 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:49:27,635 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:27,635 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:37,560 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:37,560 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:47,495 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:47,496 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:49:57,622 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:49:57,622 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:07,482 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:07,483 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:18,010 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:18,011 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:27,612 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:27,613 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:37,688 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:37,689 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:47,523 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:47,523 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:50:57,710 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:50:57,710 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:51:07,533 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:51:07,533 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:51:18,448 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:51:18,448 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:51:21,616 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:51:21,617 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:51:28,373 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:51:53,075 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:52:01,872 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:52:19,873 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:52:19,873 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:52:20,587 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:52:20,588 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:52:28,920 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:52:28,921 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:52:38,762 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:52:38,762 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:52:47,918 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:52:52,224 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 21:53:11,832 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:53:11,833 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:53:21,108 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:53:21,109 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:53:31,031 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:53:31,032 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:53:41,045 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:53:41,045 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:53:51,034 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:53:51,034 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:01,048 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:01,049 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:11,029 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:11,030 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:22,127 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:22,127 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:31,102 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:31,103 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:41,054 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:41,054 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:54:51,253 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:54:51,254 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:01,107 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:01,108 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:11,194 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:11,195 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:21,105 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:21,106 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:31,134 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:31,135 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:41,099 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:41,100 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:55:51,121 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:55:51,121 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:01,132 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:01,132 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:11,130 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:11,131 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:21,138 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:21,138 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:31,171 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:31,172 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:41,143 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:41,143 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:56:51,175 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:56:51,176 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:01,205 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:01,206 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:11,221 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:11,221 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:21,247 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:21,248 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:31,198 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:31,199 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:41,222 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:41,223 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:57:51,198 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:57:51,198 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:01,204 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:01,205 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:11,213 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:11,213 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:21,309 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:21,310 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:31,236 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:31,236 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:41,213 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:41,214 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:58:51,347 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:58:51,347 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:01,362 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:01,362 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:11,235 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:11,235 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:21,352 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:21,353 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:33,140 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:33,141 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:34,751 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:34,752 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:43,738 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:43,738 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 21:59:53,919 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 21:59:53,920 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:00:04,622 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:00:10,751 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:01:49,707 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:01:49,707 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:01:52,200 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:01:52,201 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:01,304 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:01,305 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:11,374 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:11,374 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:16,074 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:02:21,381 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:21,381 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:22,066 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:02:31,565 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:31,565 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:41,316 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:41,316 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:02:51,438 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:02:51,439 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:03:03,707 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:03:03,707 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:03:04,273 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:03:04,273 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:03:16,329 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:03:25,582 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:20:51,120 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:21:47,168 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:22:09,913 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:22:13,522 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:23:23,997 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:23:25,959 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:23:37,916 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:24:09,030 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:24:09,058 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:25:14,308 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:25:25,488 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:25:25,517 [ERROR] [api_server.py:120] - 未处理异常: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.12/dist-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/fastapi/routing.py", line 324, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/stock-analyzer/api_server.py", line 996, in report_download
+    return Response(
+           ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 47, in __init__
+    self.init_headers(headers)
+  File "/usr/local/lib/python3.12/dist-packages/starlette/responses.py", line 62, in init_headers
+    raw_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers.items()]
+                                                 ^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: ordinal not in range(256)
+2026-04-06 22:27:36,541 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:27:36,541 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:27:36,544 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:27:36,545 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:27:43,177 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:27:43,177 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:27:51,874 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:27:51,874 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:01,956 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:01,956 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:04,351 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:28:11,648 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:11,649 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:21,651 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:21,652 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:31,758 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:31,759 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:41,692 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:41,693 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:28:51,656 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:28:51,656 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:01,787 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:01,787 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:12,101 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:12,101 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:21,808 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:21,809 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:32,008 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:32,009 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:41,744 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:41,745 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:29:51,787 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:29:51,788 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:30:02,997 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:30:02,998 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:30:15,556 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:30:15,557 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:30:18,126 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:30:18,126 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:30:27,734 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:31:04,735 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:31:04,737 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:31:06,908 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:31:06,909 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:31:15,833 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:31:30,891 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:31:35,119 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:31:40,091 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:31:54,273 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:32:04,358 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:32:51,387 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:33:33,673 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:33:44,634 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:40:05,212 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:40:14,145 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:40:29,544 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:41:00,814 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:42:26,150 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:42:26,150 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:42:26,151 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:42:26,151 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:42:31,884 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:42:31,885 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:42:41,993 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:42:41,993 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:42:51,243 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:42:52,000 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:42:52,000 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:00,200 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:43:02,159 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:02,160 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:11,903 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:11,903 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:21,757 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:43:22,052 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:22,053 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:32,069 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:32,070 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:42,016 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:42,017 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:43:50,729 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:43:52,065 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:43:52,066 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:02,153 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:02,153 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:12,089 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:12,090 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:22,038 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:22,039 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:31,942 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:31,942 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:41,960 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:41,961 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:44:51,939 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:44:51,940 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:02,033 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:02,034 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:12,094 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:12,095 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:22,045 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:22,046 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:32,010 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:32,011 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:42,035 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:42,036 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:45:52,110 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:45:52,111 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:46:00,118 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:46:02,229 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:46:02,230 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:46:12,088 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:46:12,088 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:46:22,128 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:46:22,128 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:46:27,880 [INFO] [api_server.py:34] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-06 22:46:27,881 [INFO] [api_server.py:41] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-06 22:46:34,320 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:46:40,046 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:46:47,217 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:47:14,281 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:48:19,596 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-06 22:48:49,449 [INFO] [api_server.py:145] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min

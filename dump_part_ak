@@ -1,0 +1,2000 @@
+      transition: 'fade'
+    },
+    children: [
+      {
+        path: ':code',
+        name: 'StockDetail',
+        component: () => import('@/views/Stocks/Detail.vue'),
+        meta: {
+          title: '股票详情',
+          requiresAuth: true,
+          hideInMenu: true,
+          transition: 'fade'
+        }
+      }
+    ]
+  },
+
+
+  {
+    path: '/tasks',
+    name: 'TaskCenter',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '任务中心',
+      icon: 'List',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: '',
+        name: 'TaskCenterHome',
+        component: () => import('@/views/Tasks/TaskCenter.vue'),
+        meta: { title: '任务中心', requiresAuth: true }
+      }
+    ]
+  },
+  { path: '/queue', redirect: '/tasks' },
+  { path: '/analysis/history', redirect: '/tasks?tab=completed' },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '分析报告',
+      icon: 'Document',
+      requiresAuth: true,
+      transition: 'fade'
+    },
+    children: [
+      {
+        path: '',
+        name: 'ReportsHome',
+        component: () => import('@/views/Reports/index.vue'),
+        meta: {
+          title: '分析报告',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'view/:id',
+        name: 'ReportDetail',
+        component: () => import('@/views/Reports/ReportDetail.vue'),
+        meta: {
+          title: '报告详情',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'token',
+        name: 'TokenStatistics',
+        component: () => import('@/views/Reports/TokenStatistics.vue'),
+        meta: {
+          title: 'Token统计',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '设置',
+      icon: 'Setting',
+      requiresAuth: true,
+      transition: 'slide-left'
+    },
+    children: [
+      {
+        path: '',
+        name: 'SettingsHome',
+        component: () => import('@/views/Settings/index.vue'),
+        meta: {
+          title: '设置',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'config',
+        name: 'ConfigManagement',
+        component: () => import('@/views/Settings/ConfigManagement.vue'),
+        meta: {
+          title: '配置管理',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'database',
+        name: 'DatabaseManagement',
+        component: () => import('@/views/System/DatabaseManagement.vue'),
+        meta: {
+          title: '数据库管理',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'logs',
+        name: 'OperationLogs',
+        component: () => import('@/views/System/OperationLogs.vue'),
+        meta: {
+          title: '操作日志',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'system-logs',
+        name: 'LogManagement',
+        component: () => import('@/views/System/LogManagement.vue'),
+        meta: {
+          title: '系统日志',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'sync',
+        name: 'MultiSourceSync',
+        component: () => import('@/views/System/MultiSourceSync.vue'),
+        meta: {
+          title: '多数据源同步',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'cache',
+        name: 'CacheManagement',
+        component: () => import('@/views/Settings/CacheManagement.vue'),
+        meta: {
+          title: '缓存管理',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'usage',
+        name: 'UsageStatistics',
+        component: () => import('@/views/Settings/UsageStatistics.vue'),
+        meta: {
+          title: '使用统计',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'scheduler',
+        name: 'SchedulerManagement',
+        component: () => import('@/views/System/SchedulerManagement.vue'),
+        meta: {
+          title: '定时任务',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Auth/Login.vue'),
+    meta: {
+      title: '登录',
+      hideInMenu: true,
+      transition: 'fade'
+    }
+  },
+
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import('@/views/About/index.vue'),
+    meta: {
+      title: '关于',
+      icon: 'InfoFilled',
+      requiresAuth: false, // 关于页面不需要认证
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/paper',
+    name: 'PaperTrading',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '模拟交易',
+      icon: 'CreditCard',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: '',
+        name: 'PaperTradingHome',
+        component: () => import('@/views/PaperTrading/index.vue'),
+        meta: {
+          title: '模拟交易',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/Error/404.vue'),
+    meta: {
+      title: '页面不存在',
+      hideInMenu: true,
+      requiresAuth: true
+    }
+  }
+]
+
+// 创建路由实例
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
+})
+
+// 全局前置守卫
+router.beforeEach(async (to, from, next) => {
+  // 开始进度条
+  NProgress.start()
+
+  const authStore = useAuthStore()
+  const appStore = useAppStore()
+
+  // 设置页面标题
+  const title = to.meta.title as string
+  if (title) {
+    document.title = `${title} - TradingAgents-CN`
+  }
+
+  console.log('🚦 路由守卫检查:', {
+    path: to.fullPath,
+    name: to.name,
+    requiresAuth: to.meta.requiresAuth,
+    isAuthenticated: authStore.isAuthenticated,
+    hasToken: !!authStore.token
+  })
+
+  // 检查是否需要认证
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    console.log('🔒 需要认证但用户未登录:', {
+      path: to.fullPath,
+      requiresAuth: to.meta.requiresAuth,
+      isAuthenticated: authStore.isAuthenticated,
+      token: authStore.token ? '存在' : '不存在'
+    })
+    // 保存原始路径，登录后跳转
+    authStore.setRedirectPath(to.fullPath)
+    next('/login')
+    return
+  }
+
+
+
+  // 如果已登录且访问登录页，重定向到仪表板
+  if (authStore.isAuthenticated && to.name === 'Login') {
+    next('/dashboard')
+    return
+  }
+
+  // 更新当前路由信息
+  appStore.setCurrentRoute(to)
+
+  next()
+})
+
+// 全局后置守卫
+router.afterEach((to, from) => {
+  // 结束进度条
+  NProgress.done()
+
+  // 页面切换后的处理
+  nextTick(() => {
+    // 可以在这里添加页面分析、埋点等逻辑
+  })
+})
+
+// 路由错误处理
+router.onError((error) => {
+  console.error('路由错误:', error)
+  NProgress.done()
+  ElMessage.error('页面加载失败，请重试')
+})
+
+export default router
+
+// 导出路由配置供其他地方使用
+export { routes }
+
+
+==================== frontend/src/constants/analysts.ts ====================
+/**
+ * 分析师配置常量
+ */
+
+export interface Analyst {
+  id: string
+  name: string
+  description: string
+  icon?: string
+}
+
+// 系统支持的分析师列表
+export const ANALYSTS: Analyst[] = [
+  {
+    id: 'market',
+    name: '市场分析师',
+    description: '分析市场趋势、行业动态和宏观经济环境',
+    icon: 'TrendCharts'
+  },
+  {
+    id: 'fundamentals',
+    name: '基本面分析师',
+    description: '分析公司财务状况、业务模式和竞争优势',
+    icon: 'DataAnalysis'
+  },
+  {
+    id: 'news',
+    name: '新闻分析师',
+    description: '分析相关新闻、公告和市场事件的影响',
+    icon: 'Document'
+  },
+  {
+    id: 'social',
+    name: '社媒分析师',
+    description: '分析社交媒体情绪、投资者心理和舆论导向',
+    icon: 'ChatDotRound'
+  }
+]
+
+// 分析师名称列表（用于表单选项）
+export const ANALYST_NAMES = ANALYSTS.map(analyst => analyst.name)
+
+// 默认选中的分析师
+export const DEFAULT_ANALYSTS = ['市场分析师', '基本面分析师']
+
+// 根据名称获取分析师信息
+export const getAnalystByName = (name: string): Analyst | undefined => {
+  return ANALYSTS.find(analyst => analyst.name === name)
+}
+
+// 根据ID获取分析师信息
+export const getAnalystById = (id: string): Analyst | undefined => {
+  return ANALYSTS.find(analyst => analyst.id === id)
+}
+
+// 验证分析师名称是否有效
+export const isValidAnalyst = (name: string): boolean => {
+  return ANALYST_NAMES.includes(name)
+}
+
+// 中文名称到英文ID的映射
+export const ANALYST_NAME_TO_ID_MAP: Record<string, string> = {
+  '市场分析师': 'market',
+  '基本面分析师': 'fundamentals',
+  '新闻分析师': 'news',
+  '社媒分析师': 'social'
+}
+
+// 将中文分析师名称转换为英文ID
+export const convertAnalystNamesToIds = (names: string[]): string[] => {
+  return names.map(name => ANALYST_NAME_TO_ID_MAP[name] || name)
+}
+
+// 将英文ID转换为中文分析师名称
+export const convertAnalystIdsToNames = (ids: string[]): string[] => {
+  const idToNameMap = Object.fromEntries(
+    Object.entries(ANALYST_NAME_TO_ID_MAP).map(([name, id]) => [id, name])
+  )
+  return ids.map(id => idToNameMap[id] || id)
+}
+
+// 模型名称到供应商的映射
+export const MODEL_TO_PROVIDER_MAP: Record<string, string> = {
+  // 阿里百炼 (DashScope)
+  'qwen-turbo': 'dashscope',
+  'qwen-plus': 'dashscope',
+  'qwen-max': 'dashscope',
+  'qwen-plus-latest': 'dashscope',
+  'qwen-max-longcontext': 'dashscope',
+
+  // OpenAI
+  'gpt-3.5-turbo': 'openai',
+  'gpt-4': 'openai',
+  'gpt-4-turbo': 'openai',
+  'gpt-4o': 'openai',
+  'gpt-4o-mini': 'openai',
+
+  // Google
+  'gemini-pro': 'google',
+  'gemini-2.0-flash': 'google',
+  'gemini-2.0-flash-thinking-exp': 'google',
+
+  // DeepSeek
+  'deepseek-chat': 'deepseek',
+  'deepseek-coder': 'deepseek',
+
+  // 智谱AI
+  'glm-4': 'zhipu',
+  'glm-3-turbo': 'zhipu',
+  'chatglm3-6b': 'zhipu'
+}
+
+// 根据模型名称获取供应商
+export const getProviderByModel = (modelName: string): string => {
+  return MODEL_TO_PROVIDER_MAP[modelName] || 'dashscope' // 默认使用阿里百炼
+}
+
+
+==================== frontend/src/types/config.ts ====================
+// 配置管理相关类型定义
+
+// 大模型厂家
+export interface LLMProvider {
+  id: string
+  name: string
+  display_name: string
+  description?: string
+  website?: string
+  api_doc_url?: string
+  logo_url?: string
+  is_active: boolean
+  supported_features: string[]
+  default_base_url?: string
+  api_key?: string
+  api_secret?: string
+  extra_config?: Record<string, any>
+
+  // 🆕 聚合渠道支持
+  is_aggregator?: boolean
+  aggregator_type?: string
+  model_name_format?: string
+
+  created_at?: string
+  updated_at?: string
+}
+
+// 大模型配置
+export interface LLMConfig {
+  name: string
+  provider: string
+  model_name: string
+  api_key?: string  // 可选，优先从厂家配置获取
+  base_url?: string
+  max_tokens?: number
+  temperature?: number
+  timeout?: number
+  is_default?: boolean
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+// 数据源配置
+export interface DataSourceConfig {
+  name: string
+  type: string
+  config: Record<string, any>
+  is_default?: boolean
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+// 数据库配置
+export interface DatabaseConfig {
+  name: string
+  type: string
+  host: string
+  port: number
+  database: string
+  username: string
+  password: string
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+// 系统配置
+export interface SystemConfig {
+  app_name: string
+  version: string
+  debug: boolean
+  log_level: string
+  max_concurrent_analyses: number
+  default_timeout: number
+  cache_enabled: boolean
+  cache_ttl: number
+}
+
+// 配置测试请求
+export interface ConfigTestRequest {
+  type: 'llm' | 'datasource' | 'database'
+  config: Record<string, any>
+}
+
+// 配置测试响应
+export interface ConfigTestResponse {
+  success: boolean
+  message: string
+  details?: Record<string, any>
+  latency?: number
+}
+
+
+==================== frontend/src/types/analysis.ts ====================
+// 分析状态枚举
+export enum AnalysisStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled'
+}
+
+// 批次状态枚举
+export enum BatchStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  PARTIAL_SUCCESS = 'partial_success',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled'
+}
+
+// 分析参数
+export interface AnalysisParameters {
+  market_type: 'A股' | '美股' | '港股'
+  analysis_date?: string
+  research_depth: '快速' | '基础' | '标准' | '深度' | '全面'
+  selected_analysts: string[]
+  custom_prompt?: string
+  include_charts: boolean
+  language: 'zh-CN' | 'en-US'
+}
+
+// 分析结果
+export interface AnalysisResult {
+  analysis_id: string
+  summary?: string
+  recommendation?: string
+  confidence_score?: number
+  risk_level?: string
+  key_points: string[]
+  detailed_analysis?: Record<string, any>
+  charts: string[]
+  tokens_used: number
+  execution_time: number
+  error_message?: string
+}
+
+// 分析任务
+export interface AnalysisTask {
+  id: string
+  task_id: string
+  batch_id?: string
+  user_id: string
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  stock_name?: string
+  status: AnalysisStatus
+  priority: number
+  progress: number
+  
+  // 时间戳
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  
+  // 执行信息
+  worker_id?: string
+  parameters: AnalysisParameters
+  result?: AnalysisResult
+  
+  // 重试机制
+  retry_count: number
+  max_retries: number
+  last_error?: string
+}
+
+// 分析批次
+export interface AnalysisBatch {
+  id: string
+  batch_id: string
+  user_id: string
+  title: string
+  description?: string
+  status: BatchStatus
+  
+  // 任务统计
+  total_tasks: number
+  completed_tasks: number
+  failed_tasks: number
+  cancelled_tasks: number
+  progress: number
+  
+  // 时间戳
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  
+  // 配置参数
+  parameters: AnalysisParameters
+  
+  // 结果摘要
+  results_summary?: Record<string, any>
+}
+
+// 股票信息（统一前后端字段名）
+export interface StockInfo {
+  // 基础信息
+  symbol: string  // 主字段：6位股票代码
+  code?: string   // 兼容字段（已废弃）
+  full_symbol?: string  // 完整代码（如 000001.SZ）
+  name: string
+  market: string
+  industry?: string
+  area?: string
+  board?: string         // 板块（主板、创业板、科创板等）
+  exchange?: string      // 交易所（上海证券交易所、深圳证券交易所等）
+
+  // 市值信息（亿元）
+  total_mv?: number      // 总市值
+  circ_mv?: number       // 流通市值
+
+  // 财务指标
+  pe?: number            // 市盈率
+  pb?: number            // 市净率
+  pe_ttm?: number        // 滚动市盈率
+  pb_mrq?: number        // 最新市净率
+  roe?: number           // 净资产收益率(%)
+
+  // 交易数据
+  close?: number         // 收盘价
+  pct_chg?: number       // 涨跌幅(%)
+  amount?: number        // 成交额
+  turnover_rate?: number // 换手率(%)
+  volume_ratio?: number  // 量比
+
+  // 技术指标
+  ma20?: number          // 20日均线
+  rsi14?: number         // RSI指标
+  kdj_k?: number         // KDJ-K
+  kdj_d?: number         // KDJ-D
+  kdj_j?: number         // KDJ-J
+  dif?: number           // MACD-DIF
+  dea?: number           // MACD-DEA
+  macd_hist?: number     // MACD柱状图
+}
+
+// 单股分析请求
+export interface SingleAnalysisRequest {
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  parameters?: AnalysisParameters
+}
+
+// 批量分析请求
+export interface BatchAnalysisRequest {
+  title: string
+  description?: string
+  symbols?: string[]  // 主字段：股票代码列表
+  stock_codes?: string[]  // 兼容字段（已废弃）
+  parameters?: AnalysisParameters
+}
+
+// 分析任务响应
+export interface AnalysisTaskResponse {
+  task_id: string
+  batch_id?: string
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  stock_name?: string
+  status: AnalysisStatus
+  progress: number
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  result?: AnalysisResult
+}
+
+// 分析批次响应
+export interface AnalysisBatchResponse {
+  batch_id: string
+  title: string
+  description?: string
+  status: BatchStatus
+  total_tasks: number
+  completed_tasks: number
+  failed_tasks: number
+  progress: number
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  parameters: AnalysisParameters
+}
+
+// 分析历史查询参数
+export interface AnalysisHistoryQuery {
+  status?: AnalysisStatus
+  start_date?: string
+  end_date?: string
+  symbol?: string  // 主字段：股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  batch_id?: string
+  page: number
+  page_size: number
+}
+
+// 分析历史响应
+export interface AnalysisHistoryResponse {
+  tasks: AnalysisTask[]
+  batches: AnalysisBatch[]
+  total: number
+  page: number
+  page_size: number
+  has_more: boolean
+}
+
+// 任务进度信息
+export interface TaskProgress {
+  task_id: string
+  status: AnalysisStatus
+  progress: number
+  message?: string
+  updated_at: string
+}
+
+// 批次进度信息
+export interface BatchProgress {
+  batch_id: string
+  status: BatchStatus
+  total_tasks: number
+  completed_tasks: number
+  failed_tasks: number
+  progress: number
+  updated_at: string
+}
+
+// 分析统计信息
+export interface AnalysisStats {
+  total_analyses: number
+  successful_analyses: number
+  failed_analyses: number
+  success_rate: number
+  average_execution_time: number
+  total_tokens_used: number
+  daily_analyses: number
+  monthly_analyses: number
+}
+
+// 队列状态信息
+export interface QueueStatus {
+  pending: number
+  processing: number
+  completed: number
+  failed: number
+  queue_size: number
+}
+
+// 用户队列状态
+export interface UserQueueStatus {
+  pending: number
+  processing: number
+  concurrent_limit: number
+  available_slots: number
+}
+
+// 分析报告
+export interface AnalysisReport {
+  id: string
+  task_id: string
+  batch_id?: string
+  title: string
+  content: string
+  format: 'html' | 'pdf' | 'markdown'
+  created_at: string
+  download_url?: string
+}
+
+
+==================== frontend/src/types/auth.ts ====================
+// 用户信息接口
+export interface User {
+  id: string
+  username: string
+  email: string
+  avatar?: string
+  is_active: boolean
+  is_verified: boolean
+  is_admin: boolean
+  created_at: string
+  updated_at: string
+  last_login?: string
+  
+  // 用户偏好
+  preferences: UserPreferences
+  
+  // 配额和限制
+  daily_quota: number
+  concurrent_limit: number
+  
+  // 统计信息
+  total_analyses: number
+  successful_analyses: number
+  failed_analyses: number
+}
+
+// 用户偏好设置
+export interface UserPreferences {
+  // 分析偏好
+  default_market: 'A股' | '美股' | '港股'
+  default_depth: '1' | '2' | '3' | '4' | '5'  // 1-5级分析深度
+  default_analysts?: string[]  // 默认分析师列表：市场分析师、基本面分析师、新闻分析师、社媒分析师
+  auto_refresh?: boolean
+  refresh_interval?: number
+
+  // 外观设置
+  ui_theme: 'light' | 'dark' | 'auto'
+  sidebar_width?: number
+
+  // 语言和地区
+  language: 'zh-CN' | 'en-US'
+
+  // 通知设置
+  notifications_enabled: boolean
+  email_notifications: boolean
+  desktop_notifications?: boolean
+  analysis_complete_notification?: boolean
+  system_maintenance_notification?: boolean
+}
+
+// 登录表单
+export interface LoginForm {
+  username: string
+  password: string
+  remember_me?: boolean
+  captcha?: string
+}
+
+// 注册表单
+export interface RegisterForm {
+  username: string
+  email: string
+  password: string
+  confirm_password: string
+  agreement: boolean
+  captcha?: string
+  invitation_code?: string
+}
+
+// 修改密码表单
+export interface ChangePasswordForm {
+  old_password: string
+  new_password: string
+  confirm_password: string
+}
+
+// 重置密码表单
+export interface ResetPasswordForm {
+  email: string
+  captcha?: string
+}
+
+// 用户权限信息
+export interface UserPermissions {
+  permissions: string[]
+  roles: string[]
+}
+
+// 登录响应
+export interface LoginResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+  user: User
+}
+
+// Token刷新响应
+export interface RefreshTokenResponse {
+  access_token: string
+  refresh_token?: string
+  expires_in: number
+}
+
+// 用户会话信息
+export interface UserSession {
+  session_id: string
+  user_id: string
+  created_at: string
+  expires_at: string
+  last_activity: string
+  ip_address?: string
+  user_agent?: string
+}
+
+// 用户统计信息
+export interface UserStats {
+  total_analyses: number
+  successful_analyses: number
+  failed_analyses: number
+  success_rate: number
+  daily_quota: number
+  daily_used: number
+  concurrent_limit: number
+  current_concurrent: number
+}
+
+// 用户活动日志
+export interface UserActivity {
+  id: string
+  user_id: string
+  action: string
+  resource: string
+  details?: Record<string, any>
+  ip_address?: string
+  user_agent?: string
+  created_at: string
+}
+
+// 用户配置更新
+export interface UserConfigUpdate {
+  preferences?: Partial<UserPreferences>
+  daily_quota?: number
+  concurrent_limit?: number
+}
+
+// 验证码信息
+export interface CaptchaInfo {
+  captcha_id: string
+  captcha_image: string
+  expires_in: number
+}
+
+// 邀请码信息
+export interface InvitationCode {
+  code: string
+  created_by: string
+  used_by?: string
+  used_at?: string
+  expires_at: string
+  is_used: boolean
+  max_uses: number
+  current_uses: number
+}
+
+
+==================== frontend/src/types/router.d.ts ====================
+import 'vue-router'
+
+// Augment Vue Router's RouteMeta to include app-specific fields
+declare module 'vue-router' {
+  interface RouteMeta {
+    // 页面标题
+    title?: string
+    // 是否需要认证
+    requiresAuth?: boolean
+    // 菜单图标名称（与 Element Plus 图标名称一致）
+    icon?: string
+    // 是否在菜单中隐藏
+    hideInMenu?: boolean
+    // 页面切换动画名称（用于 <transition name="...">）
+    transition?: string
+  }
+}
+
+==================== frontend/src/views/Reports/TokenStatistics.vue ====================
+<template>
+  <div class="token-statistics">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1 class="page-title">
+        <el-icon><Coin /></el-icon>
+        Token使用统计
+      </h1>
+      <p class="page-description">
+        Token使用情况、成本分析和统计图表
+      </p>
+    </div>
+
+    <!-- 控制面板 -->
+    <el-card class="control-panel" shadow="never">
+      <el-row :gutter="24" align="middle">
+        <el-col :span="6">
+          <el-form-item label="统计时间范围">
+            <el-select v-model="timeRange" @change="loadStatistics">
+              <el-option label="今天" value="today" />
+              <el-option label="最近7天" value="week" />
+              <el-option label="最近30天" value="month" />
+              <el-option label="最近90天" value="quarter" />
+              <el-option label="全部" value="all" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="供应商筛选">
+            <el-select v-model="providerFilter" @change="loadStatistics" clearable>
+              <el-option label="全部供应商" value="" />
+              <el-option label="阿里百炼" value="dashscope" />
+              <el-option label="OpenAI" value="openai" />
+              <el-option label="Google" value="google" />
+              <el-option label="DeepSeek" value="deepseek" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <div class="control-buttons">
+            <el-button @click="loadStatistics" :loading="loading">
+              <el-icon><Refresh /></el-icon>
+              刷新数据
+            </el-button>
+            <el-button @click="exportData">
+              <el-icon><Download /></el-icon>
+              导出统计
+            </el-button>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- 概览指标 -->
+    <el-row :gutter="24" style="margin-top: 24px">
+      <el-col :span="6">
+        <el-card class="metric-card" shadow="never">
+          <div class="metric-content">
+            <div class="metric-value">{{ formatNumber(overview.totalRequests) }}</div>
+            <div class="metric-label">总请求数</div>
+            <div class="metric-change" :class="getChangeClass(overview.requestsChange)">
+              {{ formatChange(overview.requestsChange) }}
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="metric-card" shadow="never">
+          <div class="metric-content">
+            <div class="metric-value">{{ formatNumber(overview.totalTokens) }}</div>
+            <div class="metric-label">总Token数</div>
+            <div class="metric-change" :class="getChangeClass(overview.tokensChange)">
+              {{ formatChange(overview.tokensChange) }}
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="metric-card" shadow="never">
+          <div class="metric-content">
+            <div class="metric-value">¥{{ formatNumber(overview.totalCost) }}</div>
+            <div class="metric-label">总成本</div>
+            <div class="metric-change" :class="getChangeClass(overview.costChange)">
+              {{ formatChange(overview.costChange) }}
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="metric-card" shadow="never">
+          <div class="metric-content">
+            <div class="metric-value">¥{{ formatNumber(overview.avgCostPerRequest) }}</div>
+            <div class="metric-label">平均单次成本</div>
+            <div class="metric-change" :class="getChangeClass(overview.avgCostChange)">
+              {{ formatChange(overview.avgCostChange) }}
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 图表区域 -->
+    <el-row :gutter="24" style="margin-top: 24px">
+      <!-- Token使用趋势 -->
+      <el-col :span="12">
+        <el-card class="chart-card" shadow="never">
+          <template #header>
+            <h3>📈 Token使用趋势</h3>
+          </template>
+          <div ref="tokenTrendChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 成本分布 -->
+      <el-col :span="12">
+        <el-card class="chart-card" shadow="never">
+          <template #header>
+            <h3>💰 成本分布</h3>
+          </template>
+          <div ref="costDistributionChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="24" style="margin-top: 24px">
+      <!-- 供应商统计 -->
+      <el-col :span="12">
+        <el-card class="chart-card" shadow="never">
+          <template #header>
+            <h3>🏢 供应商统计</h3>
+          </template>
+          <div ref="providerChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 模型使用排行 -->
+      <el-col :span="12">
+        <el-card class="chart-card" shadow="never">
+          <template #header>
+            <h3>🏆 模型使用排行</h3>
+          </template>
+          <div class="model-ranking">
+            <div
+              v-for="(model, index) in modelRanking"
+              :key="model.name"
+              class="ranking-item"
+            >
+              <div class="rank-number">{{ index + 1 }}</div>
+              <div class="model-info">
+                <div class="model-name">{{ model.name }}</div>
+                <div class="model-stats">
+                  {{ formatNumber(model.requests) }} 次请求 · 
+                  {{ formatNumber(model.tokens) }} Token · 
+                  ¥{{ formatNumber(model.cost) }}
+                </div>
+              </div>
+              <div class="usage-bar">
+                <el-progress
+                  :percentage="(model.requests / modelRanking[0].requests) * 100"
+                  :show-text="false"
+                  :stroke-width="6"
+                />
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 详细记录表 -->
+    <el-card class="records-table" shadow="never" style="margin-top: 24px">
+      <template #header>
+        <div class="table-header">
+          <h3>📋 详细记录</h3>
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索股票代码或模型名称"
+            style="width: 200px"
+            @input="filterRecords"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </template>
+
+      <el-table
+        :data="filteredRecords"
+        v-loading="loading"
+        style="width: 100%"
+        :default-sort="{ prop: 'timestamp', order: 'descending' }"
+      >
+        <el-table-column prop="timestamp" label="时间" width="180" sortable>
+          <template #default="{ row }">
+            {{ formatDateTime(row.timestamp) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="provider" label="供应商" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ getProviderName(row.provider) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="model" label="模型" width="150" />
+        <el-table-column prop="stock_symbol" label="股票代码" width="100" />
+        <el-table-column prop="prompt_tokens" label="输入Token" width="100" sortable />
+        <el-table-column prop="completion_tokens" label="输出Token" width="100" sortable />
+        <el-table-column prop="total_tokens" label="总Token" width="100" sortable />
+        <el-table-column prop="cost" label="成本(¥)" width="100" sortable>
+          <template #default="{ row }">
+            ¥{{ formatNumber(row.cost) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="duration" label="耗时(ms)" width="100" sortable />
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button size="small" @click="viewDetails(row)">
+              详情
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <el-pagination
+        v-if="totalRecords > 0"
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="totalRecords"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        style="margin-top: 16px; text-align: right"
+        @size-change="loadRecords"
+        @current-change="loadRecords"
+      />
+    </el-card>
+
+    <!-- 空状态 -->
+    <el-empty
+      v-if="!loading && overview.totalRequests === 0"
+      description="暂无Token使用记录"
+      :image-size="200"
+    >
+      <template #description>
+        <div class="empty-description">
+          <p>暂无Token使用记录</p>
+          <div class="empty-tips">
+            <h4>💡 如何开始记录Token使用？</h4>
+            <ul>
+              <li>进行股票分析：使用股票分析功能</li>
+              <li>确保API配置：检查API密钥是否正确配置</li>
+              <li>启用成本跟踪：在配置管理中启用Token成本跟踪</li>
+            </ul>
+          </div>
+        </div>
+      </template>
+    </el-empty>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
+import {
+  Coin,
+  Refresh,
+  Download,
+  Search
+} from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+
+// 响应式数据
+const loading = ref(false)
+const timeRange = ref('month')
+const providerFilter = ref('')
+const searchKeyword = ref('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalRecords = ref(0)
+
+// 图表引用
+const tokenTrendChart = ref()
+const costDistributionChart = ref()
+const providerChart = ref()
+
+// 数据
+const overview = reactive({
+  totalRequests: 0,
+  totalTokens: 0,
+  totalCost: 0,
+  avgCostPerRequest: 0,
+  requestsChange: 0,
+  tokensChange: 0,
+  costChange: 0,
+  avgCostChange: 0
+})
+
+const records = ref([])
+const filteredRecords = ref([])
+const modelRanking = ref([])
+
+// 方法
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toFixed(2)
+}
+
+const formatChange = (change: number): string => {
+  if (change > 0) return `+${change.toFixed(1)}%`
+  if (change < 0) return `${change.toFixed(1)}%`
+  return '0%'
+}
+
+const getChangeClass = (change: number): string => {
+  if (change > 0) return 'positive'
+  if (change < 0) return 'negative'
+  return 'neutral'
+}
+
+const formatDateTime = (timestamp: string): string => {
+  return new Date(timestamp).toLocaleString('zh-CN')
+}
+
+const getProviderName = (provider: string): string => {
+  const names = {
+    'dashscope': '阿里百炼',
+    'openai': 'OpenAI',
+    'google': 'Google',
+    'deepseek': 'DeepSeek'
+  }
+  return names[provider] || provider
+}
+
+const loadStatistics = async () => {
+  loading.value = true
+  try {
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 模拟数据
+    Object.assign(overview, {
+      totalRequests: 1234,
+      totalTokens: 567890,
+      totalCost: 123.45,
+      avgCostPerRequest: 0.1,
+      requestsChange: 15.2,
+      tokensChange: 23.8,
+      costChange: 18.5,
+      avgCostChange: 2.1
+    })
+    
+    // 加载图表数据
+    await nextTick()
+    renderCharts()
+    
+  } catch (error) {
+    ElMessage.error('加载统计数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadRecords = async () => {
+  // 模拟加载记录数据
+  records.value = [
+    {
+      timestamp: '2024-01-18T14:30:00Z',
+      provider: 'dashscope',
+      model: 'qwen-turbo',
+      stock_symbol: '000001',
+      prompt_tokens: 1500,
+      completion_tokens: 800,
+      total_tokens: 2300,
+      cost: 0.023,
+      duration: 1200
+    }
+  ]
+  
+  totalRecords.value = 50
+  filterRecords()
+}
+
+const filterRecords = () => {
+  if (!searchKeyword.value) {
+    filteredRecords.value = records.value
+  } else {
+    const keyword = searchKeyword.value.toLowerCase()
+    filteredRecords.value = records.value.filter(record =>
+      record.stock_symbol.toLowerCase().includes(keyword) ||
+      record.model.toLowerCase().includes(keyword)
+    )
+  }
+}
+
+const renderCharts = () => {
+  // Token使用趋势图
+  if (tokenTrendChart.value) {
+    const chart1 = echarts.init(tokenTrendChart.value)
+    chart1.setOption({
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月'] },
+      yAxis: { type: 'value' },
+      series: [{
+        data: [120, 200, 150, 80, 70],
+        type: 'line',
+        smooth: true
+      }]
+    })
+  }
+  
+  // 成本分布图
+  if (costDistributionChart.value) {
+    const chart2 = echarts.init(costDistributionChart.value)
+    chart2.setOption({
+      tooltip: { trigger: 'item' },
+      series: [{
+        type: 'pie',
+        data: [
+          { value: 1048, name: '阿里百炼' },
+          { value: 735, name: 'OpenAI' },
+          { value: 580, name: 'Google' }
+        ]
+      }]
+    })
+  }
+  
+  // 供应商统计图
+  if (providerChart.value) {
+    const chart3 = echarts.init(providerChart.value)
+    chart3.setOption({
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: ['阿里百炼', 'OpenAI', 'Google', 'DeepSeek'] },
+      yAxis: { type: 'value' },
+      series: [{
+        data: [120, 200, 150, 80],
+        type: 'bar'
+      }]
+    })
+  }
+}
+
+const exportData = () => {
+  ElMessage.info('导出功能开发中...')
+}
+
+const viewDetails = (row: any) => {
+  ElMessage.info('详情功能开发中...')
+}
+
+// 生命周期
+onMounted(() => {
+  loadStatistics()
+  loadRecords()
+  
+  // 模拟模型排行数据
+  modelRanking.value = [
+    { name: 'qwen-turbo', requests: 500, tokens: 150000, cost: 15.0 },
+    { name: 'gpt-4', requests: 300, tokens: 120000, cost: 24.0 },
+    { name: 'gemini-pro', requests: 200, tokens: 80000, cost: 8.0 }
+  ]
+})
+</script>
+
+<style lang="scss" scoped>
+.token-statistics {
+  .page-header {
+    margin-bottom: 24px;
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      margin: 0 0 8px 0;
+    }
+
+    .page-description {
+      color: var(--el-text-color-regular);
+      margin: 0;
+    }
+  }
+
+  .control-panel {
+    .control-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+  }
+
+  .metric-card {
+    .metric-content {
+      text-align: center;
+      
+      .metric-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--el-color-primary);
+        margin-bottom: 8px;
+      }
+      
+      .metric-label {
+        font-size: 14px;
+        color: var(--el-text-color-regular);
+        margin-bottom: 4px;
+      }
+      
+      .metric-change {
+        font-size: 12px;
+        
+        &.positive {
+          color: var(--el-color-success);
+        }
+        
+        &.negative {
+          color: var(--el-color-danger);
+        }
+        
+        &.neutral {
+          color: var(--el-text-color-placeholder);
+        }
+      }
+    }
+  }
+
+  .chart-card {
+    .chart-container {
+      height: 300px;
+    }
+    
+    .model-ranking {
+      .ranking-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--el-border-color-lighter);
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        .rank-number {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--el-color-primary);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          margin-right: 12px;
+        }
+        
+        .model-info {
+          flex: 1;
+          
+          .model-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+          }
+          
+          .model-stats {
+            font-size: 12px;
+            color: var(--el-text-color-regular);
+          }
+        }
+        
+        .usage-bar {
+          width: 100px;
+        }
+      }
+    }
+  }
+
+  .records-table {
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      h3 {
+        margin: 0;
+      }
+    }
+  }
+
+  .empty-description {
+    .empty-tips {
+      margin-top: 16px;
+      text-align: left;
+      
+      h4 {
+        margin: 0 0 8px 0;
+        color: var(--el-text-color-primary);
+      }
+      
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        
+        li {
+          margin-bottom: 4px;
+          color: var(--el-text-color-regular);
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Reports/ReportDetail.vue ====================
+<template>
+  <div class="report-detail">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="10" animated />
+    </div>
+
+    <!-- 报告内容 -->
+    <div v-else-if="report" class="report-content">
+      <!-- 报告头部 -->
+      <el-card class="report-header" shadow="never">
+        <div class="header-content">
+          <div class="title-section">
+            <h1 class="report-title">
+              <el-icon><Document /></el-icon>
+              {{ report.stock_name || report.stock_symbol }} 分析报告
+            </h1>
+            <div class="report-meta">
+              <el-tag type="primary">{{ report.stock_symbol }}</el-tag>
+              <el-tag v-if="report.stock_name && report.stock_name !== report.stock_symbol" type="info">{{ report.stock_name }}</el-tag>
+              <el-tag type="success">{{ getStatusText(report.status) }}</el-tag>
+              <span class="meta-item">
+                <el-icon><Calendar /></el-icon>
+                {{ formatTime(report.created_at) }}
+              </span>
+              <span class="meta-item">
+                <el-icon><User /></el-icon>
+                {{ formatAnalysts(report.analysts) }}
+              </span>
+              <span v-if="report.model_info && report.model_info !== 'Unknown'" class="meta-item">
+                <el-icon><Cpu /></el-icon>
+                <el-tooltip :content="getModelDescription(report.model_info)" placement="top">
+                  <el-tag type="info" style="cursor: help;">{{ report.model_info }}</el-tag>
+                </el-tooltip>
+              </span>
+            </div>
+          </div>
+          
+          <div class="action-section">
+            <el-button
+              v-if="canApplyToTrading"
+              type="success"
+              @click="applyToTrading"
+            >
+              <el-icon><ShoppingCart /></el-icon>
+              应用到交易
+            </el-button>
+            <el-dropdown trigger="click" @command="downloadReport">
+              <el-button type="primary">
+                <el-icon><Download /></el-icon>
+                下载报告
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="markdown">
+                    <el-icon><document /></el-icon> Markdown
+                  </el-dropdown-item>
+                  <el-dropdown-item command="docx">
+                    <el-icon><document /></el-icon> Word 文档
+                  </el-dropdown-item>
+                  <el-dropdown-item command="pdf">
+                    <el-icon><document /></el-icon> PDF
+                  </el-dropdown-item>
+                  <el-dropdown-item command="json" divided>
+                    <el-icon><document /></el-icon> JSON (原始数据)
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <el-button @click="goBack">
+              <el-icon><Back /></el-icon>
+              返回
+            </el-button>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- 风险提示 -->
+      <div class="risk-disclaimer">
+        <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          <template #title>
+            <div class="disclaimer-content">
+              <el-icon class="disclaimer-icon"><WarningFilled /></el-icon>
+              <div class="disclaimer-text">
+                <p style="margin: 0 0 8px 0;"><strong>⚠️ 重要风险提示与免责声明</strong></p>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li><strong>工具性质：</strong>本系统为股票分析辅助工具，使用AI技术对公开市场数据进行分析，不具备证券投资咨询资质。</li>
+                  <li><strong>非投资建议：</strong>所有分析结果、评分、建议仅为技术分析参考，不构成任何买卖建议或投资决策依据。</li>
+                  <li><strong>数据局限性：</strong>分析基于历史数据和公开信息，可能存在延迟、不完整或不准确的情况，无法预测未来市场走势。</li>
+                  <li><strong>投资风险：</strong>股票投资存在市场风险、流动性风险、政策风险等多种风险，可能导致本金损失。</li>
+                  <li><strong>独立决策：</strong>投资者应基于自身风险承受能力、投资目标和财务状况独立做出投资决策。</li>
+                  <li><strong>专业咨询：</strong>重大投资决策建议咨询具有合法资质的专业投资顾问或金融机构。</li>
+                  <li><strong>责任声明：</strong>使用本工具产生的任何投资决策及其后果由投资者自行承担，本系统不承担任何责任。</li>
+                </ul>
+              </div>
+            </div>
+          </template>
+        </el-alert>
+      </div>
+
+      <!-- 关键指标 -->
+      <el-card class="metrics-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><TrendCharts /></el-icon>
+            <span>关键指标</span>
+          </div>
+        </template>
+        <div class="metrics-content">
+          <el-row :gutter="24">
+            <!-- 分析参考 -->
+            <el-col :span="8">
+              <div class="metric-item">
+                <div class="metric-label">
+                  <el-icon><TrendCharts /></el-icon>
+                  分析参考
+                  <el-tooltip content="基于AI模型的分析倾向，仅供参考，不构成投资建议" placement="top">
+                    <el-icon style="margin-left: 4px; cursor: help; font-size: 14px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+                <div class="metric-value recommendation-value markdown-content" v-html="renderMarkdown(report.recommendation || '暂无')"></div>
+                <el-tag type="info" size="small" style="margin-top: 8px;">仅供参考</el-tag>
+              </div>
+            </el-col>
+
+            <!-- 风险评估 -->
+            <el-col :span="8">
+              <div class="metric-item risk-item">
+                <div class="metric-label">
+                  <el-icon><Warning /></el-icon>
+                  风险评估
+                  <el-tooltip content="基于历史数据的风险评估，实际风险可能更高" placement="top">
+                    <el-icon style="margin-left: 4px; cursor: help; font-size: 14px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+                <div class="risk-display">
+                  <div class="risk-stars">
+                    <el-icon
+                      v-for="star in 5"
+                      :key="star"
+                      class="star-icon"
+                      :class="{ active: star <= getRiskStars(report.risk_level || '中等') }"
+                    >
+                      <StarFilled />
+                    </el-icon>
+                  </div>
+                  <div class="risk-label" :style="{ color: getRiskColor(report.risk_level || '中等') }">
+                    {{ report.risk_level || '中等' }}风险
+                  </div>
+                </div>
+              </div>
+            </el-col>
+
+            <!-- 模型置信度 -->
+            <el-col :span="8">
+              <div class="metric-item confidence-item">
+                <div class="metric-label">
+                  <el-icon><DataAnalysis /></el-icon>
+                  模型置信度
+                  <el-tooltip content="基于AI模型计算的置信度，不代表实际投资成功率" placement="top">
+                    <el-icon style="margin-left: 4px; cursor: help; font-size: 14px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+                <div class="confidence-display">
+                  <el-progress
+                    type="circle"
+                    :percentage="normalizeConfidenceScore(report.confidence_score || 0)"
+                    :width="120"
+                    :stroke-width="10"
+                    :color="getConfidenceColor(normalizeConfidenceScore(report.confidence_score || 0))"
+                  >
+                    <template #default="{ percentage }">
+                      <span class="confidence-text">
+                        <span class="confidence-number">{{ percentage }}</span>
+                        <span class="confidence-unit">分</span>
+                      </span>
+                    </template>
+                  </el-progress>
+                  <div class="confidence-label">{{ getConfidenceLabel(normalizeConfidenceScore(report.confidence_score || 0)) }}</div>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+          <!-- 关键要点 -->
+          <div v-if="report.key_points && report.key_points.length > 0" class="key-points">
+            <h4>
+              <el-icon><List /></el-icon>
+              关键要点
+            </h4>
+            <ul>
+              <li v-for="(point, index) in report.key_points" :key="index">
+                <el-icon class="point-icon"><Check /></el-icon>
+                {{ point }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- 报告摘要 -->
+      <el-card v-if="report.summary" class="summary-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><InfoFilled /></el-icon>
+            <span>执行摘要</span>
+          </div>
+        </template>
+        <div class="summary-content markdown-content" v-html="renderMarkdown(report.summary)"></div>
+      </el-card>
+
+      <!-- 报告模块 -->
+      <el-card class="modules-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Files /></el-icon>
+            <span>分析报告</span>
+          </div>
+        </template>
+        
+        <el-tabs v-model="activeModule" type="border-card">
+          <el-tab-pane
+            v-for="(content, moduleName) in report.reports"
+            :key="moduleName"
+            :label="getModuleDisplayName(moduleName)"
+            :name="moduleName"
+          >
+            <div class="module-content">
+              <div v-if="typeof content === 'string'" class="markdown-content">
+                <div v-html="renderMarkdown(content)"></div>
+              </div>
+              <div v-else class="json-content">
+                <pre>{{ JSON.stringify(content, null, 2) }}</pre>
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else class="error-container">
+      <el-result
+        icon="error"
+        title="报告加载失败"
+        sub-title="请检查报告ID是否正确或稍后重试"
+      >
+        <template #extra>
+          <el-button type="primary" @click="goBack">返回列表</el-button>
+        </template>
+      </el-result>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed, h, reactive } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox, ElInput, ElInputNumber, ElForm, ElFormItem } from 'element-plus'
+import { paperApi } from '@/api/paper'
+import { stocksApi } from '@/api/stocks'
+import { configApi, type LLMConfig } from '@/api/config'
+import {
+  Document,
+  Calendar,
+  User,
+  Download,
+  Back,
+  InfoFilled,
+  TrendCharts,
+  Files,
+  ShoppingCart,
+  WarningFilled,
+  DataAnalysis,
+  Warning,
+  StarFilled,
+  List,
+  Check,
+  Cpu,
+  QuestionFilled,
+  ArrowDown
+} from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { marked } from 'marked'
+import { getMarketByStockCode } from '@/utils/market'
+import type { CurrencyAmount } from '@/api/paper'
+
+// 路由和认证
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+
+// 配置 marked 以获得更完整的 Markdown 支持
+marked.setOptions({ breaks: true, gfm: true })
+
+// 响应式数据
+const loading = ref(true)
+const report = ref(null)
+const activeModule = ref('')
+const llmConfigs = ref<LLMConfig[]>([]) // 存储所有模型配置
+
+// 获取模型配置列表
+const fetchLLMConfigs = async () => {
+  try {
+    const response = await configApi.getSystemConfig()
+    if (response.success && response.data?.llm_configs) {
+      llmConfigs.value = response.data.llm_configs
+    }
+  } catch (error) {
+    console.error('获取模型配置失败:', error)
+  }
+}
+
+// 获取报告详情
+const fetchReportDetail = async () => {
+  loading.value = true
+  try {
+    const reportId = route.params.id as string
+
+    const response = await fetch(`/api/reports/${reportId}/detail`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    if (result.success) {
+      report.value = result.data
+
+      // 设置默认激活的模块
+      const reports = result.data.reports || {}
+      const moduleNames = Object.keys(reports)
+      if (moduleNames.length > 0) {
+        activeModule.value = moduleNames[0]
+      }
+    } else {
+      throw new Error(result.message || '获取报告详情失败')
+    }
+  } catch (error) {
+    console.error('获取报告详情失败:', error)
+    ElMessage.error('获取报告详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 下载报告
+const downloadReport = async (format: string = 'markdown') => {
+  try {
+    // 显示加载提示
+    const loadingMsg = ElMessage({
+      message: `正在生成${getFormatName(format)}格式报告...`,
+      type: 'info',
+      duration: 0
+    })
+
+    const response = await fetch(`/api/reports/${report.value.id}/download?format=${format}`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    loadingMsg.close()
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(errorText || `HTTP ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+

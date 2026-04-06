@@ -1,0 +1,2000 @@
+  },
+
+  // 测试厂家API
+  testProviderAPI(providerId: string): Promise<{ success: boolean; message: string; data?: any }> {
+    return ApiClient.post(`/api/config/llm/providers/${providerId}/test`)
+  },
+
+  // 获取可用的模型列表（按厂家分组）
+  getAvailableModels(): Promise<Array<{
+    provider: string
+    provider_name: string
+    models: Array<{ name: string; display_name: string }>
+  }>> {
+    return ApiClient.get('/api/config/models')
+  },
+
+  // ========== 模型目录管理 ==========
+
+  // 获取所有模型目录
+  getModelCatalog(): Promise<Array<{
+    provider: string
+    provider_name: string
+    models: Array<{
+      name: string
+      display_name: string
+      description?: string
+      context_length?: number
+      max_tokens?: number
+      input_price_per_1k?: number
+      output_price_per_1k?: number
+      currency?: string
+      is_deprecated?: boolean
+      release_date?: string
+      capabilities?: string[]
+    }>
+  }>> {
+    return ApiClient.get('/api/config/model-catalog')
+  },
+
+  // 获取指定厂家的模型目录
+  getProviderModelCatalog(provider: string): Promise<{
+    provider: string
+    provider_name: string
+    models: Array<{
+      name: string
+      display_name: string
+      description?: string
+      context_length?: number
+      max_tokens?: number
+      input_price_per_1k?: number
+      output_price_per_1k?: number
+      currency?: string
+      is_deprecated?: boolean
+      release_date?: string
+      capabilities?: string[]
+    }>
+  }> {
+    return ApiClient.get(`/api/config/model-catalog/${provider}`)
+  },
+
+  // 保存模型目录
+  saveModelCatalog(catalog: {
+    provider: string
+    provider_name: string
+    models: Array<{ name: string; display_name: string; description?: string }>
+  }): Promise<{ success: boolean; message: string }> {
+    return ApiClient.post('/api/config/model-catalog', catalog)
+  },
+
+  // 删除模型目录
+  deleteModelCatalog(provider: string): Promise<{ success: boolean; message: string }> {
+    return ApiClient.delete(`/api/config/model-catalog/${provider}`)
+  },
+
+  // 初始化默认模型目录
+  initModelCatalog(): Promise<{ success: boolean; message: string }> {
+    return ApiClient.post('/api/config/model-catalog/init')
+  },
+
+  // 从厂家 API 获取模型列表
+  fetchProviderModels(provider: string): Promise<{
+    success: boolean
+    message?: string
+    models?: Array<{
+      id: string
+      name: string
+      context_length?: number
+    }>
+  }> {
+    return ApiClient.post(`/api/config/llm/providers/${provider}/fetch-models`)
+  },
+
+  // ========== 大模型配置管理 ==========
+
+  // 获取所有大模型配置
+  getLLMConfigs(): Promise<LLMConfig[]> {
+    return ApiClient.get('/api/config/llm')
+  },
+
+  // 添加或更新大模型配置
+  updateLLMConfig(config: Partial<LLMConfig>): Promise<{ message: string; model_name: string }> {
+    return ApiClient.post('/api/config/llm', config)
+  },
+
+  // 删除大模型配置
+  deleteLLMConfig(provider: string, modelName: string): Promise<{ message: string }> {
+    return ApiClient.delete(`/api/config/llm/${provider}/${modelName}`)
+  },
+
+  // 设置默认大模型
+  setDefaultLLM(name: string): Promise<{ message: string; default_llm: string }> {
+    return ApiClient.post('/api/config/llm/set-default', { name })
+  },
+
+  // 获取所有数据源配置
+  getDataSourceConfigs(): Promise<DataSourceConfig[]> {
+    return ApiClient.get('/api/config/datasource')
+  },
+
+  // 添加数据源配置
+  addDataSourceConfig(config: Partial<DataSourceConfig>): Promise<{ message: string; name: string }> {
+    return ApiClient.post('/api/config/datasource', config)
+  },
+
+  // 设置默认数据源
+  setDefaultDataSource(name: string): Promise<{ message: string; default_data_source: string }> {
+    return ApiClient.post('/api/config/datasource/set-default', { name })
+  },
+
+  // 更新数据源配置
+  updateDataSourceConfig(name: string, config: Partial<DataSourceConfig>): Promise<{ message: string }> {
+    return ApiClient.put(`/api/config/datasource/${name}`, config)
+  },
+
+  // 删除数据源配置
+  deleteDataSourceConfig(name: string): Promise<{ message: string }> {
+    return ApiClient.delete(`/api/config/datasource/${name}`)
+  },
+
+  // 市场分类管理
+  getMarketCategories(): Promise<MarketCategory[]> {
+    return ApiClient.get('/api/config/market-categories')
+  },
+
+  addMarketCategory(category: Partial<MarketCategory>): Promise<{ message: string; id: string }> {
+    return ApiClient.post('/api/config/market-categories', category)
+  },
+
+  updateMarketCategory(id: string, category: Partial<MarketCategory>): Promise<{ message: string }> {
+    return ApiClient.put(`/api/config/market-categories/${id}`, category)
+  },
+
+  deleteMarketCategory(id: string): Promise<{ message: string }> {
+    return ApiClient.delete(`/api/config/market-categories/${id}`)
+  },
+
+  // 数据源分组管理
+  getDataSourceGroupings(): Promise<DataSourceGrouping[]> {
+    return ApiClient.get('/api/config/datasource-groupings')
+  },
+
+  addDataSourceToCategory(dataSourceName: string, categoryId: string, priority?: number): Promise<{ message: string }> {
+    return ApiClient.post('/api/config/datasource-groupings', {
+      data_source_name: dataSourceName,
+      market_category_id: categoryId,
+      priority: priority || 0,
+      enabled: true
+    })
+  },
+
+  removeDataSourceFromCategory(dataSourceName: string, categoryId: string): Promise<{ message: string }> {
+    return ApiClient.delete(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`)
+  },
+
+  updateDataSourceGrouping(dataSourceName: string, categoryId: string, updates: Partial<DataSourceGrouping>): Promise<{ message: string }> {
+    return ApiClient.put(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`, updates)
+  },
+
+  // 批量更新分类内数据源排序
+  updateCategoryDataSourceOrder(categoryId: string, orderedDataSources: Array<{name: string, priority: number}>): Promise<{ message: string }> {
+    return ApiClient.put(`/api/config/market-categories/${categoryId}/datasource-order`, {
+      data_sources: orderedDataSources
+    })
+  },
+
+  // 获取系统设置元数据
+  getSystemSettingsMeta(): Promise<{ items: SettingMeta[] }> {
+    return ApiClient.get('/api/config/settings/meta').then((r: any) => r.data)
+  },
+
+
+  // ========== 数据库配置管理 ==========
+
+  // 获取所有数据库配置
+  getDatabaseConfigs(): Promise<DatabaseConfig[]> {
+    return ApiClient.get('/api/config/database')
+  },
+
+  // 获取指定的数据库配置
+  getDatabaseConfig(dbName: string): Promise<DatabaseConfig> {
+    return ApiClient.get(`/api/config/database/${encodeURIComponent(dbName)}`)
+  },
+
+  // 添加数据库配置
+  addDatabaseConfig(config: Partial<DatabaseConfig>): Promise<{ success: boolean; message: string }> {
+    return ApiClient.post('/api/config/database', config)
+  },
+
+  // 更新数据库配置
+  updateDatabaseConfig(dbName: string, config: Partial<DatabaseConfig>): Promise<{ success: boolean; message: string }> {
+    return ApiClient.put(`/api/config/database/${encodeURIComponent(dbName)}`, config)
+  },
+
+  // 删除数据库配置
+  deleteDatabaseConfig(dbName: string): Promise<{ success: boolean; message: string }> {
+    return ApiClient.delete(`/api/config/database/${encodeURIComponent(dbName)}`)
+  },
+
+  // 测试数据库配置连接
+  testDatabaseConfig(dbName: string): Promise<ConfigTestResponse> {
+    return ApiClient.post(`/api/config/database/${encodeURIComponent(dbName)}/test`)
+  },
+
+  // 获取系统设置
+  getSystemSettings(): Promise<Record<string, any>> {
+    return ApiClient.get('/api/config/settings')
+  },
+
+  // 获取默认模型配置
+  getDefaultModels(): Promise<{ quick_analysis_model: string; deep_analysis_model: string }> {
+    return ApiClient.get('/api/config/settings').then(settings => ({
+      quick_analysis_model: settings.quick_analysis_model || 'qwen-turbo',
+      deep_analysis_model: settings.deep_analysis_model || 'qwen-max'
+    }))
+  },
+
+  // 更新系统设置
+  updateSystemSettings(settings: Record<string, any>): Promise<{ message: string }> {
+    return ApiClient.put('/api/config/settings', settings)
+  },
+
+  // 测试配置连接
+  testConfig(testRequest: ConfigTestRequest): Promise<ConfigTestResponse> {
+    return ApiClient.post('/api/config/test', testRequest)
+  },
+
+  // 导出配置
+  exportConfig(): Promise<{ message: string; data: any; exported_at: string }> {
+    return ApiClient.post('/api/config/export')
+  },
+
+  // 导入配置
+  importConfig(configData: Record<string, any>): Promise<{ message: string }> {
+    return ApiClient.post('/api/config/import', configData)
+  },
+
+  // 迁移传统配置
+  migrateLegacyConfig(): Promise<{ message: string }> {
+    return ApiClient.post('/api/config/migrate-legacy')
+  },
+
+  // 配置重载
+  reloadConfig(): Promise<{ success: boolean; message: string; data?: any }> {
+    return ApiClient.post('/api/config/reload')
+  }
+}
+
+// 配置相关的常量
+export const CONFIG_PROVIDERS = {
+  OPENAI: 'openai',
+  QWEN: 'qwen',
+  GLM: 'glm',
+  GEMINI: 'gemini',
+  CLAUDE: 'claude'
+} as const
+
+/**
+ * 数据源类型常量
+ *
+ * 注意：这些常量与后端 DataSourceType 枚举保持同步
+ * 添加新数据源时，请先在后端 tradingagents/constants/data_sources.py 中注册
+ */
+export const DATA_SOURCE_TYPES = {
+  // 缓存数据源
+  MONGODB: 'mongodb',
+
+  // 中国市场数据源
+  TUSHARE: 'tushare',
+  AKSHARE: 'akshare',
+  BAOSTOCK: 'baostock',
+
+  // 美股数据源
+  FINNHUB: 'finnhub',
+  YAHOO_FINANCE: 'yahoo_finance',
+  ALPHA_VANTAGE: 'alpha_vantage',
+  IEX_CLOUD: 'iex_cloud',
+
+  // 专业数据源
+  WIND: 'wind',
+  CHOICE: 'choice',
+
+  // 其他数据源
+  QUANDL: 'quandl',
+  LOCAL_FILE: 'local_file',
+  CUSTOM: 'custom'
+} as const
+
+export const DATABASE_TYPES = {
+  MONGODB: 'mongodb',
+  REDIS: 'redis',
+  MYSQL: 'mysql',
+  POSTGRESQL: 'postgresql'
+} as const
+
+// 默认配置模板
+export const DEFAULT_LLM_CONFIG: Partial<LLMConfig> = {
+  max_tokens: 4000,
+  temperature: 0.7,
+  timeout: 60,
+  retry_times: 3,
+  enabled: true
+}
+
+export const DEFAULT_DATA_SOURCE_CONFIG: Partial<DataSourceConfig> = {
+  timeout: 30,
+  rate_limit: 100,
+  enabled: true,
+  priority: 0,
+  config_params: {},
+  market_categories: []
+}
+
+// 默认市场分类
+export const DEFAULT_MARKET_CATEGORIES: Partial<MarketCategory>[] = [
+  {
+    id: 'a_shares',
+    name: 'a_shares',
+    display_name: 'A股',
+    description: '中国A股市场数据源',
+    enabled: true,
+    sort_order: 1
+  },
+  {
+    id: 'us_stocks',
+    name: 'us_stocks',
+    display_name: '美股',
+    description: '美国股票市场数据源',
+    enabled: true,
+    sort_order: 2
+  },
+  {
+    id: 'hk_stocks',
+    name: 'hk_stocks',
+    display_name: '港股',
+    description: '香港股票市场数据源',
+    enabled: true,
+    sort_order: 3
+  },
+  {
+    id: 'crypto',
+    name: 'crypto',
+    display_name: '数字货币',
+    description: '数字货币市场数据源',
+    enabled: true,
+    sort_order: 4
+  },
+  {
+    id: 'futures',
+    name: 'futures',
+    display_name: '期货',
+    description: '期货市场数据源',
+    enabled: true,
+    sort_order: 5
+  }
+]
+
+export const DEFAULT_DATABASE_CONFIG: Partial<DatabaseConfig> = {
+  pool_size: 10,
+  max_overflow: 20,
+  enabled: true,
+  connection_params: {}
+}
+
+// 配置验证函数
+export const validateLLMConfig = (config: Partial<LLMConfig>): string[] => {
+  const errors: string[] = []
+
+  if (!config.provider) errors.push('供应商不能为空')
+  if (!config.model_name) errors.push('模型名称不能为空')
+  // 注意：API密钥不在这里验证，因为它是在厂家配置中管理的
+  if (config.max_tokens && config.max_tokens <= 0) errors.push('最大Token数必须大于0')
+  if (config.temperature && (config.temperature < 0 || config.temperature > 2)) {
+    errors.push('温度参数必须在0-2之间')
+  }
+
+  return errors
+}
+
+export const validateDataSourceConfig = (config: Partial<DataSourceConfig>): string[] => {
+  const errors: string[] = []
+
+  if (!config.name) errors.push('数据源名称不能为空')
+  if (!config.type) errors.push('数据源类型不能为空')
+  if (config.timeout && config.timeout <= 0) errors.push('超时时间必须大于0')
+  if (config.rate_limit && config.rate_limit <= 0) errors.push('速率限制必须大于0')
+
+  return errors
+}
+
+export const validateDatabaseConfig = (config: Partial<DatabaseConfig>): string[] => {
+  const errors: string[] = []
+
+  if (!config.name) errors.push('数据库名称不能为空')
+  if (!config.type) errors.push('数据库类型不能为空')
+  if (!config.host) errors.push('主机地址不能为空')
+  if (!config.port || config.port <= 0) errors.push('端口号必须大于0')
+  if (config.pool_size && config.pool_size <= 0) errors.push('连接池大小必须大于0')
+
+  return errors
+}
+
+
+==================== frontend/src/api/favorites.ts ====================
+import { ApiClient } from './request'
+
+export interface FavoriteItem {
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  stock_name: string
+  market: string
+  board?: string
+  exchange?: string
+  added_at?: string
+  tags?: string[]
+  notes?: string
+  alert_price_high?: number | null
+  alert_price_low?: number | null
+  current_price?: number | null
+  change_percent?: number | null
+  volume?: number | null
+}
+
+export interface AddFavoriteReq {
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  stock_name: string
+  market?: string
+  tags?: string[]
+  notes?: string
+  alert_price_high?: number | null
+  alert_price_low?: number | null
+}
+
+export const favoritesApi = {
+  /**
+   * 获取收藏列表
+   */
+  list: () => ApiClient.get<FavoriteItem[]>('/api/favorites/'),
+
+  /**
+   * 添加收藏
+   * @param payload 收藏信息（需包含 symbol 或 stock_code）
+   */
+  add: (payload: AddFavoriteReq) => ApiClient.post<{ message: string; symbol?: string; stock_code?: string }>('/api/favorites/', payload),
+
+  /**
+   * 更新收藏
+   * @param symbol 股票代码（6位）
+   * @param payload 更新内容
+   */
+  update: (symbol: string, payload: Partial<Pick<FavoriteItem, 'tags' | 'notes' | 'alert_price_high' | 'alert_price_low'>>) =>
+    ApiClient.put<{ message: string; symbol?: string; stock_code?: string }>(`/api/favorites/${symbol}`, payload),
+
+  /**
+   * 删除收藏
+   * @param symbol 股票代码（6位）
+   */
+  remove: (symbol: string) => ApiClient.delete<{ message: string; symbol?: string; stock_code?: string }>(`/api/favorites/${symbol}`),
+
+  /**
+   * 检查是否已收藏
+   * @param symbol 股票代码（6位）
+   */
+  check: (symbol: string) => ApiClient.get<{ symbol?: string; stock_code?: string; is_favorite: boolean }>(`/api/favorites/check/${symbol}`),
+
+  /**
+   * 获取所有标签
+   */
+  tags: () => ApiClient.get<string[]>('/api/favorites/tags'),
+
+  /**
+   * 同步自选股实时行情
+   * @param data_source 数据源（tushare/akshare）
+   */
+  syncRealtime: (data_source: string = 'tushare') =>
+    ApiClient.post<{
+      total: number
+      success_count: number
+      failed_count: number
+      symbols: string[]
+      data_source: string
+      message: string
+    }>('/api/favorites/sync-realtime', { data_source })
+}
+
+
+
+==================== frontend/src/api/templates.ts ====================
+import ApiClient from './request'
+
+export interface TemplateItem {
+  id: string
+  name: string
+  description?: string
+  type?: string
+  created_at?: string
+  updated_at?: string
+  [key: string]: any
+}
+
+export interface CreateTemplatePayload {
+  name: string
+  description?: string
+  type?: string
+  config?: any
+}
+
+export interface UpdateTemplatePayload extends Partial<CreateTemplatePayload> {}
+
+export const TemplatesApi = {
+  list(params?: Record<string, any>) {
+    return ApiClient.get<TemplateItem[]>('/api/templates', { params })
+  },
+
+  get(id: string) {
+    return ApiClient.get<TemplateItem>(`/api/templates/${id}`)
+  },
+
+  create(payload: CreateTemplatePayload) {
+    return ApiClient.post<TemplateItem>('/api/templates', payload)
+  },
+
+  update(id: string, payload: UpdateTemplatePayload) {
+    return ApiClient.put<TemplateItem>(`/api/templates/${id}` , payload)
+  },
+
+  remove(id: string) {
+    return ApiClient.delete<void>(`/api/templates/${id}`)
+  },
+
+  listAgentTemplates(params?: Record<string, any>) {
+    return ApiClient.get<TemplateItem[]>('/api/agents/templates', { params })
+  }
+}
+
+export default TemplatesApi
+
+==================== frontend/src/api/stocks.ts ====================
+import { ApiClient } from './request'
+
+export interface QuoteResponse {
+  symbol: string  // 主字段：6位股票代码
+  code?: string   // 兼容字段（已废弃）
+  full_symbol?: string  // 完整代码（如 000001.SZ）
+  name?: string
+  market?: string
+  price?: number
+  change_percent?: number
+  amount?: number
+  prev_close?: number
+  turnover_rate?: number
+  amplitude?: number  // 振幅（替代量比）
+  trade_date?: string
+  updated_at?: string
+}
+
+export interface FundamentalsResponse {
+  symbol: string  // 主字段：6位股票代码
+  code?: string   // 兼容字段（已废弃）
+  full_symbol?: string  // 完整代码（如 000001.SZ）
+  name?: string
+  industry?: string
+  market?: string
+  sector?: string  // 板块
+  pe?: number
+  pb?: number
+  ps?: number      // 🔥 新增：市销率
+  pe_ttm?: number
+  pb_mrq?: number
+  ps_ttm?: number  // 🔥 新增：市销率（TTM）
+  roe?: number
+  debt_ratio?: number  // 🔥 新增：负债率
+  total_mv?: number
+  circ_mv?: number
+  turnover_rate?: number
+  volume_ratio?: number
+  pe_is_realtime?: boolean  // PE是否为实时数据
+  pe_source?: string        // PE数据来源
+  pe_updated_at?: string    // PE更新时间
+  updated_at?: string
+}
+
+export interface KlineBar {
+  time: string
+  open?: number
+  high?: number
+  low?: number
+  close?: number
+  volume?: number
+  amount?: number
+}
+
+export interface KlineResponse {
+  symbol: string  // 主字段：6位股票代码
+  code?: string   // 兼容字段（已废弃）
+  period: 'day'|'week'|'month'|'5m'|'15m'|'30m'|'60m'
+  limit: number
+  adj: 'none'|'qfq'|'hfq'
+  source?: string
+  items: KlineBar[]
+}
+
+export interface NewsItem {
+  title: string
+  source: string
+  time: string
+  url: string
+  type: 'news' | 'announcement'
+}
+
+export interface NewsResponse {
+  symbol: string  // 主字段：6位股票代码
+  code?: string   // 兼容字段（已废弃）
+  days: number
+  limit: number
+  include_announcements: boolean
+  source?: string
+  items: NewsItem[]
+}
+
+export const stocksApi = {
+  /**
+   * 获取股票行情
+   * @param symbol 6位股票代码
+   */
+  async getQuote(symbol: string) {
+    return ApiClient.get<QuoteResponse>(`/api/stocks/${symbol}/quote`)
+  },
+
+  /**
+   * 获取股票基本面数据
+   * @param symbol 6位股票代码
+   */
+  async getFundamentals(symbol: string) {
+    return ApiClient.get<FundamentalsResponse>(`/api/stocks/${symbol}/fundamentals`)
+  },
+
+  /**
+   * 获取K线数据
+   * @param symbol 6位股票代码
+   * @param period K线周期
+   * @param limit 数据条数
+   * @param adj 复权方式
+   */
+  async getKline(symbol: string, period: KlineResponse['period'] = 'day', limit = 120, adj: KlineResponse['adj'] = 'none') {
+    return ApiClient.get<KlineResponse>(`/api/stocks/${symbol}/kline`, { period, limit, adj })
+  },
+
+  /**
+   * 获取股票新闻
+   * @param symbol 6位股票代码
+   * @param days 天数
+   * @param limit 数量限制
+   * @param includeAnnouncements 是否包含公告
+   */
+  async getNews(symbol: string, days = 30, limit = 50, includeAnnouncements = true) {
+    return ApiClient.get<NewsResponse>(`/api/stocks/${symbol}/news`, { days, limit, include_announcements: includeAnnouncements })
+  }
+}
+
+
+
+==================== frontend/src/api/multiMarket.ts ====================
+/**
+ * 多市场股票API
+ * 支持A股、港股、美股的统一查询接口
+ */
+import request from './request'
+
+export interface Market {
+  code: string
+  name: string
+  name_en: string
+  currency: string
+  timezone: string
+  trading_hours?: string
+}
+
+export interface StockInfo {
+  code: string
+  name: string
+  name_en?: string
+  market: string
+  source: string
+  total_mv?: number
+  pe?: number
+  pb?: number
+  lot_size?: number
+  currency?: string
+  industry?: string
+  sector?: string
+  list_date?: string
+  updated_at?: string
+}
+
+export interface StockQuote {
+  code: string
+  close?: number
+  pct_chg?: number
+  open?: number
+  high?: number
+  low?: number
+  volume?: number
+  amount?: number
+  trade_date?: string
+  currency?: string
+  turnover_rate?: number
+  amplitude?: number
+}
+
+export interface DailyQuote {
+  trade_date: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+  amount?: number
+}
+
+/**
+ * 获取支持的市场列表
+ */
+export function getSupportedMarkets() {
+  return request<{ markets: Market[] }>({
+    url: '/api/markets',
+    method: 'get'
+  })
+}
+
+/**
+ * 搜索股票（支持多市场）
+ */
+export function searchStocks(market: string, query: string, limit: number = 20) {
+  return request<{ stocks: StockInfo[]; total: number }>({
+    url: `/api/markets/${market}/stocks/search`,
+    method: 'get',
+    params: { q: query, limit }
+  })
+}
+
+/**
+ * 获取股票基础信息
+ */
+export function getStockInfo(market: string, code: string, source?: string) {
+  return request<StockInfo>({
+    url: `/api/markets/${market}/stocks/${code}/info`,
+    method: 'get',
+    params: source ? { source } : undefined
+  })
+}
+
+/**
+ * 获取股票实时行情
+ */
+export function getStockQuote(market: string, code: string) {
+  return request<StockQuote>({
+    url: `/api/markets/${market}/stocks/${code}/quote`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取股票历史K线数据
+ */
+export function getStockDailyQuotes(
+  market: string,
+  code: string,
+  startDate?: string,
+  endDate?: string,
+  limit: number = 100
+) {
+  return request<{ code: string; market: string; quotes: DailyQuote[]; total: number }>({
+    url: `/api/markets/${market}/stocks/${code}/daily`,
+    method: 'get',
+    params: {
+      start_date: startDate,
+      end_date: endDate,
+      limit
+    }
+  })
+}
+
+
+
+==================== frontend/src/api/analysis.ts ====================
+
+/**
+ * 股票分析API
+ */
+
+import { request, type ApiResponse } from './request'
+
+// 分析相关类型定义
+export interface AnalysisRequest {
+  market_type: string
+  stock_symbol: string
+  analysis_date: string
+  analysis_type: string
+  data_sources: string[]
+  analysis_depth: number
+  include_news: boolean
+  include_financials: boolean
+  llm_provider?: string
+  llm_model?: string
+}
+
+// 后端期望的请求格式
+export interface SingleAnalysisRequest {
+  symbol?: string  // 主字段：6位股票代码
+  stock_code?: string  // 兼容字段（已废弃）
+  parameters?: {
+    market_type?: string
+    analysis_date?: string
+    research_depth?: string
+    selected_analysts?: string[]
+    custom_prompt?: string
+    include_sentiment?: boolean
+    include_risk?: boolean
+    language?: string
+    quick_analysis_model?: string
+    deep_analysis_model?: string
+  }
+}
+
+export interface AnalysisProgress {
+  analysis_id: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  progress: number
+  current_step: string
+  step_detail: string
+  steps: AnalysisStep[]
+  started_at: string
+  updated_at: string
+  estimated_completion?: string
+}
+
+export interface AnalysisStep {
+  name: string
+  title: string
+  description: string
+  status: 'pending' | 'active' | 'success' | 'error'
+  started_at?: string
+  completed_at?: string
+  duration?: number
+  error_message?: string
+}
+
+export interface AnalysisResult {
+  analysis_id: string
+  symbol?: string  // 主字段：6位股票代码
+  stock_symbol: string  // 兼容字段
+  stock_code?: string  // 兼容字段（已废弃）
+  stock_name: string
+  market_type: string
+  analysis_date: string
+  analysis_type: string
+
+  // 基础数据
+  current_price: number
+  price_change: number
+  price_change_percent: number
+  volume: number
+  market_cap?: number
+
+  // 分析结果
+  summary: string
+  technical_analysis: string
+  fundamental_analysis: string
+  sentiment_analysis: string
+  news_analysis?: string
+  recommendation: string
+  risk_assessment: string
+
+  // 评分
+  technical_score: number
+  fundamental_score: number
+  sentiment_score: number
+  overall_score: number
+
+  // 元数据
+  data_sources: string[]
+  llm_provider: string
+  llm_model: string
+  analysis_duration: number
+  token_usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+    cost: number
+  }
+
+  created_at: string
+  updated_at: string
+}
+
+export interface AnalysisHistory {
+  total: number
+  page: number
+  page_size: number
+  analyses: AnalysisResult[]
+}
+
+// 股票分析API
+export const analysisApi = {
+  // 开始分析
+  startAnalysis(analysisRequest: AnalysisRequest): Promise<{ analysis_id: string; message: string }> {
+    return request.post('/api/analysis/single', analysisRequest)
+  },
+
+  // 开始单股分析（使用后端期望的格式）
+  startSingleAnalysis(analysisRequest: SingleAnalysisRequest): Promise<ApiResponse<any>> {
+    return request.post('/api/analysis/single', analysisRequest)
+  },
+
+  // 获取任务状态
+  getTaskStatus(taskId: string): Promise<ApiResponse<any>> {
+    return request.get(`/api/analysis/tasks/${taskId}/status`)
+  },
+
+  // 获取分析进度
+  getProgress(analysisId: string): Promise<AnalysisProgress> {
+    return request.get(`/api/analysis/${analysisId}/progress`)
+  },
+
+  // 获取分析结果
+  getResult(analysisId: string): Promise<AnalysisResult> {
+    return request.get(`/api/analysis/${analysisId}/result`)
+  },
+
+  // 停止分析
+  stopAnalysis(analysisId: string): Promise<{ message: string }> {
+    return request.post(`/api/analysis/${analysisId}/stop`, {})
+  },
+
+  // 获取分析历史（用户维度）
+  getHistory(params?: {
+    page?: number
+    page_size?: number
+    market_type?: string
+    symbol?: string  // 主字段：股票代码
+    stock_code?: string  // 兼容字段（已废弃）
+    start_date?: string
+    end_date?: string
+    status?: string
+  }): Promise<any> {
+    return request.get('/api/analysis/user/history', { params })
+  },
+
+  // 删除分析结果
+  deleteAnalysis(analysisId: string): Promise<{ message: string }> {
+    return request.delete(`/api/analysis/${analysisId}`)
+  },
+
+  // 导出分析结果
+  exportAnalysis(analysisId: string, format: 'pdf' | 'excel' | 'json' = 'pdf'): Promise<Blob> {
+    return request.get(`/api/analysis/${analysisId}/export`, {
+      params: { format },
+      responseType: 'blob'
+    })
+  },
+
+  // 批量分析（方案A：与单股一致的进程内执行）
+  startBatchAnalysis(batchRequest: {
+    title: string
+    description?: string
+    symbols?: string[]  // 主字段：股票代码列表
+    stock_codes?: string[]  // 兼容字段（已废弃）
+    parameters?: SingleAnalysisRequest['parameters']
+  }): Promise<ApiResponse<{ batch_id: string; total_tasks: number; task_ids: string[]; mapping?: any[]; status: string }>>{
+    return request.post('/api/analysis/batch', batchRequest)
+  },
+
+  // 获取批次详情（兼容原有队列接口，若后续需要）
+  getBatch(batchId: string): Promise<any> {
+    return request.get(`/api/analysis/batches/${batchId}`)
+  },
+
+  // 获取任务详情（兼容原有队列接口，若后续需要）
+  getTaskDetails(taskId: string): Promise<any> {
+    return request.get(`/api/analysis/tasks/${taskId}/details`)
+  },
+
+  // 获取任务列表（新版 simple service）
+  getTaskList(params?: { status?: string; limit?: number; offset?: number }): Promise<any>{
+    return request.get('/api/analysis/tasks', { params })
+  },
+
+  // 获取任务结果（新版 simple service）
+  getTaskResult(taskId: string): Promise<any>{
+    return request.get(`/api/analysis/tasks/${taskId}/result`)
+  },
+
+  // 标记任务为失败
+  markTaskAsFailed(taskId: string): Promise<{ success: boolean; message: string }> {
+    return request.post(`/api/analysis/tasks/${taskId}/mark-failed`, {})
+  },
+
+  // 删除任务
+  deleteTask(taskId: string): Promise<{ success: boolean; message: string }> {
+    return request.delete(`/api/analysis/tasks/${taskId}`)
+  },
+
+  // 分享分析结果
+  shareAnalysis(analysisId: string, options: {
+    expires_in?: number // 过期时间（秒）
+    password?: string   // 访问密码
+    public?: boolean    // 是否公开
+  }): Promise<{ share_url: string; share_code: string }> {
+    return request.post(`/api/analysis/${analysisId}/share`, options)
+  },
+
+  // 获取股票基础信息
+  getStockInfo(symbol: string, market: string): Promise<{
+    symbol: string
+    name: string
+    market: string
+    current_price: number
+    change: number
+    change_percent: number
+    volume: number
+    market_cap?: number
+    pe_ratio?: number
+    pb_ratio?: number
+    dividend_yield?: number
+  }> {
+    return request.get('/api/analysis/stock-info', {
+      params: { symbol, market }
+    })
+  },
+
+  // 搜索股票
+  searchStocks(query: string, market?: string): Promise<Array<{
+    symbol: string
+    name: string
+    market: string
+    type: string
+  }>> {
+    return request.get('/api/analysis/search', {
+      params: { query, market }
+    })
+  },
+
+  // 获取热门股票
+  getPopularStocks(market?: string, limit: number = 10): Promise<Array<{
+    symbol: string
+    name: string
+    market: string
+    current_price: number
+    change_percent: number
+    volume: number
+    analysis_count: number
+  }>> {
+    return request.get('/api/analysis/popular', {
+      params: { market, limit }
+    })
+  },
+
+  // 获取分析统计
+  getAnalysisStats(params?: {
+    start_date?: string
+    end_date?: string
+    market_type?: string
+  }): Promise<{
+    total_analyses: number
+    successful_analyses: number
+    failed_analyses: number
+    avg_duration: number
+    total_tokens: number
+    total_cost: number
+    popular_stocks: Array<{
+      symbol: string
+      name: string
+      count: number
+    }>
+    analysis_by_date: Array<{
+      date: string
+      count: number
+    }>
+    analysis_by_market: Array<{
+      market: string
+      count: number
+    }>
+  }> {
+    return request.get('/api/analysis/stats', { params })
+  }
+}
+
+// 分析相关的常量
+export const MARKET_TYPES = {
+  US: '美股',
+  CN: 'A股',
+  HK: '港股'
+} as const
+
+export const ANALYSIS_TYPES = {
+  BASIC: 'basic',
+  DEEP: 'deep',
+  TECHNICAL: 'technical',
+  NEWS: 'news',
+  COMPREHENSIVE: 'comprehensive'
+} as const
+
+/**
+ * 数据源常量
+ *
+ * 注意：这些常量与后端 DataSourceType 枚举保持同步
+ * 添加新数据源时，请先在后端 tradingagents/constants/data_sources.py 中注册
+ */
+export const DATA_SOURCES = {
+  // 缓存数据源
+  MONGODB: 'mongodb',
+
+  // 中国市场数据源
+  TUSHARE: 'tushare',
+  AKSHARE: 'akshare',
+  BAOSTOCK: 'baostock',
+
+  // 美股数据源
+  FINNHUB: 'finnhub',
+  YAHOO_FINANCE: 'yahoo_finance',
+  ALPHA_VANTAGE: 'alpha_vantage',
+  IEX_CLOUD: 'iex_cloud',
+
+  // 专业数据源
+  WIND: 'wind',
+  CHOICE: 'choice',
+
+  // 其他数据源
+  QUANDL: 'quandl',
+  LOCAL_FILE: 'local_file',
+  CUSTOM: 'custom'
+} as const
+
+// 分析状态常量
+export const ANALYSIS_STATUS = {
+  PENDING: 'pending',
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+} as const
+
+// 步骤状态常量
+export const STEP_STATUS = {
+  PENDING: 'pending',
+  ACTIVE: 'active',
+  SUCCESS: 'success',
+  ERROR: 'error'
+} as const
+
+// 验证函数
+export const validateAnalysisRequest = (request: Partial<AnalysisRequest>): string[] => {
+  const errors: string[] = []
+
+  if (!request.market_type) errors.push('请选择市场类型')
+  if (!request.stock_symbol) errors.push('请输入股票代码')
+  if (!request.analysis_date) errors.push('请选择分析日期')
+  if (!request.analysis_type) errors.push('请选择分析类型')
+  if (!request.data_sources || request.data_sources.length === 0) {
+    errors.push('请至少选择一个数据源')
+  }
+
+  // 验证股票代码格式
+  if (request.stock_symbol) {
+    const symbol = request.stock_symbol.trim().toUpperCase()
+    if (request.market_type === '美股') {
+      if (!/^[A-Z]{1,5}$/.test(symbol)) {
+        errors.push('美股代码格式不正确，应为1-5个字母')
+      }
+    } else if (request.market_type === 'A股') {
+      if (!/^\d{6}$/.test(symbol)) {
+        errors.push('A股代码格式不正确，应为6位数字')
+      }
+    } else if (request.market_type === '港股') {
+      if (!/^\d{4,5}\.HK$/.test(symbol)) {
+        errors.push('港股代码格式不正确，应为4-5位数字.HK')
+      }
+    }
+  }
+
+  return errors
+}
+
+// 格式化函数
+export const formatAnalysisType = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    basic: '基础分析',
+    deep: '深度分析',
+    technical: '技术分析',
+    news: '新闻分析',
+    comprehensive: '综合分析'
+  }
+  return typeMap[type] ?? type
+}
+
+export const formatMarketType = (market: string): string => {
+  const marketMap: Record<string, string> = {
+    '美股': '🇺🇸 美股',
+    'A股': '🇨🇳 A股',
+    '港股': '🇭🇰 港股'
+  }
+  return marketMap[market] ?? market
+}
+
+export const formatDataSource = (source: string): string => {
+  const sourceMap: Record<string, string> = {
+    finnhub: 'FinnHub',
+    tushare: 'Tushare',
+    akshare: 'AKShare',
+    yahoo: 'Yahoo Finance'
+  }
+  return sourceMap[source] ?? source
+}
+
+/**
+ * 获取分析历史记录（当前用户）
+ */
+export const getAnalysisHistory = async (params: {
+  page?: number
+  page_size?: number
+  status?: string
+}) => {
+  const response = await request.get('/api/analysis/user/history', { params })
+  return response.data
+}
+
+/**
+ * 获取所有任务列表（不限用户）
+ */
+export const getAllTasks = async (params: {
+  limit?: number
+  offset?: number
+  status?: string
+}) => {
+  return request<{
+    tasks: any[]
+    total: number
+    limit: number
+    offset: number
+  }>({
+    url: '/api/analysis/tasks/all',
+    method: 'GET',
+    params
+  })
+}
+
+// 工具函数
+export const getStockExamples = (market: string): string[] => {
+  const examples: Record<string, string[]> = {
+    '美股': ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'NFLX'],
+    'A股': ['000001', '600519', '000002', '600036', '000858', '002415', '300059', '688981'],
+    '港股': ['0700.HK', '9988.HK', '3690.HK', '0941.HK', '1810.HK', '2318.HK', '1299.HK']
+  }
+  return examples[market] ?? []
+}
+
+export const getStockPlaceholder = (market: string): string => {
+  const placeholders: Record<string, string> = {
+    '美股': '输入美股代码，如 AAPL, TSLA, MSFT',
+    'A股': '输入A股代码，如 000001, 600519',
+    '港股': '输入港股代码，如 0700.HK, 9988.HK'
+  }
+  return placeholders[market] ?? '输入股票代码'
+}
+
+
+
+
+
+
+==================== frontend/src/api/screening.ts ====================
+import { ApiClient } from './request'
+
+export interface ScreeningOrderBy { field: string; direction: 'asc' | 'desc' }
+export interface ScreeningRunReq {
+  market?: 'CN'
+  date?: string | null
+  adj?: 'qfq' | 'hfq' | 'none'
+  conditions: any
+  order_by?: ScreeningOrderBy[]
+  limit?: number
+  offset?: number
+}
+
+export interface ScreeningRunItem {
+  code: string
+  close?: number
+  pct_chg?: number
+  amount?: number
+  ma20?: number
+  rsi14?: number
+  kdj_k?: number
+  kdj_d?: number
+  kdj_j?: number
+  dif?: number
+  dea?: number
+  macd_hist?: number
+}
+
+export interface ScreeningRunResp { total: number; items: ScreeningRunItem[] }
+
+// 筛选字段配置
+export interface FieldInfo {
+  name: string
+  display_name: string
+  field_type: string
+  data_type: string
+  description: string
+  supported_operators: string[]
+}
+
+export interface FieldConfigResponse {
+  fields: Record<string, FieldInfo>
+  categories: Record<string, string[]>
+}
+
+// 行业列表响应
+export interface IndustryOption {
+  value: string
+  label: string
+  count: number
+}
+
+export interface IndustriesResponse {
+  industries: IndustryOption[]
+  total: number
+}
+
+export const screeningApi = {
+  run: (payload: ScreeningRunReq, options?: { timeout?: number }) =>
+    ApiClient.post<ScreeningRunResp>('/api/screening/run', payload, { timeout: options?.timeout ?? 120000 }),
+  getFields: () => ApiClient.get<FieldConfigResponse>('/api/screening/fields'),
+  getIndustries: () => ApiClient.get<IndustriesResponse>('/api/screening/industries')
+}
+
+
+
+==================== frontend/src/api/auth.ts ====================
+import { ApiClient } from './request'
+import type { 
+  LoginForm, 
+  RegisterForm, 
+  LoginResponse, 
+  RefreshTokenResponse,
+  User,
+  UserPermissions,
+  ChangePasswordForm
+} from '@/types/auth'
+
+export const authApi = {
+  // 登录
+  login: (data: LoginForm) =>
+    ApiClient.post<LoginResponse>('/api/auth/login', data, {
+      skipAuth: true,  // 登录请求不需要认证
+      skipAuthError: true  // 跳过 401 错误的自动处理
+    }),
+
+  // 注册
+  register: (data: RegisterForm) =>
+    ApiClient.post('/api/auth/register', data, {
+      skipAuth: true,  // 注册请求不需要认证
+      skipAuthError: true  // 跳过 401 错误的自动处理
+    }),
+
+  // 登出
+  logout: () =>
+    ApiClient.post('/api/auth/logout'),
+
+  // 刷新Token
+  refreshToken: (refreshToken: string) =>
+    ApiClient.post<RefreshTokenResponse>('/api/auth/refresh', { refresh_token: refreshToken }),
+
+  // 获取用户信息
+  getUserInfo: () =>
+    ApiClient.get<User>('/api/auth/me'),
+
+  // 获取用户权限（开源版不需要，admin拥有所有权限）
+  // getUserPermissions: () =>
+  //   ApiClient.get<UserPermissions>('/api/auth/permissions'),
+
+  // 更新用户信息
+  updateUserInfo: (data: Partial<User>) =>
+    ApiClient.put<User>('/api/auth/me', data),
+
+  // 修改密码
+  changePassword: (data: ChangePasswordForm) =>
+    ApiClient.post('/api/auth/change-password', data),
+
+  // 重置密码
+  resetPassword: (email: string) =>
+    ApiClient.post('/api/auth/reset-password', { email }),
+
+  // 验证邮箱
+  verifyEmail: (token: string) =>
+    ApiClient.post('/api/auth/verify-email', { token })
+}
+
+
+==================== frontend/src/api/sync.ts ====================
+/**
+ * 多数据源同步相关API
+ */
+import { ApiClient } from './request'
+
+// 数据源状态接口
+export interface DataSourceStatus {
+  name: string
+  priority: number
+  available: boolean
+  description: string
+  token_source?: 'database' | 'env'  // Token 来源（仅 Tushare）
+}
+
+// 同步状态接口
+export interface SyncStatus {
+  job: string
+  status: 'idle' | 'running' | 'success' | 'success_with_errors' | 'failed' | 'never_run'
+  started_at?: string
+  finished_at?: string
+  total: number
+  inserted: number
+  updated: number
+  errors: number
+  last_trade_date?: string
+  data_sources_used: string[]
+  source_stats?: Record<string, Record<string, number>>
+  message?: string
+}
+
+// 同步请求参数
+export interface SyncRequest {
+  force?: boolean
+  preferred_sources?: string[]
+}
+
+// API响应格式
+export interface ApiResponse<T = any> {
+  success: boolean
+  message: string
+  data: T
+}
+
+// 基础测试结果接口
+export interface BaseTestResult {
+  success: boolean
+  message: string
+  count?: number
+  date?: string
+}
+
+// 测试结果接口（简化版）
+export interface DataSourceTestResult {
+  name: string
+  priority: number
+  available: boolean
+  message: string
+  token_source?: 'database' | 'env'  // Token 来源（仅 Tushare）
+}
+
+// 使用建议接口
+export interface SyncRecommendations {
+  primary_source?: {
+    name: string
+    priority: number
+    reason: string
+  }
+  fallback_sources: Array<{
+    name: string
+    priority: number
+  }>
+  suggestions: string[]
+  warnings: string[]
+}
+
+/**
+ * 获取数据源状态
+ */
+export const getDataSourcesStatus = (): Promise<ApiResponse<DataSourceStatus[]>> => {
+  return ApiClient.get('/api/sync/multi-source/sources/status')
+}
+
+/**
+ * 获取当前正在使用的数据源
+ */
+export const getCurrentDataSource = (): Promise<ApiResponse<{
+  name: string
+  priority: number
+  description: string
+  token_source?: 'database' | 'env'
+  token_source_display?: string
+}>> => {
+  return ApiClient.get('/api/sync/multi-source/sources/current')
+}
+
+/**
+ * 获取同步状态
+ */
+export const getSyncStatus = (): Promise<ApiResponse<SyncStatus>> => {
+  return ApiClient.get('/api/sync/multi-source/status')
+}
+
+/**
+ * 运行股票基础信息同步
+ */
+export const runStockBasicsSync = (params?: {
+  force?: boolean
+  preferred_sources?: string
+}): Promise<ApiResponse<SyncStatus>> => {
+  const queryParams = new URLSearchParams()
+  if (params?.force) {
+    queryParams.append('force', 'true')
+  }
+  if (params?.preferred_sources) {
+    queryParams.append('preferred_sources', params.preferred_sources)
+  }
+
+  const url = `/api/sync/multi-source/stock_basics/run${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+  return ApiClient.post(url, undefined, {
+    timeout: 600000 // 🔥 同步操作需要更长时间，设置为10分钟（BaoStock需要逐个获取估值数据）
+  })
+}
+
+/**
+ * 测试数据源连接
+ * @param sourceName - 可选，指定要测试的数据源名称。如果不指定，则测试所有数据源
+ */
+export const testDataSources = (sourceName?: string): Promise<ApiResponse<{ test_results: DataSourceTestResult[] }>> => {
+  const params = sourceName ? { source_name: sourceName } : {}
+  return ApiClient.post('/api/sync/multi-source/test-sources', params, {
+    timeout: 15000 // 单个数据源测试超时15秒，多个数据源最多30秒
+  })
+}
+
+/**
+ * 获取同步建议
+ */
+export const getSyncRecommendations = (): Promise<ApiResponse<SyncRecommendations>> => {
+  return ApiClient.get('/api/sync/multi-source/recommendations')
+}
+
+/**
+ * 获取同步历史记录
+ */
+export const getSyncHistory = (params?: {
+  page?: number
+  page_size?: number
+  status?: string
+}): Promise<ApiResponse<{
+  records: SyncStatus[]
+  total: number
+  page: number
+  page_size: number
+  has_more: boolean
+}>> => {
+  const queryParams = new URLSearchParams()
+  if (params?.page) {
+    queryParams.append('page', params.page.toString())
+  }
+  if (params?.page_size) {
+    queryParams.append('page_size', params.page_size.toString())
+  }
+  if (params?.status) {
+    queryParams.append('status', params.status)
+  }
+
+  const url = `/api/sync/multi-source/history${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+  return ApiClient.get(url)
+}
+
+/**
+ * 清空同步缓存
+ */
+export const clearSyncCache = (): Promise<ApiResponse<{ cleared: boolean }>> => {
+  return ApiClient.delete('/api/sync/multi-source/cache')
+}
+
+// 传统单一数据源同步API（保持兼容性）
+export const runSingleSourceSync = (): Promise<ApiResponse<any>> => {
+  return ApiClient.post('/api/sync/stock_basics/run')
+}
+
+export const getSingleSourceSyncStatus = (): Promise<ApiResponse<any>> => {
+  return ApiClient.get('/api/sync/stock_basics/status')
+}
+
+
+==================== frontend/src/api/cache.ts ====================
+/**
+ * 缓存管理 API
+ */
+import request from '@/api/request'
+
+/**
+ * 缓存统计数据
+ */
+export interface CacheStats {
+  totalFiles: number
+  totalSize: number
+  maxSize: number
+  stockDataCount: number
+  newsDataCount: number
+  analysisDataCount: number
+}
+
+/**
+ * 缓存详情项
+ */
+export interface CacheDetailItem {
+  type: string
+  symbol: string
+  size: number
+  created_at: string
+  last_accessed: string
+  hit_count: number
+}
+
+/**
+ * 缓存详情响应
+ */
+export interface CacheDetailsResponse {
+  items: CacheDetailItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
+/**
+ * 缓存后端信息
+ */
+export interface CacheBackendInfo {
+  system: string
+  primary_backend: string
+  fallback_enabled: boolean
+  mongodb_available?: boolean
+  redis_available?: boolean
+}
+
+/**
+ * 获取缓存统计
+ */
+export function getCacheStats() {
+  return request<CacheStats>({
+    url: '/api/cache/stats',
+    method: 'get'
+  })
+}
+
+/**
+ * 清理过期缓存
+ * @param days 清理多少天前的缓存
+ */
+export function cleanupOldCache(days: number) {
+  return request({
+    url: '/api/cache/cleanup',
+    method: 'delete',
+    params: { days }
+  })
+}
+
+/**
+ * 清空所有缓存
+ */
+export function clearAllCache() {
+  return request({
+    url: '/api/cache/clear',
+    method: 'delete'
+  })
+}
+
+/**
+ * 获取缓存详情列表
+ * @param page 页码
+ * @param pageSize 每页数量
+ */
+export function getCacheDetails(page: number = 1, pageSize: number = 20) {
+  return request<CacheDetailsResponse>({
+    url: '/api/cache/details',
+    method: 'get',
+    params: { page, page_size: pageSize }
+  })
+}
+
+/**
+ * 获取缓存后端信息
+ */
+export function getCacheBackendInfo() {
+  return request<CacheBackendInfo>({
+    url: '/api/cache/backend-info',
+    method: 'get'
+  })
+}
+
+
+
+==================== frontend/src/api/operationLogs.ts ====================
+/**
+ * 操作日志API接口
+ */
+
+import { ApiClient } from './request'
+
+// 操作日志数据类型
+export interface OperationLog {
+  id: string
+  user_id: string
+  username: string
+  action_type: string
+  action: string
+  details?: Record<string, any>
+  success: boolean
+  error_message?: string
+  duration_ms?: number
+  ip_address?: string
+  user_agent?: string
+  session_id?: string
+  timestamp: string
+  created_at: string
+}
+
+// 操作日志查询参数
+export interface OperationLogQuery {
+  page?: number
+  page_size?: number
+  start_date?: string
+  end_date?: string
+  action_type?: string
+  success?: boolean
+  keyword?: string
+}
+
+// 操作日志列表响应
+export interface OperationLogListResponse {
+  success: boolean
+  data: {
+    logs: OperationLog[]
+    total: number
+    page: number
+    page_size: number
+    total_pages: number
+  }
+  message: string
+}
+
+// 操作日志统计
+export interface OperationLogStats {
+  total_logs: number
+  success_logs: number
+  failed_logs: number
+  success_rate: number
+  action_type_distribution: Record<string, number>
+  hourly_distribution: Array<{
+    hour: string
+    count: number
+  }>
+}
+
+// 操作日志统计响应
+export interface OperationLogStatsResponse {
+  success: boolean
+  data: OperationLogStats
+  message: string
+}
+
+// 创建操作日志请求
+export interface CreateOperationLogRequest {
+  action_type: string
+  action: string
+  details?: Record<string, any>
+  success?: boolean
+  error_message?: string
+  duration_ms?: number
+  session_id?: string
+}
+
+// 清空日志请求
+export interface ClearLogsRequest {
+  days?: number
+  action_type?: string
+}
+
+// 清空日志响应
+export interface ClearLogsResponse {
+  success: boolean
+  data: {
+    deleted_count: number
+    filter: Record<string, any>
+  }
+  message: string
+}
+
+// 操作日志API类
+export class OperationLogsApi {
+  /**
+   * 获取操作日志列表
+   */
+  static getOperationLogs(params: OperationLogQuery = {}): Promise<OperationLogListResponse> {
+    const queryParams = new URLSearchParams()
+    
+    if (params.page) queryParams.append('page', params.page.toString())
+    if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+    if (params.start_date) queryParams.append('start_date', params.start_date)
+    if (params.end_date) queryParams.append('end_date', params.end_date)
+    if (params.action_type) queryParams.append('action_type', params.action_type)
+    if (params.success !== undefined) queryParams.append('success', params.success.toString())
+    if (params.keyword) queryParams.append('keyword', params.keyword)
+    
+    const url = `/api/system/logs/list${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+    return ApiClient.get(url)
+  }
+
+  /**
+   * 获取操作日志统计
+   */
+  static getOperationLogStats(days: number = 30): Promise<OperationLogStatsResponse> {
+    return ApiClient.get(`/api/system/logs/stats?days=${days}`)
+  }
+
+  /**
+   * 获取操作日志详情
+   */
+  static getOperationLogDetail(logId: string): Promise<{
+    success: boolean
+    data: OperationLog
+    message: string
+  }> {
+    return ApiClient.get(`/api/system/logs/${logId}`)
+  }
+
+  /**
+   * 创建操作日志
+   */
+  static createOperationLog(data: CreateOperationLogRequest): Promise<{
+    success: boolean
+    data: { log_id: string }
+    message: string
+  }> {
+    return ApiClient.post('/api/system/logs/create', data)
+  }
+
+  /**
+   * 清空操作日志
+   */
+  static clearOperationLogs(data: ClearLogsRequest = {}): Promise<ClearLogsResponse> {
+    return ApiClient.post('/api/system/logs/clear', data)
+  }
+
+  /**
+   * 导出操作日志为CSV
+   */
+  static exportOperationLogsCSV(params: {
+    start_date?: string
+    end_date?: string
+    action_type?: string
+  } = {}): Promise<Blob> {
+    const queryParams = new URLSearchParams()
+    
+    if (params.start_date) queryParams.append('start_date', params.start_date)
+    if (params.end_date) queryParams.append('end_date', params.end_date)
+    if (params.action_type) queryParams.append('action_type', params.action_type)
+    
+    const url = `/api/system/logs/export/csv${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+    return ApiClient.get(url, { responseType: 'blob' })
+  }
+}
+
+// 操作类型常量
+export const ActionTypes = {
+  STOCK_ANALYSIS: 'stock_analysis',
+  CONFIG_MANAGEMENT: 'config_management',
+  CACHE_OPERATION: 'cache_operation',
+  DATA_IMPORT: 'data_import',
+  DATA_EXPORT: 'data_export',
+  SYSTEM_SETTINGS: 'system_settings',
+  USER_LOGIN: 'user_login',
+  USER_LOGOUT: 'user_logout',
+  USER_MANAGEMENT: 'user_management',  // 🔧 添加用户管理操作类型
+  DATABASE_OPERATION: 'database_operation',
+  SCREENING: 'screening',
+  REPORT_GENERATION: 'report_generation'
+} as const
+
+// 操作类型名称映射
+export const ActionTypeNames = {
+  [ActionTypes.STOCK_ANALYSIS]: '股票分析',
+  [ActionTypes.CONFIG_MANAGEMENT]: '配置管理',
+  [ActionTypes.CACHE_OPERATION]: '缓存操作',
+  [ActionTypes.DATA_IMPORT]: '数据导入',
+  [ActionTypes.DATA_EXPORT]: '数据导出',
+  [ActionTypes.SYSTEM_SETTINGS]: '系统设置',
+  [ActionTypes.USER_LOGIN]: '用户登录',
+  [ActionTypes.USER_LOGOUT]: '用户登出',
+  [ActionTypes.USER_MANAGEMENT]: '用户管理',  // 🔧 添加用户管理操作类型名称
+  [ActionTypes.DATABASE_OPERATION]: '数据库操作',
+  [ActionTypes.SCREENING]: '股票筛选',
+  [ActionTypes.REPORT_GENERATION]: '报告生成'
+} as const
+
+// 操作类型标签颜色映射
+export const ActionTypeTagColors = {
+  [ActionTypes.STOCK_ANALYSIS]: 'primary',
+  [ActionTypes.CONFIG_MANAGEMENT]: 'success',
+  [ActionTypes.CACHE_OPERATION]: 'warning',
+  [ActionTypes.DATA_IMPORT]: 'info',
+  [ActionTypes.DATA_EXPORT]: 'info',
+  [ActionTypes.SYSTEM_SETTINGS]: 'danger',
+  [ActionTypes.USER_LOGIN]: 'success',
+  [ActionTypes.USER_LOGOUT]: 'warning',
+  [ActionTypes.USER_MANAGEMENT]: 'warning',  // 🔧 添加用户管理操作类型颜色
+  [ActionTypes.DATABASE_OPERATION]: 'primary',
+  [ActionTypes.SCREENING]: 'info',
+  [ActionTypes.REPORT_GENERATION]: 'primary'
+} as const
+
+// 便捷函数
+export const getActionTypeName = (actionType: string): string => {
+  return ActionTypeNames[actionType as keyof typeof ActionTypeNames] || actionType
+}
+
+export const getActionTypeTagColor = (actionType: string): string => {
+  return ActionTypeTagColors[actionType as keyof typeof ActionTypeTagColors] || 'info'
+}
+
+// 格式化时间（导入统一的时间格式化工具）
+import { formatDateTime as formatDateTimeUtil } from '@/utils/datetime'
+
+export const formatDateTime = (timestamp: string | number): string => {
+  return formatDateTimeUtil(timestamp)
+}
+
+// 默认导出
+export default OperationLogsApi
+
+
+==================== frontend/src/api/usage.ts ====================
+/**
+ * 使用统计 API
+ */
+
+import request, { ApiClient } from './request'
+import type { ApiResponse } from './request'
+
+export interface UsageRecord {
+  id?: string
+  timestamp: string
+  provider: string
+  model_name: string
+  input_tokens: number
+  output_tokens: number
+  cost: number
+  currency?: string
+  session_id: string
+  analysis_type: string
+}
+
+export interface UsageStatistics {
+  total_requests: number
+  total_input_tokens: number
+  total_output_tokens: number
+  total_cost: number
+  cost_by_currency: Record<string, number>
+  by_provider: Record<string, any>
+  by_model: Record<string, any>
+  by_date: Record<string, any>
+}
+
+/**
+ * 获取使用记录
+ */
+export function getUsageRecords(params?: {
+  provider?: string
+  model_name?: string
+  start_date?: string
+  end_date?: string
+  limit?: number
+}): Promise<ApiResponse<{ records: UsageRecord[]; total: number }>> {
+  return ApiClient.get<{ records: UsageRecord[]; total: number }>(
+    '/api/usage/records',
+    params
+  )
+}

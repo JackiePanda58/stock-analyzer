@@ -1,0 +1,2000 @@
+  const oldKey = paramKeys.value[index]
+  if (oldKey !== newKey && newKey.trim()) {
+    const value = formData.value.config_params[oldKey]
+    delete formData.value.config_params[oldKey]
+    formData.value.config_params[newKey] = value
+    paramKeys.value[index] = newKey
+  }
+}
+
+// 加载市场分类
+const loadMarketCategories = async () => {
+  try {
+    marketCategories.value = await configApi.getMarketCategories()
+  } catch (error) {
+    console.error('加载市场分类失败:', error)
+    ElMessage.error('加载市场分类失败')
+  }
+}
+
+// 监听配置变化
+watch(
+  () => props.config,
+  (config) => {
+    if (config) {
+      // 编辑模式：合并默认值和传入的配置
+      formData.value = {
+        ...defaultFormData,
+        ...config,
+        market_categories: config.market_categories || []
+      }
+      // 初始化参数键列表
+      paramKeys.value = Object.keys(config.config_params || {})
+    } else {
+      // 新增模式：使用默认值
+      formData.value = { ...defaultFormData }
+      paramKeys.value = []
+    }
+  },
+  { immediate: true }
+)
+
+// 监听visible变化
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      loadMarketCategories()
+      if (props.config) {
+        // 编辑模式
+        formData.value = {
+          ...defaultFormData,
+          ...props.config,
+          market_categories: props.config.market_categories || []
+        }
+        paramKeys.value = Object.keys(props.config.config_params || {})
+      } else {
+        // 新增模式
+        formData.value = { ...defaultFormData }
+        paramKeys.value = []
+      }
+    }
+  }
+)
+
+// 处理关闭
+const handleClose = () => {
+  emit('update:visible', false)
+}
+
+// 处理提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+    loading.value = true
+
+    // 🔥 修复：直接发送截断的 API Key 给后端
+    // 后端会判断截断值是否与数据库中的原值匹配
+    const payload: any = { ...formData.value }
+
+    // 添加日志，显示发送的 API Key
+    if (payload.api_key) {
+      console.log('🔍 [保存] 发送 API Key:', payload.api_key, '(长度:', payload.api_key.length, ')')
+    } else {
+      console.log('🔍 [保存] API Key 为空')
+    }
+
+    if (payload.api_secret) {
+      console.log('🔍 [保存] 发送 API Secret:', payload.api_secret, '(长度:', payload.api_secret.length, ')')
+    } else {
+      console.log('🔍 [保存] API Secret 为空')
+    }
+
+    // 处理占位符（your_xxx 或 your-xxx）
+    if ('api_key' in payload) {
+      const apiKey = payload.api_key || ''
+      // 如果是占位符，删除该字段（不更新）
+      if (apiKey.startsWith('your_') || apiKey.startsWith('your-')) {
+        console.log('🔍 [保存] API Key 是占位符，删除字段')
+        delete payload.api_key
+      }
+    }
+
+    if ('api_secret' in payload) {
+      const apiSecret = payload.api_secret || ''
+      // 如果是占位符，删除该字段（不更新）
+      if (apiSecret.startsWith('your_') || apiSecret.startsWith('your-')) {
+        console.log('🔍 [保存] API Secret 是占位符，删除字段')
+        delete payload.api_secret
+      }
+    }
+
+    if (isEdit.value) {
+      // 更新数据源
+      await configApi.updateDataSourceConfig(formData.value.name, payload)
+      ElMessage.success('数据源更新成功')
+    } else {
+      // 创建数据源
+      await configApi.addDataSourceConfig(payload)
+      ElMessage.success('数据源创建成功')
+    }
+
+    emit('success')
+    handleClose()
+  } catch (error: any) {
+    console.error('保存数据源失败:', error)
+
+    // 提取详细的错误信息
+    let errorMessage = '保存数据源失败'
+
+    // 尝试从不同的错误结构中提取消息
+    if (error?.response?.data?.detail) {
+      // FastAPI HTTPException 的错误格式
+      errorMessage = error.response.data.detail
+    } else if (error?.response?.data?.message) {
+      // 自定义错误格式
+      errorMessage = error.response.data.message
+    } else if (error?.message) {
+      // 标准 Error 对象
+      errorMessage = error.message
+    }
+
+    ElMessage.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 处理测试连接
+const handleTest = async () => {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+    testing.value = true
+
+    // 🔥 修复：直接发送截断的 API Key 给后端
+    // 后端会判断截断值是否与数据库中的原值匹配
+    const testPayload: any = { ...formData.value }
+
+    // 添加日志，显示发送的 API Key
+    if (testPayload.api_key) {
+      console.log('🔍 [测试连接] 发送 API Key:', testPayload.api_key, '(长度:', testPayload.api_key.length, ')')
+    } else {
+      console.log('🔍 [测试连接] API Key 为空')
+    }
+
+    if (testPayload.api_secret) {
+      console.log('🔍 [测试连接] 发送 API Secret:', testPayload.api_secret, '(长度:', testPayload.api_secret.length, ')')
+    } else {
+      console.log('🔍 [测试连接] API Secret 为空')
+    }
+
+    const result = await configApi.testConfig({
+      config_type: 'datasource',
+      config_data: testPayload
+    })
+
+    if (result.success) {
+      ElMessage.success(`连接测试成功: ${result.message}`)
+    } else {
+      ElMessage.error(`连接测试失败: ${result.message}`)
+    }
+  } catch (error) {
+    console.error('测试连接失败:', error)
+    ElMessage.error('测试连接失败')
+  } finally {
+    testing.value = false
+  }
+}
+
+// 生命周期
+onMounted(() => {
+  loadMarketCategories()
+})
+</script>
+
+<style lang="scss" scoped>
+.form-help {
+  color: #909399;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.form-tip {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.register-guide {
+  p {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--el-text-color-regular);
+  }
+
+  :deep(.el-button) {
+    font-size: 15px;
+    padding: 8px 16px;
+  }
+}
+
+.config-params {
+  .param-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+}
+
+.dialog-footer {
+  text-align: right;
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/ProviderDialog.vue ====================
+<template>
+  <el-dialog
+    :model-value="visible"
+    :title="isEdit ? '编辑厂家信息' : '添加厂家'"
+    width="600px"
+    @update:model-value="handleVisibleChange"
+    @close="handleClose"
+  >
+    <el-form
+      ref="formRef"
+      :model="formData"
+      :rules="rules"
+      label-width="120px"
+    >
+      <!-- 预设厂家选择 -->
+      <el-form-item v-if="!isEdit" label="快速选择">
+        <el-select
+          v-model="selectedPreset"
+          placeholder="选择预设厂家或手动填写"
+          clearable
+          @change="handlePresetChange"
+        >
+          <el-option
+            v-for="preset in presetProviders"
+            :key="preset.name"
+            :label="preset.display_name"
+            :value="preset.name"
+          />
+        </el-select>
+      </el-form-item>
+
+      <!-- 🆕 注册引导提示 -->
+      <el-alert
+        v-if="selectedPreset && currentPresetInfo?.register_url"
+        :title="`📝 ${currentPresetInfo.display_name} 注册引导`"
+        type="info"
+        :closable="false"
+        class="mb-4"
+      >
+        <template #default>
+          <div class="register-guide">
+            <p>{{ currentPresetInfo.register_guide || '如果您还没有账号，请先注册：' }}</p>
+            <el-button
+              type="primary"
+              size="small"
+              link
+              @click="openRegisterUrl"
+            >
+              <el-icon><Link /></el-icon>
+              前往注册 {{ currentPresetInfo.display_name }}
+            </el-button>
+          </div>
+        </template>
+      </el-alert>
+
+      <el-form-item label="厂家ID" prop="name">
+        <el-input 
+          v-model="formData.name" 
+          placeholder="如: openai, anthropic"
+          :disabled="isEdit"
+        />
+        <div class="form-tip">厂家的唯一标识符，创建后不可修改</div>
+      </el-form-item>
+
+      <el-form-item label="显示名称" prop="display_name">
+        <el-input 
+          v-model="formData.display_name" 
+          placeholder="如: OpenAI, Anthropic"
+        />
+      </el-form-item>
+
+      <el-form-item label="描述" prop="description">
+        <el-input 
+          v-model="formData.description" 
+          type="textarea"
+          :rows="3"
+          placeholder="厂家简介和特点"
+        />
+      </el-form-item>
+
+      <el-form-item label="官网" prop="website">
+        <el-input 
+          v-model="formData.website" 
+          placeholder="https://openai.com"
+        />
+      </el-form-item>
+
+      <el-form-item label="API文档" prop="api_doc_url">
+        <el-input 
+          v-model="formData.api_doc_url" 
+          placeholder="https://platform.openai.com/docs"
+        />
+      </el-form-item>
+
+      <el-form-item label="默认API地址" prop="default_base_url">
+        <el-input
+          v-model="formData.default_base_url"
+          placeholder="https://api.openai.com/v1"
+        />
+      </el-form-item>
+
+      <el-alert
+        title="🔒 安全提示"
+        type="info"
+        description="敏感密钥通过环境变量/运维配置注入，出于安全考虑，此处不存储或展示真实密钥。"
+        show-icon
+        :closable="false"
+        class="mb-2"
+      />
+      <el-form-item label="密钥状态">
+        <el-tag :type="(props.provider?.extra_config?.has_api_key ? 'success' : 'danger')" size="small">
+          {{ props.provider?.extra_config?.has_api_key ? '已配置' : '未配置' }}
+        </el-tag>
+        <el-tag v-if="props.provider?.extra_config?.has_api_key" :type="props.provider?.extra_config?.source === 'environment' ? 'warning' : 'success'" size="small" class="ml-2">
+          {{ props.provider?.extra_config?.source === 'environment' ? 'ENV' : '已配置' }}
+        </el-tag>
+      </el-form-item>
+
+      <!-- 🔥 新增：API Key 输入框 -->
+      <el-form-item label="API Key" prop="api_key">
+        <el-input
+          v-model="formData.api_key"
+          type="password"
+          placeholder="输入 API Key（可选，留空则使用环境变量）"
+          show-password
+          clearable
+        />
+        <div class="form-tip">
+          优先级：数据库配置 > 环境变量。留空则使用 .env 文件中的配置
+        </div>
+      </el-form-item>
+
+      <!-- 🔥 新增：API Secret 输入框（某些厂家需要） -->
+      <el-form-item v-if="needsApiSecret" label="API Secret" prop="api_secret">
+        <el-input
+          v-model="formData.api_secret"
+          type="password"
+          placeholder="输入 API Secret（可选）"
+          show-password
+          clearable
+        />
+        <div class="form-tip">
+          某些厂家（如百度千帆）需要额外的 Secret Key
+        </div>
+      </el-form-item>
+
+      <el-form-item label="支持功能" prop="supported_features">
+        <el-checkbox-group v-model="formData.supported_features">
+          <el-checkbox label="chat">对话</el-checkbox>
+          <el-checkbox label="completion">文本补全</el-checkbox>
+          <el-checkbox label="embedding">向量化</el-checkbox>
+          <el-checkbox label="image">图像生成</el-checkbox>
+          <el-checkbox label="vision">图像理解</el-checkbox>
+          <el-checkbox label="function_calling">函数调用</el-checkbox>
+          <el-checkbox label="streaming">流式输出</el-checkbox>
+        </el-checkbox-group>
+      </el-form-item>
+
+      <el-form-item label="状态">
+        <el-switch 
+          v-model="formData.is_active"
+          active-text="启用"
+          inactive-text="禁用"
+        />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">
+          {{ isEdit ? '更新' : '添加' }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Link } from '@element-plus/icons-vue'
+import type { FormInstance, FormRules } from 'element-plus'
+import { configApi, type LLMProvider } from '@/api/config'
+
+// 表单数据类型（扩展 LLMProvider，添加临时字段）
+interface ProviderFormData extends Partial<LLMProvider> {
+  api_key?: string
+  api_secret?: string
+}
+
+interface Props {
+  visible: boolean
+  provider?: Partial<LLMProvider>
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  provider: () => ({})
+})
+
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'success': []
+}>()
+
+// 表单引用
+const formRef = ref<FormInstance>()
+const submitting = ref(false)
+const selectedPreset = ref('')
+
+// 是否为编辑模式
+const isEdit = computed(() => !!props.provider?.id)
+
+// 是否需要API Secret（某些厂家需要）
+const needsApiSecret = computed(() => {
+  const providersNeedSecret = ['baidu', 'dashscope', 'qianfan']
+  return providersNeedSecret.includes(formData.value.name || '')
+})
+
+// 当前选中的预设厂家信息
+const currentPresetInfo = computed(() => {
+  if (!selectedPreset.value) return null
+  return presetProviders.find(p => p.name === selectedPreset.value)
+})
+
+// 打开注册链接
+const openRegisterUrl = () => {
+  if (currentPresetInfo.value?.register_url) {
+    window.open(currentPresetInfo.value.register_url, '_blank')
+  }
+}
+
+// 预设厂家数据
+const presetProviders = [
+  {
+    name: 'dashscope',
+    display_name: '阿里云百炼',
+    description: '阿里云百炼大模型服务平台，提供通义千问等模型',
+    website: 'https://bailian.console.aliyun.com',
+    api_doc_url: 'https://help.aliyun.com/zh/dashscope/',
+    default_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+    supported_features: ['chat', 'completion', 'embedding', 'function_calling', 'streaming'],
+    register_url: 'https://account.aliyun.com/register/qr_register.htm',
+    register_guide: '如果您还没有阿里云账号，请先注册并开通百炼服务：'
+  },
+  {
+    name: '302ai',
+    display_name: '302.AI',
+    description: '302.AI是企业级AI聚合平台，提供多种主流大模型的统一接口',
+    website: 'https://302.ai',
+    api_doc_url: 'https://doc.302.ai',
+    default_base_url: 'https://api.302.ai/v1',
+    supported_features: ['chat', 'completion', 'embedding', 'image', 'vision', 'function_calling', 'streaming'],
+    register_url: 'https://share.302.ai/DUjftK',
+    register_guide: '如果您还没有 302.AI 账号，请先注册并获取 API Key：'
+  },
+    {
+    name: 'deepseek',
+    display_name: 'DeepSeek',
+    description: 'DeepSeek提供高性能的AI推理服务',
+    website: 'https://www.deepseek.com',
+    api_doc_url: 'https://platform.deepseek.com/api-docs',
+    default_base_url: 'https://api.deepseek.com',
+    supported_features: ['chat', 'completion', 'function_calling', 'streaming'],
+    register_url: 'https://platform.deepseek.com/sign_up',
+    register_guide: '如果您还没有 DeepSeek 账号，请先注册并获取 API Key：'
+  },
+  {
+    name: 'openai',
+    display_name: 'OpenAI',
+    description: 'OpenAI是人工智能领域的领先公司，提供GPT系列模型',
+    website: 'https://openai.com',
+    api_doc_url: 'https://platform.openai.com/docs',
+    default_base_url: 'https://api.openai.com/v1',
+    supported_features: ['chat', 'completion', 'embedding', 'image', 'vision', 'function_calling', 'streaming'],
+    register_url: 'https://platform.openai.com/signup',
+    register_guide: '如果您还没有 OpenAI 账号，请先注册并获取 API Key：'
+  },
+  {
+    name: 'anthropic',
+    display_name: 'Anthropic',
+    description: 'Anthropic专注于AI安全研究，提供Claude系列模型',
+    website: 'https://anthropic.com',
+    api_doc_url: 'https://docs.anthropic.com',
+    default_base_url: 'https://api.anthropic.com',
+    supported_features: ['chat', 'completion', 'function_calling', 'streaming'],
+    register_url: 'https://console.anthropic.com/signup',
+    register_guide: '如果您还没有 Anthropic 账号，请先注册并获取 API Key：'
+  },
+  {
+    name: 'google',
+    display_name: 'Google AI',
+    description: 'Google的人工智能平台，提供Gemini系列模型',
+    website: 'https://ai.google.dev',
+    api_doc_url: 'https://ai.google.dev/docs',
+    default_base_url: 'https://generativelanguage.googleapis.com/v1',
+    supported_features: ['chat', 'completion', 'embedding', 'vision', 'function_calling', 'streaming'],
+    register_url: 'https://makersuite.google.com/app/apikey',
+    register_guide: '如果您还没有 Google AI 账号，请先登录 Google 账号并获取 API Key：'
+  },
+  {
+    name: 'azure',
+    display_name: 'Azure OpenAI',
+    description: 'Microsoft Azure平台上的OpenAI服务',
+    website: 'https://azure.microsoft.com/en-us/products/ai-services/openai-service',
+    api_doc_url: 'https://learn.microsoft.com/en-us/azure/ai-services/openai/',
+    default_base_url: 'https://your-resource.openai.azure.com',
+    supported_features: ['chat', 'completion', 'embedding', 'function_calling', 'streaming'],
+    register_url: 'https://azure.microsoft.com/en-us/free/',
+    register_guide: '如果您还没有 Azure 账号，请先注册并申请 Azure OpenAI 服务：'
+  },
+  {
+    name: 'zhipu',
+    display_name: '智谱AI',
+    description: '智谱AI提供GLM系列中文大模型',
+    website: 'https://zhipuai.cn',
+    api_doc_url: 'https://open.bigmodel.cn/doc',
+    default_base_url: 'https://open.bigmodel.cn/api/paas/v4',
+    supported_features: ['chat', 'completion', 'embedding', 'function_calling', 'streaming'],
+    register_url: 'https://open.bigmodel.cn/login',
+    register_guide: '如果您还没有智谱AI账号，请先注册并获取 API Key：'
+  },
+  {
+    name: 'baidu',
+    display_name: '百度智能云',
+    description: '百度提供的文心一言等AI服务',
+    website: 'https://cloud.baidu.com',
+    api_doc_url: 'https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html',
+    default_base_url: 'https://aip.baidubce.com',
+    supported_features: ['chat', 'completion', 'embedding', 'streaming'],
+    register_url: 'https://login.bce.baidu.com/new-reg',
+    register_guide: '如果您还没有百度智能云账号，请先注册并开通文心一言服务：'
+  }
+]
+
+// 表单数据
+const formData = ref<ProviderFormData>({
+  name: '',
+  display_name: '',
+  description: '',
+  website: '',
+  api_doc_url: '',
+  default_base_url: '',
+  api_key: '',
+  api_secret: '',
+  supported_features: [],
+  is_active: true
+})
+
+// 表单验证规则
+const rules: FormRules = {
+  name: [
+    { required: true, message: '请输入厂家ID', trigger: 'blur' },
+    { pattern: /^[a-z0-9_-]+$/, message: '只能包含小写字母、数字、下划线和连字符', trigger: 'blur' }
+  ],
+  display_name: [
+    { required: true, message: '请输入显示名称', trigger: 'blur' }
+  ],
+  supported_features: [
+    { type: 'array', min: 1, message: '请至少选择一个支持的功能', trigger: 'change' }
+  ]
+}
+
+// 重置表单
+const resetForm = () => {
+  formData.value = {
+    name: '',
+    display_name: '',
+    description: '',
+    website: '',
+    api_doc_url: '',
+    default_base_url: '',
+    api_key: '',
+    api_secret: '',
+    supported_features: [],
+    is_active: true
+  }
+  selectedPreset.value = ''
+}
+
+// 监听props变化，更新表单数据
+watch(() => props.provider, (newProvider) => {
+  if (newProvider && Object.keys(newProvider).length > 0) {
+    formData.value = { ...newProvider }
+  } else {
+    resetForm()
+  }
+}, { immediate: true, deep: true })
+
+// 处理预设选择
+const handlePresetChange = (presetName: string) => {
+  if (!presetName) return
+
+  const preset = presetProviders.find(p => p.name === presetName)
+  if (preset) {
+    formData.value = {
+      ...preset,
+      is_active: true
+    }
+  }
+}
+
+// 处理可见性变化
+const handleVisibleChange = (value: boolean) => {
+  emit('update:visible', value)
+}
+
+// 处理关闭
+const handleClose = () => {
+  emit('update:visible', false)
+  formRef.value?.resetFields()
+}
+
+// 处理提交
+const handleSubmit = async () => {
+  try {
+    await formRef.value?.validate()
+    submitting.value = true
+
+    // 🔥 修改：处理 API Key 的提交逻辑
+    const payload: any = { ...formData.value }
+
+    // 处理 API Key
+    if ('api_key' in payload) {
+      const apiKey = payload.api_key || ''
+
+      // 如果是截断的密钥（包含 "..."），表示用户没有修改，删除该字段（不更新）
+      if (apiKey.includes('...')) {
+        delete payload.api_key
+      }
+      // 如果是占位符，删除该字段（不更新）
+      else if (apiKey.startsWith('your_') || apiKey.startsWith('your-')) {
+        delete payload.api_key
+      }
+      // 如果是空字符串，保留（表示用户想清空密钥）
+      // 如果是有效的完整密钥，保留（表示用户想更新密钥）
+    }
+
+    // 处理 API Secret（同样的逻辑）
+    if ('api_secret' in payload) {
+      const apiSecret = payload.api_secret || ''
+
+      if (apiSecret.includes('...') || apiSecret.startsWith('your_') || apiSecret.startsWith('your-')) {
+        delete payload.api_secret
+      }
+    }
+
+    if (isEdit.value) {
+      await configApi.updateLLMProvider(formData.value.id!, payload)
+      ElMessage.success('厂家信息更新成功')
+    } else {
+      await configApi.addLLMProvider(payload)
+      ElMessage.success('厂家添加成功')
+    }
+
+    emit('success')
+    handleClose()
+  } catch (error) {
+    console.error('提交失败:', error)
+    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.form-tip {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  margin-top: 4px;
+}
+
+.dialog-footer {
+  text-align: right;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.register-guide {
+  p {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--el-text-color-regular);
+  }
+
+  :deep(.el-button) {
+    font-size: 15px;
+    padding: 8px 16px;
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/SortableDataSourceList.vue ====================
+<template>
+  <div class="sortable-datasource-list">
+    <div class="list-header">
+      <h4>{{ categoryDisplayName }}</h4>
+      <div class="header-actions">
+        <el-tag type="info" size="small">{{ dataSources.length }} 个数据源</el-tag>
+        <el-button
+          size="small"
+          type="primary"
+          icon="Sort"
+          @click="$emit('manage-category', categoryId)"
+        >
+          管理分类
+        </el-button>
+      </div>
+    </div>
+
+    <div
+      ref="sortableContainer"
+      class="datasource-container"
+      :class="{ 'drag-active': isDragging }"
+    >
+      <div
+        v-for="(item, index) in dataSources"
+        :key="item.name"
+        class="datasource-item"
+        :data-id="item.name"
+      >
+        <div class="drag-handle">
+          <el-icon><Rank /></el-icon>
+        </div>
+        
+        <div class="datasource-info">
+          <div class="datasource-header">
+            <span class="datasource-name">{{ item.display_name || item.name }}</span>
+            <div class="datasource-tags">
+              <el-tag
+                :type="item.enabled ? 'success' : 'danger'"
+                size="small"
+              >
+                {{ item.enabled ? '启用' : '禁用' }}
+              </el-tag>
+              <el-tag type="info" size="small">
+                优先级: {{ item.priority }}
+              </el-tag>
+            </div>
+          </div>
+          
+          <div class="datasource-details">
+            <span class="datasource-type">{{ item.type }}</span>
+            <span class="datasource-provider">{{ item.provider || '-' }}</span>
+            <span class="datasource-desc">{{ item.description || '暂无描述' }}</span>
+          </div>
+        </div>
+
+        <div class="datasource-actions">
+          <el-input-number
+            v-model="item.priority"
+            :min="0"
+            :max="100"
+            size="small"
+            controls-position="right"
+            style="width: 100px"
+            @change="updatePriority(item)"
+          />
+          <el-button
+            size="small"
+            @click="$emit('edit-datasource', item)"
+          >
+            编辑
+          </el-button>
+          <el-button
+            size="small"
+            type="info"
+            :loading="testingDataSources[item.name]"
+            @click="testDataSource(item)"
+          >
+            测试
+          </el-button>
+          <el-button
+            size="small"
+            @click="$emit('manage-grouping', item.name)"
+          >
+            分组
+          </el-button>
+          <el-button
+            size="small"
+            :type="item.enabled ? 'warning' : 'success'"
+            @click="toggleDataSource(item)"
+          >
+            {{ item.enabled ? '禁用' : '启用' }}
+          </el-button>
+          <el-button
+            size="small"
+            type="danger"
+            @click="$emit('delete-datasource', item)"
+          >
+            删除
+          </el-button>
+        </div>
+      </div>
+
+      <div v-if="dataSources.length === 0" class="empty-state">
+        <el-empty description="该分类下暂无数据源" :image-size="60">
+          <el-button
+            type="primary"
+            size="small"
+            @click="$emit('add-datasource', categoryId)"
+          >
+            添加数据源
+          </el-button>
+        </el-empty>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Rank } from '@element-plus/icons-vue'
+import Sortable from 'sortablejs'
+import { configApi, type DataSourceConfig } from '@/api/config'
+
+// Props
+interface Props {
+  categoryId: string
+  categoryDisplayName: string
+  dataSources: (DataSourceConfig & { priority: number; enabled: boolean })[]
+}
+
+const props = defineProps<Props>()
+
+// Emits
+const emit = defineEmits<{
+  'update-order': [categoryId: string, orderedItems: Array<{name: string, priority: number}>]
+  'edit-datasource': [dataSource: DataSourceConfig]
+  'manage-grouping': [dataSourceName: string]
+  'manage-category': [categoryId: string]
+  'add-datasource': [categoryId: string]
+  'delete-datasource': [dataSource: DataSourceConfig]
+}>()
+
+// Refs
+const sortableContainer = ref<HTMLElement>()
+const isDragging = ref(false)
+const testingDataSources = ref<Record<string, boolean>>({})
+let sortableInstance: Sortable | null = null
+
+// 初始化拖拽排序
+const initSortable = () => {
+  if (!sortableContainer.value) return
+
+  sortableInstance = Sortable.create(sortableContainer.value, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    
+    onStart: () => {
+      isDragging.value = true
+    },
+    
+    onEnd: (evt) => {
+      isDragging.value = false
+
+      if (evt.oldIndex !== evt.newIndex && evt.oldIndex !== undefined && evt.newIndex !== undefined) {
+        // 🔥 重要：根据拖动后的DOM顺序重新构建数据数组
+        const container = sortableContainer.value
+        if (!container) return
+
+        // 获取拖动后的DOM元素顺序
+        const items = Array.from(container.querySelectorAll('.datasource-item'))
+        const orderedNames = items.map(item => (item as HTMLElement).dataset.id).filter(Boolean) as string[]
+
+        // 根据新顺序构建优先级映射
+        const orderedItems = orderedNames.map((name, index) => ({
+          name,
+          priority: orderedNames.length - index // 倒序，第一个优先级最高
+        }))
+
+        console.log('拖动排序完成:', orderedItems)
+
+        // 发送更新事件
+        emit('update-order', props.categoryId, orderedItems)
+      }
+    }
+  })
+}
+
+// 销毁拖拽排序
+const destroySortable = () => {
+  if (sortableInstance) {
+    sortableInstance.destroy()
+    sortableInstance = null
+  }
+}
+
+// 更新优先级
+const updatePriority = async (item: DataSourceConfig & { priority: number; enabled: boolean }) => {
+  try {
+    await configApi.updateDataSourceGrouping(
+      item.name,
+      props.categoryId,
+      { priority: item.priority }
+    )
+    
+    ElMessage.success('优先级更新成功')
+  } catch (error) {
+    console.error('更新优先级失败:', error)
+    ElMessage.error('更新优先级失败')
+  }
+}
+
+// 切换数据源状态
+const toggleDataSource = async (item: DataSourceConfig & { priority: number; enabled: boolean }) => {
+  try {
+    const newEnabled = !item.enabled
+    await configApi.updateDataSourceGrouping(
+      item.name,
+      props.categoryId,
+      { enabled: newEnabled }
+    )
+
+    item.enabled = newEnabled
+    ElMessage.success(`数据源已${newEnabled ? '启用' : '禁用'}`)
+  } catch (error) {
+    console.error('切换数据源状态失败:', error)
+    ElMessage.error('切换数据源状态失败')
+  }
+}
+
+// 测试数据源连接
+const testDataSource = async (item: DataSourceConfig) => {
+  try {
+    testingDataSources.value[item.name] = true
+
+    console.log('🧪 测试数据源:', item.name)
+
+    const result = await configApi.testConfig({
+      config_type: 'datasource',
+      config_data: item
+    })
+
+    if (result.success) {
+      ElMessage.success({
+        message: `✅ ${result.message}`,
+        duration: 3000
+      })
+    } else {
+      ElMessage.error({
+        message: `❌ ${result.message}`,
+        duration: 5000
+      })
+    }
+  } catch (error: any) {
+    console.error('测试数据源失败:', error)
+    ElMessage.error({
+      message: `❌ 测试失败: ${error.message || '未知错误'}`,
+      duration: 5000
+    })
+  } finally {
+    testingDataSources.value[item.name] = false
+  }
+}
+
+// 生命周期
+onMounted(async () => {
+  await nextTick()
+  initSortable()
+})
+
+onUnmounted(() => {
+  destroySortable()
+})
+</script>
+
+<style lang="scss" scoped>
+.sortable-datasource-list {
+  margin-bottom: 24px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #f5f7fa;
+    border-bottom: 1px solid #ebeef5;
+
+    h4 {
+      margin: 0;
+      color: #303133;
+      font-size: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .datasource-container {
+    &.drag-active {
+      background: #f0f9ff;
+    }
+
+    .datasource-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: all 0.3s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: #f8f9fa;
+      }
+
+      .drag-handle {
+        cursor: move;
+        color: #c0c4cc;
+        margin-right: 12px;
+        padding: 4px;
+
+        &:hover {
+          color: #409eff;
+        }
+      }
+
+      .datasource-info {
+        flex: 1;
+        min-width: 0;
+
+        .datasource-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+
+          .datasource-name {
+            font-weight: 500;
+            color: #303133;
+            font-size: 14px;
+          }
+
+          .datasource-tags {
+            display: flex;
+            gap: 4px;
+          }
+        }
+
+        .datasource-details {
+          display: flex;
+          gap: 16px;
+          font-size: 12px;
+          color: #909399;
+
+          .datasource-type {
+            font-weight: 500;
+          }
+        }
+      }
+
+      .datasource-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 16px;
+      }
+    }
+
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+    }
+  }
+}
+
+// 拖拽样式
+:global(.sortable-ghost) {
+  opacity: 0.5;
+  background: #e3f2fd;
+}
+
+:global(.sortable-chosen) {
+  background: #f0f9ff;
+}
+
+:global(.sortable-drag) {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: rotate(2deg);
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/LLMConfigDialog.vue ====================
+<template>
+  <el-dialog
+    :model-value="visible"
+    :title="isEdit ? '编辑大模型配置' : '添加大模型配置'"
+    width="600px"
+    @update:model-value="handleVisibleChange"
+    @close="handleClose"
+  >
+    <el-form
+      ref="formRef"
+      :model="formData"
+      :rules="rules"
+      label-width="120px"
+    >
+      <!-- 基础配置 -->
+      <el-form-item label="供应商" prop="provider">
+        <div style="display: flex; gap: 8px; align-items: flex-start; width: 100%;">
+          <el-select
+            v-model="formData.provider"
+            placeholder="选择供应商"
+            @change="handleProviderChange"
+            :loading="providersLoading"
+            style="flex: 1; min-width: 0;"
+          >
+            <el-option
+              v-for="provider in availableProviders"
+              :key="provider.name"
+              :label="provider.display_name"
+              :value="provider.name"
+            />
+          </el-select>
+          <el-button
+            :icon="Refresh"
+            :loading="providersLoading"
+            @click="() => loadProviders(true)"
+            title="刷新供应商列表"
+          />
+        </div>
+        <div class="form-tip">
+          如果没有找到需要的供应商，请先在"厂家管理"中添加，然后点击刷新按钮
+        </div>
+      </el-form-item>
+
+      <el-form-item label="选择模型" v-if="modelOptions.length > 0">
+        <el-select
+          v-model="selectedModelKey"
+          placeholder="从列表中选择模型"
+          filterable
+          clearable
+          @change="handleModelSelect"
+        >
+          <el-option
+            v-for="model in modelOptions"
+            :key="model.value"
+            :label="model.label"
+            :value="model.value"
+          >
+            <div style="display: flex; flex-direction: column;">
+              <span>{{ model.label }}</span>
+              <span style="font-size: 12px; color: #909399;">代码: {{ model.value }}</span>
+            </div>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          💡 从列表中选择模型，会自动填充下方的显示名称和模型代码
+        </div>
+      </el-form-item>
+
+      <el-form-item label="模型显示名称" prop="model_display_name">
+        <el-input
+          v-model="formData.model_display_name"
+          placeholder="输入模型的显示名称，如：Qwen3系列Flash模型 - 快速经济"
+        />
+        <div class="form-tip">
+          💡 用于在界面上显示的友好名称
+        </div>
+      </el-form-item>
+
+      <el-form-item label="模型代码" prop="model_name">
+        <el-input
+          v-model="formData.model_name"
+          placeholder="输入模型的API调用代码，如：qwen-turbo"
+        />
+        <div class="form-tip">
+          💡 实际调用API时使用的模型标识符
+        </div>
+      </el-form-item>
+
+      <el-form-item label="API基础URL" prop="api_base">
+        <el-input
+          v-model="formData.api_base"
+          placeholder="可选，自定义API端点（留空使用厂家默认地址）"
+        />
+        <div class="form-tip">
+          💡 API密钥已在厂家配置中设置，此处只需配置模型参数
+        </div>
+      </el-form-item>
+
+      <!-- 模型参数 -->
+      <el-divider content-position="left">模型参数</el-divider>
+
+      <el-form-item label="最大Token数" prop="max_tokens">
+        <el-input-number
+          v-model="formData.max_tokens"
+          :min="100"
+          :max="32000"
+          :step="100"
+        />
+      </el-form-item>
+
+      <el-form-item label="温度参数" prop="temperature">
+        <el-input-number
+          v-model="formData.temperature"
+          :min="0"
+          :max="2"
+          :step="0.1"
+          :precision="1"
+        />
+      </el-form-item>
+
+      <el-form-item label="超时时间" prop="timeout">
+        <el-input-number
+          v-model="formData.timeout"
+          :min="10"
+          :max="300"
+          :step="10"
+        />
+        <span class="ml-2 text-gray-500">秒</span>
+      </el-form-item>
+
+      <el-form-item label="重试次数" prop="retry_times">
+        <el-input-number
+          v-model="formData.retry_times"
+          :min="0"
+          :max="10"
+        />
+      </el-form-item>
+
+      <!-- 定价配置 -->
+      <el-divider content-position="left">定价配置</el-divider>
+
+      <el-form-item label="输入价格" prop="input_price_per_1k">
+        <el-input-number
+          v-model="formData.input_price_per_1k"
+          :min="0"
+          :step="0.0001"
+          :controls="false"
+          placeholder="每1000个token的价格"
+        />
+        <span class="ml-2 text-gray-500">{{ formData.currency || 'CNY' }}/1K tokens</span>
+      </el-form-item>
+
+      <el-form-item label="输出价格" prop="output_price_per_1k">
+        <el-input-number
+          v-model="formData.output_price_per_1k"
+          :min="0"
+          :step="0.0001"
+          :controls="false"
+          placeholder="每1000个token的价格"
+        />
+        <span class="ml-2 text-gray-500">{{ formData.currency || 'CNY' }}/1K tokens</span>
+      </el-form-item>
+
+      <el-form-item label="货币单位" prop="currency">
+        <el-select v-model="formData.currency" placeholder="选择货币单位">
+          <el-option label="人民币 (CNY)" value="CNY" />
+          <el-option label="美元 (USD)" value="USD" />
+          <el-option label="欧元 (EUR)" value="EUR" />
+        </el-select>
+      </el-form-item>
+
+      <!-- 高级设置 -->
+      <el-divider content-position="left">高级设置</el-divider>
+
+      <el-form-item label="启用模型">
+        <el-switch v-model="formData.enabled" />
+      </el-form-item>
+
+      <el-form-item label="启用记忆功能">
+        <el-switch v-model="formData.enable_memory" />
+      </el-form-item>
+
+      <el-form-item label="启用调试模式">
+        <el-switch v-model="formData.enable_debug" />
+      </el-form-item>
+
+      <el-form-item label="优先级" prop="priority">
+        <el-input-number
+          v-model="formData.priority"
+          :min="0"
+          :max="100"
+        />
+        <span class="ml-2 text-gray-500">数值越大优先级越高</span>
+      </el-form-item>
+
+      <el-form-item label="模型类别" prop="model_category">
+        <el-input
+          v-model="formData.model_category"
+          placeholder="可选，用于OpenRouter等分类"
+        />
+      </el-form-item>
+
+      <el-form-item label="描述" prop="description">
+        <el-input
+          v-model="formData.description"
+          type="textarea"
+          :rows="3"
+          placeholder="可选，配置描述"
+        />
+      </el-form-item>
+
+      <!-- 🆕 模型能力配置 -->
+      <el-divider content-position="left">模型能力配置</el-divider>
+
+      <el-form-item label="能力等级" prop="capability_level">
+        <el-select v-model="formData.capability_level" placeholder="选择模型能力等级">
+          <el-option :value="1" label="1级 - 基础模型（快速分析）">
+            <span>1级 - 基础模型</span>
+            <span class="text-gray-400 text-xs ml-2">适合快速分析和简单任务</span>
+          </el-option>
+          <el-option :value="2" label="2级 - 标准模型（日常使用）">
+            <span>2级 - 标准模型</span>
+            <span class="text-gray-400 text-xs ml-2">适合日常分析和常规任务</span>
+          </el-option>
+          <el-option :value="3" label="3级 - 高级模型（深度分析）">
+            <span>3级 - 高级模型</span>
+            <span class="text-gray-400 text-xs ml-2">适合深度分析和复杂推理</span>
+          </el-option>
+          <el-option :value="4" label="4级 - 专业模型（专业分析）">
+            <span>4级 - 专业模型</span>
+            <span class="text-gray-400 text-xs ml-2">适合专业级分析和多轮辩论</span>
+          </el-option>
+          <el-option :value="5" label="5级 - 旗舰模型（全面分析）">
+            <span>5级 - 旗舰模型</span>
+            <span class="text-gray-400 text-xs ml-2">最强能力，适合全面分析</span>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          💡 能力等级决定模型可以处理的分析深度上限
+        </div>
+      </el-form-item>
+
+      <el-form-item label="适用角色" prop="suitable_roles">
+        <el-select
+          v-model="formData.suitable_roles"
+          multiple
+          placeholder="选择模型适用的角色"
+          style="width: 100%"
+        >
+          <el-option value="quick_analysis" label="快速分析">
+            <span>快速分析</span>
+            <span class="text-gray-400 text-xs ml-2">数据收集、工具调用</span>
+          </el-option>
+          <el-option value="deep_analysis" label="深度分析">
+            <span>深度分析</span>
+            <span class="text-gray-400 text-xs ml-2">推理、决策</span>
+          </el-option>
+          <el-option value="both" label="两者都适合">
+            <span>两者都适合</span>
+            <span class="text-gray-400 text-xs ml-2">全能型模型</span>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          💡 快速分析侧重数据收集，深度分析侧重推理决策
+        </div>
+      </el-form-item>
+
+      <el-form-item label="推荐分析深度" prop="recommended_depths">
+        <el-select
+          v-model="formData.recommended_depths"
+          multiple
+          placeholder="选择推荐的分析深度级别"
+          style="width: 100%"
+        >
+          <el-option value="快速" label="快速（1级）">
+            <span>快速（1级）</span>
+            <span class="text-gray-400 text-xs ml-2">任何模型都可以</span>
+          </el-option>
+          <el-option value="基础" label="基础（2级）">
+            <span>基础（2级）</span>
+            <span class="text-gray-400 text-xs ml-2">基础级以上</span>
+          </el-option>
+          <el-option value="标准" label="标准（3级）">
+            <span>标准（3级）</span>
+            <span class="text-gray-400 text-xs ml-2">标准级以上</span>
+          </el-option>
+          <el-option value="深度" label="深度（4级）">
+            <span>深度（4级）</span>
+            <span class="text-gray-400 text-xs ml-2">高级以上，需推理能力</span>
+          </el-option>
+          <el-option value="全面" label="全面（5级）">
+            <span>全面（5级）</span>
+            <span class="text-gray-400 text-xs ml-2">专业级以上，强推理能力</span>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          💡 根据模型能力等级，系统会自动推荐合适的分析深度
+        </div>
+      </el-form-item>
+
+      <el-form-item label="模型特性" prop="features">
+        <el-select
+          v-model="formData.features"
+          multiple
+          placeholder="选择模型支持的特性"
+          style="width: 100%"
+        >
+          <el-option value="tool_calling" label="工具调用">
+            <span>工具调用</span>
+            <span class="text-gray-400 text-xs ml-2">必需特性</span>
+          </el-option>
+          <el-option value="long_context" label="长上下文">
+            <span>长上下文</span>
+            <span class="text-gray-400 text-xs ml-2">支持大量历史信息</span>
+          </el-option>
+          <el-option value="reasoning" label="强推理能力">
+            <span>强推理能力</span>
+            <span class="text-gray-400 text-xs ml-2">深度分析必需</span>
+          </el-option>
+          <el-option value="vision" label="视觉输入">
+            <span>视觉输入</span>
+            <span class="text-gray-400 text-xs ml-2">支持图表分析</span>
+          </el-option>
+          <el-option value="fast_response" label="快速响应">
+            <span>快速响应</span>
+            <span class="text-gray-400 text-xs ml-2">响应速度快</span>
+          </el-option>
+          <el-option value="cost_effective" label="成本效益高">
+            <span>成本效益高</span>
+            <span class="text-gray-400 text-xs ml-2">性价比高</span>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          💡 工具调用是必需特性，推理能力对深度分析很重要
+        </div>
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="loading">
+          {{ isEdit ? '更新' : '添加' }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
+import { configApi, type LLMProvider, type LLMConfig, validateLLMConfig } from '@/api/config'
+
+// Props
+interface Props {
+  visible: boolean
+  config?: LLMConfig | null
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  config: null
+})
+
+// Emits
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  'success': []
+}>()
+
+// Refs
+const formRef = ref<FormInstance>()
+const loading = ref(false)
+const providersLoading = ref(false)
+const availableProviders = ref<LLMProvider[]>([])
+
+// Computed
+const isEdit = computed(() => !!props.config)
+
+// 表单数据
+const defaultFormData = {
+  provider: '',
+  model_name: '',
+  model_display_name: '',  // 新增：模型显示名称
+  api_base: '',
+  max_tokens: 4000,
+  temperature: 0.7,
+  timeout: 180,  // 默认超时时间改为180秒
+  retry_times: 3,
+  enabled: true,
+  enable_memory: false,
+  enable_debug: false,
+  priority: 0,
+  model_category: '',
+  description: '',
+  input_price_per_1k: 0,
+  output_price_per_1k: 0,
+  currency: 'CNY',
+  // 🆕 模型能力配置
+  capability_level: 2,  // 默认标准级
+  suitable_roles: ['both'],  // 默认两者都适合
+  features: ['tool_calling'],  // 默认支持工具调用
+  recommended_depths: ['快速', '基础', '标准'],  // 默认推荐1-3级分析
+  performance_metrics: {
+    speed: 3,
+    cost: 3,
+    quality: 3
+  }
+}
+
+const formData = ref({ ...defaultFormData })
+
+// 用于跟踪当前选择的模型（用于下拉列表）
+const selectedModelKey = ref<string>('')
+
+// 表单验证规则
+const rules: FormRules = {
+  provider: [{ required: true, message: '请选择供应商', trigger: 'change' }],
+  model_name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
+  max_tokens: [{ required: true, message: '请输入最大Token数', trigger: 'blur' }],
+  temperature: [{ required: true, message: '请输入温度参数', trigger: 'blur' }],
+  timeout: [{ required: true, message: '请输入超时时间', trigger: 'blur' }],
+  retry_times: [{ required: true, message: '请输入重试次数', trigger: 'blur' }],
+  priority: [{ required: true, message: '请输入优先级', trigger: 'blur' }]
+}
+
+// 模型选项
+const modelOptions = ref<Array<{ label: string; value: string }>>([])
+
+// 从后端获取的模型目录（包含完整信息）
+interface ModelInfo {
+  name: string
+  display_name: string
+  description?: string
+  context_length?: number
+  max_tokens?: number
+  input_price_per_1k?: number
+  output_price_per_1k?: number
+  currency?: string
+  is_deprecated?: boolean
+  release_date?: string
+  capabilities?: string[]
+}
+
+const modelCatalog = ref<Record<string, Array<ModelInfo>>>({})
+
+// 加载模型目录
+const loadModelCatalog = async () => {
+  try {
+    const catalog = await configApi.getModelCatalog()
+    // 转换为 provider -> models 的映射
+    const catalogMap: Record<string, Array<ModelInfo>> = {}
+    catalog.forEach(item => {
+      catalogMap[item.provider] = item.models
+    })
+    modelCatalog.value = catalogMap
+    console.log('✅ 模型目录加载成功:', Object.keys(catalogMap))
+  } catch (error) {
+    console.error('❌ 加载模型目录失败:', error)
+    ElMessage.warning('加载模型列表失败，将使用默认列表')
+    // 失败时使用空目录，允许用户手动输入
+    modelCatalog.value = {}
+  }
+}
+
+// 根据供应商获取模型选项
+const getModelOptions = (provider: string) => {
+  // 优先从后端获取的目录中查找
+  const models = modelCatalog.value[provider]
+  if (models && models.length > 0) {
+    return models.map(m => ({
+      label: m.display_name,
+      value: m.name
+    }))
+  }
+
+  // 如果后端没有数据，返回空数组（允许用户手动输入）
+  return []
+}
+
+// 根据供应商和模型名称获取模型详细信息
+const getModelInfo = (provider: string, modelName: string): ModelInfo | null => {
+  const models = modelCatalog.value[provider]
+  if (!models) return null
+
+  return models.find(m => m.name === modelName) || null
+}
+
+// 处理供应商变更
+const handleProviderChange = async (provider: string) => {
+  // 先尝试从已加载的目录中获取
+  modelOptions.value = getModelOptions(provider)
+
+  // 如果没有找到模型，重新加载模型目录
+  if (modelOptions.value.length === 0) {
+    console.log(`⚠️ 供应商 ${provider} 没有模型数据，重新加载模型目录...`)
+    await loadModelCatalog()
+    // 重新获取模型选项
+    modelOptions.value = getModelOptions(provider)
+
+    if (modelOptions.value.length > 0) {
+      ElMessage.success(`已加载 ${modelOptions.value.length} 个可用模型`)
+    } else {
+      ElMessage.warning('该供应商暂无可用模型，请在"模型目录管理"中添加')
+    }
+  }
+
+  formData.value.model_name = ''
+  // 清空价格信息
+  formData.value.input_price_per_1k = 0
+  formData.value.output_price_per_1k = 0
+  formData.value.currency = 'CNY'
+}
+
+// 处理从下拉列表选择模型
+const handleModelSelect = (modelCode: string) => {
+  if (!modelCode) {
+    // 清空选择
+    selectedModelKey.value = ''
+    return
+  }
+
+  // 查找选中的模型信息
+  const selectedModel = modelOptions.value.find(m => m.value === modelCode)
+  if (selectedModel) {
+    // 自动填充模型代码和显示名称
+    formData.value.model_name = selectedModel.value
+    formData.value.model_display_name = selectedModel.label
+
+    console.log('📋 选择模型:', {
+      code: selectedModel.value,
+      display_name: selectedModel.label
+    })
+
+    // 自动填充价格信息
+    const modelInfo = getModelInfo(formData.value.provider, modelCode)
+    if (modelInfo) {
+      console.log('📋 自动填充模型信息:', modelInfo)
+
+      if (modelInfo.input_price_per_1k !== undefined) {
+        formData.value.input_price_per_1k = modelInfo.input_price_per_1k
+      }
+      if (modelInfo.output_price_per_1k !== undefined) {
+        formData.value.output_price_per_1k = modelInfo.output_price_per_1k
+      }
+      if (modelInfo.currency) {
+        formData.value.currency = modelInfo.currency
+      }
+
+      ElMessage.success('已自动填充模型信息和价格')
+    } else {
+      ElMessage.success('已填充模型名称')
+    }
+  }
+}
+
+// 监听配置变化
+watch(
+  () => props.config,
+  (config) => {
+    if (config) {
+      // 编辑模式：先使用默认值，再用配置覆盖
+      // 注意：对于数字类型的字段，即使是 0 也应该保留
+      formData.value = {
+        ...defaultFormData,
+        ...config,
+        // 确保价格字段正确加载，即使是 0 也要保留
+        input_price_per_1k: config.input_price_per_1k ?? defaultFormData.input_price_per_1k,
+        output_price_per_1k: config.output_price_per_1k ?? defaultFormData.output_price_per_1k,
+        currency: config.currency || defaultFormData.currency,
+        // 确保显示名称正确加载
+        model_display_name: config.model_display_name || '',
+        // 🆕 确保模型能力字段正确加载
+        capability_level: config.capability_level ?? defaultFormData.capability_level,
+        suitable_roles: config.suitable_roles || defaultFormData.suitable_roles,
+        features: config.features || defaultFormData.features,
+        recommended_depths: config.recommended_depths || defaultFormData.recommended_depths,
+        performance_metrics: config.performance_metrics || defaultFormData.performance_metrics
+      }
+      modelOptions.value = getModelOptions(config.provider)
+
+      // 如果有 model_name，尝试在下拉列表中选中它
+      if (config.model_name) {
+        selectedModelKey.value = config.model_name
+      }
+
+      console.log('📝 编辑模式加载配置:', formData.value)
+    } else {
+      formData.value = { ...defaultFormData }
+      modelOptions.value = getModelOptions('dashscope')
+      selectedModelKey.value = ''
+    }
+  },
+  { immediate: true }
+)
+
+// 监听visible变化
+watch(
+  () => props.visible,
+  async (visible) => {
+    if (visible) {
+      // 对话框打开时刷新供应商列表和模型目录，确保显示最新数据
+      await Promise.all([
+        loadProviders(),
+        loadModelCatalog()
+      ])
+
+      if (props.config) {
+        // 编辑模式：先使用默认值，再用配置覆盖
+        formData.value = {
+          ...defaultFormData,
+          ...props.config,
+          // 确保价格字段正确加载，即使是 0 也要保留
+          input_price_per_1k: props.config.input_price_per_1k ?? defaultFormData.input_price_per_1k,
+          output_price_per_1k: props.config.output_price_per_1k ?? defaultFormData.output_price_per_1k,
+          currency: props.config.currency || defaultFormData.currency,
+          // 确保显示名称正确加载
+          model_display_name: props.config.model_display_name || '',
+          // 🆕 确保模型能力字段正确加载
+          capability_level: props.config.capability_level ?? defaultFormData.capability_level,
+          suitable_roles: props.config.suitable_roles || defaultFormData.suitable_roles,
+          features: props.config.features || defaultFormData.features,
+          recommended_depths: props.config.recommended_depths || defaultFormData.recommended_depths,
+          performance_metrics: props.config.performance_metrics || defaultFormData.performance_metrics
+        }
+        modelOptions.value = getModelOptions(props.config.provider)
+
+        // 如果有 model_name，尝试在下拉列表中选中它
+        if (props.config.model_name) {
+          selectedModelKey.value = props.config.model_name
+        }
+
+        console.log('📝 对话框打开，加载配置:', formData.value)
+      } else {
+        // 新增模式：使用默认值
+        formData.value = { ...defaultFormData }
+        // 如果有供应商，加载其模型列表
+        if (formData.value.provider) {
+          modelOptions.value = getModelOptions(formData.value.provider)
+        } else {
+          modelOptions.value = []
+        }
+        selectedModelKey.value = ''
+      }
+    }
+  }
+)
+
+// 处理可见性变化
+const handleVisibleChange = (value: boolean) => {
+  emit('update:visible', value)
+}
+
+// 处理关闭
+const handleClose = () => {
+  emit('update:visible', false)
+  formRef.value?.resetFields()
+}
+
+// 处理提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+
+    // 验证配置数据
+    const errors = validateLLMConfig(formData.value)
+    if (errors.length > 0) {
+      ElMessage.error(`配置验证失败: ${errors.join(', ')}`)
+      return
+    }
+
+    loading.value = true
+
+    // 准备提交数据，移除api_key字段（由后端从厂家配置获取）
+    const submitData = { ...formData.value }
+    // 使用类型安全的方式移除api_key字段（如果存在的话）
+    if ('api_key' in submitData) {
+      delete (submitData as any).api_key  // 不发送api_key，让后端从厂家配置获取
+    }
+
+    console.log('🚀 提交大模型配置:', submitData)
+
+    // 调用API
+    await configApi.updateLLMConfig(submitData)
+
+    ElMessage.success(isEdit.value ? '模型配置更新成功' : '模型配置添加成功')
+    emit('success')
+    handleClose()
+  } catch (error) {
+    console.error('❌ 提交大模型配置失败:', error)
+    ElMessage.error(isEdit.value ? '模型配置更新失败' : '模型配置添加失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载可用的厂家列表
+const loadProviders = async (showSuccessMessage = false) => {
+  providersLoading.value = true
+  try {
+    const providers = await configApi.getLLMProviders()
+    // 只显示启用的厂家
+    availableProviders.value = providers.filter(p => p.is_active)
+    console.log('✅ 加载厂家列表成功:', availableProviders.value.length)
+
+    if (showSuccessMessage) {
+      ElMessage.success(`已刷新供应商列表，共 ${availableProviders.value.length} 个启用的供应商`)
+    }
+
+    // 如果是新增模式且没有选择供应商，默认选择第一个
+    if (!isEdit.value && !formData.value.provider && availableProviders.value.length > 0) {
+      formData.value.provider = availableProviders.value[0].name
+      await handleProviderChange(formData.value.provider)
+    }
+  } catch (error) {
+    console.error('❌ 加载厂家列表失败:', error)
+    ElMessage.error('加载厂家列表失败')
+  } finally {
+    providersLoading.value = false
+  }
+}
+
+// 组件挂载时加载厂家数据和模型目录
+onMounted(() => {
+  loadProviders()
+  loadModelCatalog()
+})
+</script>
+
+<style lang="scss" scoped>
+.dialog-footer {
+  text-align: right;
+}
+
+.ml-2 {
+  margin-left: 8px;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+.text-xs {
+  font-size: 11px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  margin-top: 4px;
+}
+
+// 🆕 模型能力配置样式
+:deep(.el-select-dropdown__item) {
+  height: auto;
+  line-height: 1.5;
+  padding: 8px 20px;
+
+  span {
+    display: inline-block;
+  }
+}
+</style>
+
+
+==================== frontend/src/views/Settings/components/ModelCatalogManagement.vue ====================
+<template>
+  <div class="model-catalog-management">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>模型目录管理</span>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加厂家模型目录
+          </el-button>
+        </div>
+      </template>
+
+      <el-alert
+        title="说明"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 20px"
+      >
+        模型目录用于在添加大模型配置时提供可选的模型列表。您可以在这里管理各个厂家支持的模型。
+      </el-alert>
+
+      <el-table
+        :data="catalogs"
+        v-loading="loading"
+        border
+        style="width: 100%"
+      >
+        <el-table-column prop="provider" label="厂家标识" width="150" />
+        <el-table-column prop="provider_name" label="厂家名称" width="150" />
+        <el-table-column label="模型数量" width="120">
+          <template #default="{ row }">
+            <el-tag>{{ row.models.length }} 个模型</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="模型列表">
+          <template #default="{ row }">
+            <el-tag
+              v-for="model in row.models.slice(0, 3)"
+              :key="model.name"
+              size="small"
+              style="margin-right: 5px"
+            >
+              {{ model.display_name }}
+            </el-tag>
+            <span v-if="row.models.length > 3">
+              ... 还有 {{ row.models.length - 3 }} 个
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.updated_at) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              type="danger"
+              size="small"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- 编辑对话框 -->
