@@ -92,8 +92,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       // WebSocket 连接地址
       // 🔥 统一使用当前访问的服务器地址（开发环境通过 Vite 代理，生产环境通过 Nginx 代理）
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = window.location.host
-      const wsUrl = `ws://139.155.146.217:8083/api/ws/notifications?token=${encodeURIComponent(token)}`
+      const wsUrl = `${wsProtocol}//139.155.146.217:8030/api/ws/notifications?token=${encodeURIComponent(token)}`
 
       console.log('[WS] 连接到:', wsUrl)
 

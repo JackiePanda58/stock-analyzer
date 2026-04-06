@@ -41,4 +41,4 @@ async def ws_notifications(websocket: WebSocket):
         pass
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8083, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8030, log_level="info")

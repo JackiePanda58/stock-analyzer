@@ -513,11 +513,100 @@ async def config_migrate_legacy(username: str = Depends(verify_token)):
 # ==================== 分析接口 (Analysis) ====================
 @app.post("/api/analysis/single")
 async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"task_id": "stub", "status": "queued"}}
+    """
+    股票智能分析接口 - 前端单股分析调用此端点
+    内部复用 /api/v1/analyze 的核心分析逻辑
+    """
+    symbol = req.resolve_symbol()
+    target_date = req.resolve_date()
+
+    if not symbol or len(symbol) != 6:
+        raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
+
+    cache_key = f"report:{symbol}:{target_date}"
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached:
+                return {"success": True, "data": {"task_id": f"cached_{symbol}", "status": "completed", "report": cached, "cached": True}}
+        except Exception:
+            pass
+
+    try:
+        t0 = time.time()
+        local_ta = TradingAgentsGraph(
+            selected_analysts=["market", "news", "fundamentals"],
+            debug=False,
+            config=TRADING_CONFIG
+        )
+        result, _ = await asyncio.to_thread(local_ta.propagate, symbol, target_date)
+        elapsed = time.time() - t0
+        final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
+
+        if redis_client:
+            try:
+                redis_client.setex(cache_key, 43200, final_report)
+            except Exception:
+                pass
+
+        return {
+            "success": True,
+            "data": {
+                "task_id": f"{symbol}_{int(time.time())}",
+                "status": "completed",
+                "report": final_report,
+                "elapsed_seconds": round(elapsed, 2),
+                "cached": False
+            }
+        }
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="LLM 多智能体分析超时")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
 
 @app.get("/api/analysis/tasks/{task_id}/status")
 async def analysis_task_status(task_id: str, username: str = Depends(verify_token)):
+    # 从 task_id 提取 symbol（格式: 600519_timestamp）
+    symbol = task_id.split("_")[0] if "_" in task_id else task_id
+    if symbol.startswith("cached_"):
+        symbol = symbol.replace("cached_", "")
+    cache_key = f"report:{symbol}:"
+    if redis_client:
+        try:
+            # 查找该 symbol 的最新缓存
+            keys = redis_client.keys(f"report:{symbol}:*")
+            if keys:
+                cached = redis_client.get(keys[0])
+                if cached:
+                    return {"success": True, "data": {"status": "completed", "progress": 100, "report": cached}}
+        except Exception:
+            pass
     return {"success": True, "data": {"status": "pending", "progress": 0}}
+
+@app.get("/api/analysis/tasks/{task_id}/result")
+async def analysis_task_result(task_id: str, username: str = Depends(verify_token)):
+    # 从 task_id 提取 symbol
+    symbol = task_id.split("_")[0] if "_" in task_id else task_id
+    if symbol.startswith("cached_"):
+        symbol = symbol.replace("cached_", "")
+    cache_key_prefix = f"report:{symbol}:"
+    if redis_client:
+        try:
+            keys = redis_client.keys(f"report:{symbol}:*")
+            if keys:
+                cached = redis_client.get(keys[0])
+                if cached:
+                    return {
+                        "success": True,
+                        "data": {
+                            "reports": {"trading_decision": {"content": cached}},
+                            "decision": cached,
+                            "summary": cached[:200] + "..." if len(cached) > 200 else cached
+                        }
+                    }
+        except Exception:
+            pass
+    return {"success": True, "data": {"reports": {}, "decision": "", "summary": ""}}
 
 @app.get("/api/analysis/user/history")
 async def analysis_user_history(username: str = Depends(verify_token)):
@@ -660,35 +749,6 @@ async def usage_cost_by_model(username: str = Depends(verify_token)):
 async def usage_cost_by_provider(username: str = Depends(verify_token)):
     return {"success": True, "data": {"costs": {}}}
 
-# ==================== 模型能力 (Model Capabilities) ====================
-@app.get("/api/model-capabilities/recommend")
-async def model_capabilities_recommend(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"recommended": None}}
-
-@app.get("/api/model-capabilities/badges")
-async def model_capabilities_badges(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"badges": []}}
-
-@app.get("/api/model-capabilities/capability-descriptions")
-async def model_capabilities_descriptions(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"descriptions": {}}}
-
-@app.get("/api/model-capabilities/default-configs")
-async def model_capabilities_default_configs(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"configs": {}}}
-
-@app.get("/api/model-capabilities/depth-requirements")
-async def model_capabilities_depth_requirements(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"requirements": {}}}
-
-@app.post("/api/model-capabilities/validate")
-async def model_capabilities_validate(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"valid": True}}
-
-@app.post("/api/model-capabilities/batch-init")
-async def model_capabilities_batch_init(username: str = Depends(verify_token)):
-    return {"success": True}
-
 # ==================== 纸带交易 (Paper Trading) ====================
 @app.get("/api/paper/positions")
 async def paper_positions(username: str = Depends(verify_token)):
@@ -755,6 +815,42 @@ async def system_logs_create(username: str = Depends(verify_token)):
 @app.post("/api/system/logs/clear")
 async def system_logs_clear(username: str = Depends(verify_token)):
     return {"success": True, "data": {"cleared": 0}}
+
+
+# ==================== 模型能力接口 (Model Capabilities) ====================
+
+@app.get("/api/model-capabilities/default-configs")
+async def model_default_configs(username: str = Depends(verify_token)):
+    return {"success": True, "data": {"configs": {}}}
+
+@app.get("/api/model-capabilities/depth-requirements")
+async def model_depth_requirements(username: str = Depends(verify_token)):
+    return {"success": True, "data": {"requirements": {}}}
+
+@app.get("/api/model-capabilities/capability-descriptions")
+async def model_capability_descriptions(username: str = Depends(verify_token)):
+    return {"success": True, "data": {"descriptions": {}}}
+
+@app.get("/api/model-capabilities/badges")
+async def model_badges(username: str = Depends(verify_token)):
+    return {"success": True, "data": {"badges": []}}
+
+@app.post("/api/model-capabilities/recommend")
+async def model_recommend(req: dict, username: str = Depends(verify_token)):
+    research_depth = req.get("research_depth", "标准")
+    return {"success": True, "data": {"quick_model": "MiniMax-M2.7", "deep_model": "MiniMax-M2.7", "research_depth": research_depth}}
+
+@app.post("/api/model-capabilities/validate")
+async def model_validate(req: dict, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"valid": True, "message": ""}}
+
+@app.post("/api/model-capabilities/batch-init")
+async def model_batch_init(req: dict, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"initialized": 0}}
+
+@app.get("/api/model-capabilities/model/{model_name}")
+async def model_capability_get(model_name: str, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"name": model_name, "capabilities": {}}}
 
 
 if __name__ == "__main__":

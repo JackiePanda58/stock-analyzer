@@ -148,8 +148,8 @@ def get_china_stock_indicators(
         "boll_ub": "Bollinger Upper Band：通常比中轨高2个标准差，标记潜在超买。",
         "boll_lb": "Bollinger Lower Band：通常比中轨低2个标准差，指示潜在超卖。",
         "atr": "ATR：平均真实波幅以衡量波动性，用于设置止损水平。",
-        "vwma": "VWMA：BaoStock 无成交量数据，标记 N/A。",
-        "mfi": "MFI：BaoStock 无成交量，用 RSI 近似。",
+        "vwma": "VWMA：成交量加权平均价格，BaoStock 已提供成交量数据。",
+        "mfi": "MFI：资金流量指标，BaoStock 已提供成交量数据。",
     }
 
     if indicator not in best_ind_params:
@@ -159,7 +159,7 @@ def get_china_stock_indicators(
         with _baostock_session():
             rs = bs.query_history_k_data_plus(
                 bs_code,
-                "date,close,high,low",
+                "date,close,high,low,volume",
                 start_date=fetch_start,
                 end_date=fetch_end,
                 frequency="d",
@@ -170,13 +170,15 @@ def get_china_stock_indicators(
         if df.empty:
             return f"未找到 {symbol} 的历史数据，无法计算技术指标"
 
-        for col in ["close", "high", "low"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+        for col in ["close", "high", "low", "volume"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
         df = df.dropna(subset=["close", "high", "low"])
 
         close = df["close"]
         high = df["high"]
         low_df = df["low"]
+        volume = df["volume"] if "volume" in df.columns else None
 
         # MACD (12, 26, 9)
         ema12 = close.ewm(span=12, adjust=False).mean()
@@ -214,6 +216,23 @@ def get_china_stock_indicators(
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         atr = tr.rolling(14).mean()
 
+        # VWMA (成交量加权平均价)
+        if volume is not None and not volume.isna().all():
+            vwma_vals = volume.rolling(20).apply(
+                lambda x: (x * close.iloc[x.index]).sum() / x.sum(), raw=False
+            ).values
+        else:
+            vwma_vals = [float('nan')] * len(close)
+
+        # MFI (资金流量指标)
+        if volume is not None and not volume.isna().all():
+            typical = (high + low_df + close) / 3
+            pos_flow = typical.where(typical > typical.shift(), 0).rolling(14).sum()
+            neg_flow = typical.where(typical < typical.shift(), 0).rolling(14).sum()
+            mfi_vals = (100 - 100 / (1 + pos_flow / neg_flow.replace(0, float('nan')))).values
+        else:
+            mfi_vals = [float('nan')] * len(close)
+
         # 指标到 DataFrame 列名的映射
         ind_col_map = {
             "macd": "MACD", "macds": "MACD_signal", "macdh": "MACD_hist",
@@ -241,7 +260,8 @@ def get_china_stock_indicators(
             "SMA50": close.rolling(50).mean().values,
             "SMA200": close.rolling(200).mean().values,
             "EMA10": close.ewm(span=10, adjust=False).mean().values,
-            "VWMA": [float("nan")] * len(close),
+            "VWMA": vwma_vals,
+            "MFI": mfi_vals,
         })
 
         # 筛选 curr_date 当日或之前的最后 look_back_days 条

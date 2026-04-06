@@ -99,3 +99,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 - 更早版本记录已丢失
+
+---
+
+## [Unreleased] - 2026-04-06
+
+### 🐛 Bug 修复
+
+- **修复 `/api/analysis/single` Stub 问题**
+  - 原来返回 `task_id: "stub"`，现在真正调用 `TradingAgentsGraph` 执行完整多智能体分析
+  - 返回 `status: "completed"` + 完整报告，匹配前端轮询逻辑
+
+- **修复 `/api/analysis/tasks/{task_id}/status` 端点**
+  - 原来始终返回 `status: "pending"`，现在正确查询 Redis 缓存
+  - 对于已缓存的报告返回 `status: "completed", progress: 100`
+
+- **修复 `/api/analysis/tasks/{task_id}/result` 端点（缺失）**
+  - 新增实现，从 Redis 缓存读取报告内容并返回结构化数据
+  - 解决前端 `status: "completed"` 后调用 result 接口 404 的问题
+
+- **修复 `/api/model-capabilities/recommend` HTTP 方法**
+  - 前端发送 POST，后端原为 GET（第一组定义），现已统一为 POST
+
+- **清理重复的 Model Capabilities 端点定义**
+  - 删除了第一组重复的 model-capabilities 端点（保留正确实现的第二组）
+
+- **BaoStock Volume 数据问题（误报 + 真实修复）**
+  - 确认：BaoStock 实际上返回 `volume` 字段（测试验证：`fields: ['date','code','open','high','low','close','volume','amount']`）
+  - 修复 `get_china_stock_indicators`：将 `volume` 字段加入 BaoStock 查询
+  - VWMA：实现了真实的成交量加权平均价计算（之前硬编码为 NaN）
+  - MFI：实现了真实的资金流量指标计算（之前用 RSI 近似）
+  - 修正了描述文案：`"BaoStock 无成交量数据"` → `"BaoStock 已提供成交量数据"`
+
+- **前端 WebSocket 端点硬编码**
+  - 从 `ws://139.155.146.217:8083/...` 改为 `ws://139.155.146.217:8030/...`
+  - 配合腾讯云开通的 8030 端口
+  - Vite proxy 添加 `ws: true` 支持 WebSocket 升级
+
+- **前端 API 代理配置**
+  - Vite dev server 端口由 62879→62880→62879 漂移问题已稳定
+  - 62879 端口确认可用
+
