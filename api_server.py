@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import asyncio
+import uuid
 import jwt
 import traceback
 from datetime import datetime, timedelta
@@ -19,6 +20,15 @@ load_dotenv('/root/stock-analyzer/.env')
 from tradingagents.dataflows.config import set_config
 from config.settings import TRADING_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.usage_tracker import (
+    init_db,
+    UsageTrackingCallback,
+    get_usage_stats,
+    get_usage_records,
+    get_daily_cost,
+    get_cost_by_model,
+    get_cost_by_provider,
+)
 from config.logger import sys_logger
 
 # ==================== JWT 安全基建 ====================
@@ -37,6 +47,10 @@ except Exception as e:
     redis_client = None
 
 # ==================== FastAPI 应用 ====================
+# 初始化用量数据库
+init_db()
+sys_logger.info("[API] ✅ 用量追踪数据库已初始化")
+
 app = FastAPI(title="TradingAgents Enterprise API", version="1.0.0-preview")
 sys_logger.info("=== FastAPI 后端服务启动 (JWT 鉴权已启用) ===")
 set_config(TRADING_CONFIG)
@@ -253,10 +267,17 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
     # 2. 未命中缓存，执行真实 TradingAgentsGraph 分析
     try:
         t0 = time.time()
+        session_id = str(uuid.uuid4())
+        usage_cb = UsageTrackingCallback(
+            session_id=session_id,
+            analysis_type="stock_analysis",
+            symbol=symbol
+        )
         local_ta = TradingAgentsGraph(
             selected_analysts=["market", "news", "fundamentals"],
             debug=False,
-            config=TRADING_CONFIG
+            config=TRADING_CONFIG,
+            callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
             local_ta.propagate,
@@ -624,10 +645,17 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
 
     try:
         t0 = time.time()
+        session_id = str(uuid.uuid4())
+        usage_cb = UsageTrackingCallback(
+            session_id=session_id,
+            analysis_type="batch_analysis",
+            symbol=symbol
+        )
         local_ta = TradingAgentsGraph(
             selected_analysts=["market", "news", "fundamentals"],
             debug=False,
-            config=TRADING_CONFIG
+            config=TRADING_CONFIG,
+            callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
             local_ta.propagate,
@@ -1164,38 +1192,73 @@ async def tags_list(username: str = Depends(verify_token)):
 
 # ==================== 使用统计 (Usage) ====================
 @app.get("/api/usage/statistics")
-async def usage_statistics(username: str = Depends(verify_token)):
-    """获取使用统计"""
-    # 返回符合前端预期的格式
-    return {
-        "success": True,
-        "data": {
-            "total": 0,
-            "by_provider": {},
-            "by_model": {},
-            "by_date": {}
+async def usage_statistics(days: int = 7, username: str = Depends(verify_token)):
+    """获取使用统计（默认近7天）"""
+    try:
+        stats = get_usage_stats(days=days)
+        return {
+            "success": True,
+            "data": {
+                "total": stats["total_requests"],
+                "total_input_tokens": stats["total_prompt_tokens"],
+                "total_output_tokens": stats["total_completion_tokens"],
+                "total_cost": stats["total_cost"],
+                "cost_by_currency": {"CNY": stats["total_cost"]},
+                "by_provider": stats["by_provider"],
+                "by_model": stats["by_model"],
+                "by_date": stats["by_date"]
+            }
         }
-    }
+    except Exception as e:
+        sys_logger.error(f"[Usage] statistics error: {e}")
+        return {"success": True, "data": {"total": 0, "by_provider": {}, "by_model": {}, "by_date": {}}}
 
 @app.get("/api/usage/records")
-async def usage_records(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"records": []}}
+async def usage_records(
+    limit: int = 100,
+    start_date: str = None,
+    end_date: str = None,
+    provider: str = None,
+    model_name: str = None,
+    username: str = Depends(verify_token)
+):
+    try:
+        records = get_usage_records(limit=limit, start_date=start_date, end_date=end_date, provider=provider, model_name=model_name)
+        return {"success": True, "data": records}
+    except Exception as e:
+        sys_logger.error(f"[Usage] records error: {e}")
+        return {"success": True, "data": {"records": [], "total": 0}}
 
 @app.get("/api/usage/records/old")
 async def usage_records_old(username: str = Depends(verify_token)):
     return {"success": True, "data": {"records": []}}
 
 @app.get("/api/usage/cost/daily")
-async def usage_cost_daily(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": []}}
+async def usage_cost_daily(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_daily_cost(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] daily cost error: {e}")
+        return {"success": True, "data": {"costs": []}}
 
 @app.get("/api/usage/cost/by-model")
-async def usage_cost_by_model(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": {}}}
+async def usage_cost_by_model(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_cost_by_model(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] cost by model error: {e}")
+        return {"success": True, "data": {"costs": {}}}
 
 @app.get("/api/usage/cost/by-provider")
-async def usage_cost_by_provider(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": {}}}
+async def usage_cost_by_provider(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_cost_by_provider(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] cost by provider error: {e}")
+        return {"success": True, "data": {"costs": {}}}
 
 # ==================== 纸带交易 (Paper Trading) ====================
 @app.get("/api/paper/positions")
