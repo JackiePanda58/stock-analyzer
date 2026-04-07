@@ -11,19 +11,21 @@
 - **多智能体协作**：市场分析员、新闻分析员、基本面分析员协同决策
 - **最终报告**：提取 `final_trade_decision` 字段，输出 HOLD/BUY/SELL 中文结论
 - **自动巡航**：每日 14:00（周一至周五）自动对自选股批量预热分析
-- **首次实盘验证**：贵州茅台（600519）→ 结论 HOLD
+- **自选股管理**：Redis HASH 存储，支持 A股/港股/美股 CRUD
+- **用量追踪**：SQLite 持久化，记录每次 LLM 调用的 token 消耗与成本
 
 ## 技术栈
 
 | 组件 | 技术 | 端口 |
 |------|------|------|
-| 后端 API | FastAPI + Python | 8080 |
+| 后端 API | FastAPI + Python（`api_server.py`） | 8080 |
 | 前端 | Vue3 + Vite + Echarts | 62879 |
 | WebSocket | ws + asyncio | 8030 |
 | Agent 框架 | LangGraph | — |
 | 大模型 | MiniMax M2.7 | — |
-| 数据源 | BaoStock + AkShare | — |
+| 数据源 | BaoStock + AkShare + 腾讯财经 | — |
 | 缓存 | Redis | 6379 |
+| 用量数据库 | SQLite | — |
 | 守护进程 | Watchdog | — |
 
 ## 系统架构
@@ -36,9 +38,9 @@
                   │ HTTP + WebSocket
 ┌─────────────────▼───────────────────────────────────┐
 │                   FastAPI Backend                    │  :8080
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────┐  │
-│  │ Market Agent │  │ News Agent   │  │Fundamental │  │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬──────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │ Market Agent │  │ News Agent   │  │Fundamental │ │
+│  └──────┬───────┘  └──────┬───────┘  └─────┬──────┘ │
 │         └──────────────────┼─────────────────┘         │
 │                            ▼                          │
 │                    LangGraph State                    │
@@ -59,22 +61,74 @@
 cd /root/stock-analyzer
 
 # 启动后端（8080）
-python -m uvicorn main:app --host 0.0.0.0 --port 8080
+python api_server.py
 
 # 启动前端（新窗口）
 cd frontend && npm run dev -- --port 62879
 
-# 或一键启动全部
+# 或使用脚本启动全部
 bash scripts/start_all.sh
 ```
+
+## 核心 API
+
+### 股票数据
+| 接口 | 说明 |
+|------|------|
+| `GET /api/stocks/{symbol}/quote` | 实时行情（OHLCV + 涨跌幅） |
+| `GET /api/stocks/{symbol}/kline` | K线数据（日/周/月 + 复权） |
+| `GET /api/stocks/{symbol}/fundamentals` | 基本面信息（PE/PB/市值） |
+| `GET /api/stocks/{symbol}/news` | 股票新闻 |
+| `GET /api/stock-data/search?keyword=` | 股票搜索（代码/名称） |
+| `GET /api/stock-data/basic-info/{code}` | 股票基本信息 |
+
+### 自选股
+| 接口 | 说明 |
+|------|------|
+| `GET /api/favorites` | 列表 |
+| `POST /api/favorites` | 添加 |
+| `DELETE /api/favorites/{stock_code}` | 删除 |
+| `GET /api/favorites/check/{symbol}` | 是否自选 |
+
+### 分析
+| 接口 | 说明 |
+|------|------|
+| `POST /api/analysis/single` | 单股分析 |
+| `GET /api/analysis/tasks` | 分析历史 |
+| `GET /api/analysis/tasks/{id}/result` | 报告详情（结构化字段） |
+| `GET /api/analysis/search?query=` | 搜索报告 |
+| `GET /api/reports/list` | 报告列表（支持市场筛选） |
+| `GET /api/reports/{id}/download?format=markdown` | 下载报告 |
+
+### 用量统计
+| 接口 | 说明 |
+|------|------|
+| `GET /api/usage/statistics` | 汇总（总tokens/总费用） |
+| `GET /api/usage/records` | 明细记录 |
+| `GET /api/usage/cost/daily` | 按日费用 |
+| `GET /api/usage/cost/by-provider` | 按提供商统计 |
+
+### 配置与系统
+| 接口 | 说明 |
+|------|------|
+| `GET /api/config/llm` | LLM 提供商与模型配置 |
+| `GET /api/config/settings` | 系统设置 |
+| `GET /api/config/datasource` | 数据源配置 |
+| `GET /api/system/status` | 系统状态 |
+| `GET /api/system/info` | 系统信息（内存/CPU） |
+| `GET /api/dashboard/summary` | 首页摘要 |
+| `GET /api/dashboard/market` | 市场指数（沪深300等） |
+| `GET /api/scheduler/jobs` | 定时任务管理 |
+| `GET /api/model-capabilities/default-configs` | 模型能力配置 |
 
 ## 目录结构
 
 ```
 stock-analyzer/
-├── main.py                      # FastAPI 入口
+├── api_server.py                 # FastAPI 入口（端口 8080）
 ├── auto_cruiser.py               # 自动巡航脚本（14:00 定时）
 ├── cron_daily_docs.py            # 每日文档更新（23:30 定时）
+├── ws_server.py                  # WebSocket 服务（端口 8030）
 ├── requirements.txt
 ├── frontend/                     # Vue3 前端
 │   ├── src/
@@ -84,19 +138,19 @@ stock-analyzer/
 │   └── package.json
 ├── tradingagents/
 │   ├── llm_clients/             # MiniMax LLM 客户端
-│   │   ├── base.py
-│   │   └── rate_limiter.py
 │   └── dataflows/
 │       ├── akshare_stock.py     # AkShare 数据获取
 │       ├── baostock_stock.py    # BaoStock 数据获取
-│       ├── propagate.py          # LangGraph 状态机
-│       └── tools/                # 工具函数
-├── config/
-│   └── logger.py                # 全局日志配置
-├── docs/                         # 文档（飞书文档链接）
-├── PRD.md                        # 产品需求文档
-├── CHANGELOG.md                  # 更新日志
-└── USER_GUIDE.md                # 用户指南
+│       └── propagate.py         # LangGraph 状态机
+├── config/                      # 配置文件
+│   ├── llm_config.json          # LLM 提供商配置
+│   ├── model_catalog.json       # 模型目录
+│   ├── data_sources.json        # 数据源配置
+│   ├── config.json              # 系统设置
+│   └── model_capabilities.json  # 模型能力
+├── data/                        # 数据目录
+│   └── usage.db                 # 用量 SQLite 数据库
+└── reports/                     # 分析报告存储
 ```
 
 ## 核心配置
@@ -107,7 +161,7 @@ MINIMAX_API_KEY=your_key
 MINIMAX_BASE_URL=https://api.minimaxi.com/v1
 
 # BaoStock（自动登录，无需额外配置）
-# Redis（可选，用于缓存）
+# Redis（可选，用于缓存和自选股）
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
@@ -137,9 +191,24 @@ uvicorn>=0.29.0
 vue>=3.4.0
 echarts>=5.5.0
 redis>=5.0.0
+pdfkit>=1.0.0
 ```
 
 ## 更新日志
+
+### v1.2.0 (2026-04-07) — 质量治理
+- **Token统计**：用量追踪接入真实 SQLite 数据，前端图表全部真实渲染
+- **股票数据**：实现完整行情/K线/基本面/新闻接口（全部非 stub）
+- **分析历史**：从报告目录读取真实历史记录
+- **分析端点**：progress/result/stop/share/delete/mark-failed 全部实现
+- **Redis优化**：移除 KEYS 命令，改为直接文件查找（避免阻塞）
+- **Config系统**：40+ 接口全部实现，含 LLM 提供商/模型目录/数据源配置
+- **Scheduler**：真实读取 crontab + journalctl 执行历史
+- **Multi-Source Sync**：数据源状态与健康检查
+- **Model Capabilities**：模型能力分级与推荐系统
+- **Dashboard**：首页摘要/市场指数/最近动态
+- **系统信息**：内存/CPU/运行时间实时监控
+- **股票搜索**：代码精确匹配 + 名称模糊搜索
 
 ### v1.1.0 (2026-04-07)
 - **架构升级**：Chainlit → FastAPI + Vue3 + WebSocket
