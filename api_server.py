@@ -880,9 +880,33 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
 async def analysis_user_history(username: str = Depends(verify_token)):
     return {"success": True, "data": {"items": [], "total": 0}}
 
-@app.get("/api/analysis/stock-info")
-async def analysis_stock_info(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+@app.get("/api/stock-data/basic-info/{code}")
+async def stock_basic_info(code: str, username: str = Depends(verify_token)):
+    """根据股票代码获取A股股票基本信息（用于自动填充股票名称）"""
+    code = code.strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="股票代码不能为空")
+    for prefix in ["sh.", "sz."]:
+        lg = bs.login()
+        rs = bs.query_stock_basic(code=prefix + code)
+        rows = []
+        while rs.error_code == "0" and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        if rows:
+            row = rows[0]
+            return {
+                "success": True,
+                "data": {
+                    "code": row[0],
+                    "name": row[1],
+                    "ipoDate": row[2],
+                    "outDate": row[3],
+                    "stockType": row[4],
+                    "status": row[5]
+                }
+            }
+    return {"success": False, "message": f"未找到股票代码 {code}"}
 
 @app.get("/api/analysis/search")
 async def analysis_search(username: str = Depends(verify_token)):
