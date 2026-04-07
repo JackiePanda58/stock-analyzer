@@ -7,7 +7,7 @@ import jwt
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ConfigDict
@@ -62,21 +62,187 @@ set_config(TRADING_CONFIG)
 def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level, selected_analysts, parameters):
     """
     运行 TradingAgentsGraph，使用 stream() 而非 invoke() 避免挂起。
-    stream() 在 LangGraph 1.1.3 中工作正常，invoke() 有已知挂起问题。
+    在独立线程中运行，避免阻塞事件循环。
     """
-    init_state = ta.propagator.create_initial_state(symbol, target_date,
-        user_context=user_context,
-        risk_level=risk_level,
-        selected_analysts=selected_analysts,
-        **(parameters or {})
-    )
-    args = ta.propagator.get_graph_args()
-    final_state = None
-    for chunk in ta.graph.stream(init_state, **args):
-        final_state = chunk
-    if final_state is None:
-        raise RuntimeError("TradingAgentsGraph produced no output")
-    return final_state, ta.process_signal(final_state.get("final_trade_decision", ""))
+    import threading
+    import queue
+
+    result_queue = queue.Queue()
+    error_queue = queue.Queue()
+
+    def _run():
+        try:
+            init_state = ta.propagator.create_initial_state(symbol, target_date,
+                user_context=user_context,
+                risk_level=risk_level,
+                selected_analysts=selected_analysts,
+                **(parameters or {})
+            )
+            args = ta.propagator.get_graph_args()
+            final_state = None
+            for chunk in ta.graph.stream(init_state, **args):
+                final_state = chunk
+            if final_state is None:
+                raise RuntimeError("TradingAgentsGraph produced no output")
+            result_queue.put((final_state, ta.process_signal(final_state.get("final_trade_decision", ""))))
+        except Exception as e:
+            error_queue.put(e)
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout=600)  # 10 minute timeout
+
+    if not result_queue.empty():
+        return result_queue.get()
+    elif not error_queue.empty():
+        raise error_queue.get()
+    else:
+        raise TimeoutError(f"TradingAgentsGraph timed out after 600s for {symbol}")
+
+
+def _run_analysis_in_subprocess(
+    symbol: str,
+    target_date: str,
+    selected_analysts: list,
+    risk_level: str,
+    task_id: str
+) -> dict:
+    """
+    在独立子进程中运行完整的 LangGraph 分析。
+    结果写入临时文件，主进程通过文件内容获取结果。
+    这确保 API 服务器永远不会被分析任务阻塞。
+    """
+    import tempfile
+    import pickle
+    import os
+    import sys
+
+    # 设置 Python path
+    sys.path.insert(0, '/root/stock-analyzer')
+    os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
+
+    result_file = f"/tmp/analysis_result_{task_id}.pkl"
+
+    try:
+        from dotenv import load_dotenv
+        load_dotenv('/root/stock-analyzer/.env')
+        from tradingagents.dataflows.config import set_config
+        from config.settings import TRADING_CONFIG
+        set_config(TRADING_CONFIG)
+        from tradingagents.graph.trading_graph import TradingAgentsGraph
+
+        ta = TradingAgentsGraph(
+            selected_analysts=selected_analysts,
+            debug=False,
+            config=TRADING_CONFIG
+        )
+        init_state = ta.propagator.create_initial_state(
+            symbol, target_date,
+            user_context={},
+            risk_level=risk_level,
+            selected_analysts=selected_analysts
+        )
+        args = ta.propagator.get_graph_args()
+        final_state = None
+        for chunk in ta.graph.stream(init_state, **args):
+            final_state = chunk
+        if final_state is None:
+            raise RuntimeError("TradingAgentsGraph produced no output")
+        final_report = ta.process_signal(final_state.get("final_trade_decision", ""))
+        with open(result_file, 'wb') as f:
+            pickle.dump({'report': final_report, 'state': str(final_state)[:500]}, f)
+        return {'status': 'completed', 'report': final_report}
+    except Exception as e:
+        with open(result_file, 'wb') as f:
+            pickle.dump({'status': 'failed', 'error': str(e)}, f)
+        return {'status': 'failed', 'error': str(e)}
+
+
+async def _analysis_background_task(
+    task_id: str,
+    symbol: str,
+    target_date: str,
+    username: str,
+    user_context: dict,
+    risk_level: str,
+    selected_analysts: list,
+    parameters: dict
+):
+    """
+    后台分析任务：在线程池中运行 TradingAgentsGraph，
+    结果写入报告文件。
+    使用 run_in_executor 避免阻塞 FastAPI 事件循环。
+    """
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='analysis_worker')
+
+    loop = asyncio.get_running_loop()
+    try:
+        sys_logger.info(f"[Background] Task {task_id} 开始执行 {symbol}...")
+
+        def _do_analysis():
+            try:
+                from tradingagents.graph.trading_graph import TradingAgentsGraph
+                ta = TradingAgentsGraph(
+                    selected_analysts=selected_analysts,
+                    debug=False,
+                    config=TRADING_CONFIG
+                )
+                init_state = ta.propagator.create_initial_state(
+                    symbol, target_date,
+                    user_context={},
+                    risk_level=risk_level,
+                    selected_analysts=selected_analysts
+                )
+                args = ta.propagator.get_graph_args()
+                final_state = None
+                for chunk in ta.graph.stream(init_state, **args):
+                    final_state = chunk
+                if final_state is None:
+                    raise RuntimeError("TradingAgentsGraph produced no output")
+                # 返回完整报告，不提取信号（process_signal 只返回决策）
+                return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+            except Exception as e:
+                sys_logger.error(f"[Background] Task {task_id} 分析异常: {e}\n{traceback.format_exc()}")
+                return f"⚠️ 分析失败: {e}"
+
+        final_report = await loop.run_in_executor(_executor, _do_analysis)
+        sys_logger.info(f"[Background] Task {task_id} LangGraph 完成，正在写入结果...")
+
+        # 写入 Redis 缓存（12小时）
+        cache_key = f"report:{symbol}:{target_date}"
+        if redis_client:
+            try:
+                await redis_client.setex(cache_key, 43200, final_report)
+                import json
+                await redis_client.setex(f"task_meta:{task_id}", 86400, json.dumps({
+                    "symbol": symbol, "date": target_date,
+                    "status": "completed", "username": username,
+                    "report": final_report
+                }))
+            except Exception as e:
+                sys_logger.error(f"[Background] Redis 写入失败: {e}")
+
+        # 写入报告文件
+        try:
+            reports_dir = "/root/stock-analyzer/reports"
+            os.makedirs(reports_dir, exist_ok=True)
+            date_str = target_date.replace('-', '')
+            report_file = os.path.join(reports_dir, f"{symbol}_{date_str}.md")
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write(final_report)
+            sys_logger.info(f"[Background] Task {task_id} 报告已写入: {report_file}")
+        except Exception as e:
+            sys_logger.error(f"[Background] 报告文件写入失败: {e}")
+
+        sys_logger.info(f"[Background] Task {task_id} 完成！")
+
+    except Exception as e:
+        sys_logger.error(f"[Background] Task {task_id} 失败: {e}\n{traceback.format_exc()}")
+    finally:
+        _executor.shutdown(wait=False)
 
 
 # ==================== JWT 鉴权依赖 ====================
@@ -304,13 +470,14 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
             callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
-            local_ta.propagate,
+            _run_trading_graph_stream,
+            local_ta,
             symbol,
             target_date,
-            user_context=req.user_context or {},
-            risk_level=req.risk_level or "medium",
-            selected_analysts=req.selected_analysts or ["market", "news", "fundamentals"],
-            **(req.parameters or {})
+            req.user_context or {},
+            req.risk_level or "medium",
+            req.selected_analysts or ["market", "news", "fundamentals"],
+            req.parameters or {}
         )
         elapsed = time.time() - t0
 
@@ -1109,10 +1276,11 @@ async def config_migrate_legacy(username: str = Depends(verify_token)):
 
 # ==================== 分析接口 (Analysis) ====================
 @app.post("/api/analysis/single")
-async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)):
+async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, username: str = Depends(verify_token)):
     """
     股票智能分析接口 - 前端单股分析调用此端点
-    内部复用 /api/v1/analyze 的核心分析逻辑
+    异步模式：立即返回 task_id，后台线程执行分析，前端轮询 task 状态。
+    解决 LangGraph 分析耗时 8-10 分钟导致的 HTTP 超时问题。
     """
     symbol = req.resolve_symbol()
     target_date = req.resolve_date()
@@ -1148,73 +1316,42 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
         except Exception:
             pass
 
-    try:
-        t0 = time.time()
-        session_id = str(uuid.uuid4())
-        usage_cb = UsageTrackingCallback(
-            session_id=session_id,
-            analysis_type="batch_analysis",
-            symbol=symbol
-        )
-        local_ta = TradingAgentsGraph(
-            selected_analysts=["market", "news", "fundamentals"],
-            debug=False,
-            config=TRADING_CONFIG,
-            callbacks=[usage_cb]
-        )
-        result, _ = await asyncio.to_thread(
-            _run_trading_graph_stream,
-            local_ta,
-            symbol,
-            target_date,
-            req.user_context or {},
-            req.risk_level or "medium",
-            req.selected_analysts or ["market", "news", "fundamentals"],
-            req.parameters or {}
-        )
-        elapsed = time.time() - t0
-        final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
+    # 生成 task_id 并立即返回，后台执行分析
+    task_id = f"{symbol}_{int(time.time())}"
+    selected = req.selected_analysts or ["market", "news", "fundamentals"]
 
-        if redis_client:
-            try:
-                await redis_client.setex(cache_key, 43200, final_report)
-            except Exception:
-                pass
+    # 立即记录操作日志（分析正在后台进行）
+    _add_operation_log(
+        username=username,
+        action="股票分析",
+        action_type="analysis",
+        success=True,
+        details=f"已接受 {symbol} {target_date} 分析请求（后台执行中）",
+        duration_ms=0
+    )
 
-        # 📄 保存报告到 reports/ 目录（供报告列表页面展示）
-        try:
-            reports_dir = "/root/stock-analyzer/reports"
-            os.makedirs(reports_dir, exist_ok=True)
-            report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
-            with open(report_file, "w", encoding="utf-8") as f:
-                f.write(final_report)
-        except Exception as e:
-            sys_logger.error(f"[API] 报告文件写入失败: {e}")
+    # 调度后台任务（响应发送后才真正执行，不会阻塞）
+    background_tasks.add_task(
+        _analysis_background_task,
+        task_id,
+        symbol,
+        target_date,
+        username,
+        req.user_context or {},
+        req.risk_level or "medium",
+        selected,
+        req.parameters or {}
+    )
 
-        # 📝 记录操作日志
-        _add_operation_log(
-            username=username,
-            action="股票分析",
-            action_type="analysis",
-            success=True,
-            details=f"完成 {symbol} {target_date} 分析，耗时{int(elapsed*1000)}ms",
-            duration_ms=int(elapsed * 1000)
-        )
-
-        return {
-            "success": True,
-            "data": {
-                "task_id": f"{symbol}_{int(time.time())}",
-                "status": "completed",
-                "report": final_report,
-                "elapsed_seconds": round(elapsed, 2),
-                "cached": False
-            }
+    sys_logger.info(f"[API] [{symbol}] 任务已调度 task_id={task_id}，立即返回")
+    return {
+        "success": True,
+        "data": {
+            "task_id": task_id,
+            "status": "pending",
+            "message": "分析任务已接受，正在后台执行，请通过 /api/analysis/tasks/{task_id}/result 查询结果"
         }
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="LLM 多智能体分析超时")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
+    }
 
 def _find_report_file(task_id: str) -> str | None:
     """从 task_id 找到对应的报告文件（避免使用 KEYS 命令）"""
