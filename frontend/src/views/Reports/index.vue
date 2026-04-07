@@ -319,18 +319,23 @@ const downloadReport = async (report: any, format: string = 'markdown') => {
     }
 
     const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-
-    // 根据格式设置文件扩展名
-    const ext = getFileExtension(format)
-    a.download = `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
-
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(blobUrl)
-    document.body.removeChild(a)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      // 根据格式设置文件扩展名
+      const ext = getFileExtension(format)
+      a.download = `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
 
     ElMessage.success(`${getFormatName(format)}报告下载成功`)
   } catch (error: any) {

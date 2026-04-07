@@ -416,16 +416,23 @@ const downloadReport = async (analysis: AnalysisTask) => {
       return
     }
     const blob = await res.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    const code = (analysis as any).stock_code || (analysis as any).stock_symbol || 'stock'
-    const dateStr = (analysis as any).analysis_date || (analysis as any).start_time || ''
-    a.download = `${code}_分析报告_${String(dateStr).slice(0,10)}.md`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(blobUrl)
-    document.body.removeChild(a)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      const code = (analysis as any).stock_code || (analysis as any).stock_symbol || 'stock'
+      const dateStr = (analysis as any).analysis_date || (analysis as any).start_time || ''
+      a.download = `${code}_分析报告_${String(dateStr).slice(0,10)}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
     ElMessage.success('报告已开始下载')
   } catch (err) {
     console.error('下载报告出错:', err)

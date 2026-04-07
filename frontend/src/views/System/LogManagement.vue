@@ -316,15 +316,22 @@ const downloadLog = async (file: LogFileInfo) => {
     req.onload = function () {
       if (this.status === 200) {
         const blob = new Blob([req.response], { type: 'application/zip' })
-        const blobUrl = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = blobUrl
-        a.download = `${file.name}.zip`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(blobUrl)
-        ElMessage.success('日志下载成功')
+        // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+        const reader = new FileReader()
+        reader.onload = () => {
+          const dataUrl = reader.result as string
+          const a = document.createElement('a')
+          a.href = dataUrl
+          a.download = `${file.name}.zip`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          ElMessage.success('日志下载成功')
+        }
+        reader.onerror = () => {
+          ElMessage.error('文件读取失败')
+        }
+        reader.readAsDataURL(blob)
       } else if (this.status === 401) {
         ElMessage.error('登录已过期，请重新登录')
       } else {
@@ -386,17 +393,24 @@ const exportLogs = async () => {
     req.onload = function () {
       if (this.status === 200) {
         const blob = new Blob([req.response], { type: 'application/zip' })
-        const blobUrl = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = blobUrl
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-        a.download = `logs_export_${timestamp}.${exportForm.value.format}`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(blobUrl)
-        ElMessage.success('日志导出成功')
-        exportDialogVisible.value = false
+        // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+        const reader = new FileReader()
+        reader.onload = () => {
+          const dataUrl = reader.result as string
+          const a = document.createElement('a')
+          a.href = dataUrl
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+          a.download = `logs_export_${timestamp}.${exportForm.value.format}`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          ElMessage.success('日志导出成功')
+          exportDialogVisible.value = false
+        }
+        reader.onerror = () => {
+          ElMessage.error('文件读取失败')
+        }
+        reader.readAsDataURL(blob)
       } else if (this.status === 401) {
         ElMessage.error('登录已过期，请重新登录')
       } else {
