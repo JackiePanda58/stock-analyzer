@@ -1621,8 +1621,37 @@ async def markets_list(username: str = Depends(verify_token)):
 
 # ==================== 新闻数据 (News) ====================
 @app.get("/api/news-data/latest")
-async def news_latest(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"news": []}}
+async def news_latest(hours_back: int = 24, limit: int = 50, username: str = Depends(verify_token)):
+    """获取市场最新新闻（所有股票）"""
+    return {"success": True, "data": {"news": [], "total_count": 0}}
+
+@app.get("/api/news-data/query/{symbol}")
+async def news_query(symbol: str, hours_back: int = 24, limit: int = 50, username: str = Depends(verify_token)):
+    """获取个股新闻（使用腾讯财经）"""
+    try:
+        r = requests.get(
+            f"https://newsapi.qq.com/fetchNewsById?newsId=&category=&tag=&featured=&count={limit}&from=&lcategory=&nettype=&os=&szcode={symbol}",
+            timeout=5,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        items = []
+        if r.status_code == 200:
+            import json
+            try:
+                data = r.json()
+                for n in data.get("newslist", [])[:limit]:
+                    items.append({
+                        "title": n.get("title", ""),
+                        "source": n.get("source", ""),
+                        "time": n.get("pubTime", ""),
+                        "url": n.get("url", "")
+                    })
+            except Exception:
+                pass
+        return {"success": True, "data": {"symbol": symbol, "items": items, "total_count": len(items)}}
+    except Exception as e:
+        sys_logger.error(f"[News] query error: {e}")
+        return {"success": True, "data": {"symbol": symbol, "items": [], "total_count": 0}}
 
 @app.post("/api/news-data/sync/start")
 async def news_sync_start(username: str = Depends(verify_token)):
