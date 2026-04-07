@@ -1057,9 +1057,10 @@ const startPollingTaskStatus = () => {
         console.log('🎉 分析完成，正在获取完整结果...')
 
         try {
+          const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
           const resultResponse = await fetch(`/api/analysis/tasks/${currentTaskId.value}/result`, {
             headers: {
-              'Authorization': `Bearer ${authStore.token}`,
+              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           })
@@ -1414,22 +1415,28 @@ const downloadReport = async (format: string = 'markdown') => {
     })
 
     const reportId = (analysisResults.value?.id as any) || currentTaskId.value
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const res = await fetch(`/api/reports/${reportId}/download?format=${format}`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
     loadingMsg.close()
 
     if (!res.ok) {
+      if (res.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        return
+      }
       const errorText = await res.text()
       throw new Error(errorText || `HTTP ${res.status}`)
     }
 
     const blob = await res.blob()
-    const url = window.URL.createObjectURL(blob)
+    const blobUrl = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
+    a.href = blobUrl
     a.href = url
     const code =
       analysisResults.value?.stock_code ||
@@ -1444,7 +1451,7 @@ const downloadReport = async (format: string = 'markdown') => {
 
     document.body.appendChild(a)
     a.click()
-    window.URL.revokeObjectURL(url)
+    window.URL.revokeObjectURL(blobUrl)
     document.body.removeChild(a)
 
     ElMessage.success(`${getFormatName(format)}报告下载成功`)

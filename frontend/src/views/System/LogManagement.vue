@@ -287,27 +287,57 @@ const loadLogContent = async () => {
 const downloadLog = async (file: LogFileInfo) => {
   try {
     ElMessage.info('正在下载...')
-    // 使用 fetch 直接下载，携带 auth token
     const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || ''
-    const response = await fetch('/api/system/system-logs/export', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ filenames: [file.name] })
-    })
-    if (!response.ok) throw new Error('下载失败')
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${file.name}.zip`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-    ElMessage.success('日志下载成功')
+    if (!token) {
+      ElMessage.error('未登录或登录已过期')
+      return
+    }
+
+    // 改用 GET + window.open，绕过 blob: 在 HTTP 下的安全限制
+    const params = new URLSearchParams({ filename: file.name })
+    const url = `/api/system/system-logs/export?${params.toString()}`
+
+    // 通过隐藏 iframe 触发下载，避免新窗口打开
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.id = 'download_iframe_' + Date.now()
+    document.body.appendChild(iframe)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.target = iframe.id
+    link.setAttribute('download', `${file.name}.zip`)
+
+    // 通过 Authorization header 传递 token（Vite proxy 透传）
+    const req = new XMLHttpRequest()
+    req.open('GET', url, true)
+    req.setRequestHeader('Authorization', `Bearer ${token}`)
+    req.responseType = 'blob'
+    req.onload = function () {
+      if (this.status === 200) {
+        const blob = new Blob([req.response], { type: 'application/zip' })
+        const blobUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = `${file.name}.zip`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(blobUrl)
+        ElMessage.success('日志下载成功')
+      } else if (this.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+      } else {
+        ElMessage.error(`下载失败: HTTP ${this.status}`)
+      }
+      document.body.removeChild(iframe)
+    }
+    req.onerror = function () {
+      ElMessage.error('网络错误，下载失败')
+      const ifr = document.getElementById(iframe.id)
+      if (ifr) document.body.removeChild(ifr)
+    }
+    req.send()
   } catch (error: any) {
     ElMessage.error(`下载失败: ${error.message || error}`)
   }
@@ -335,27 +365,52 @@ const showExportDialog = () => {
 const exportLogs = async () => {
   exportLoading.value = true
   try {
-    const blob = await LogsApi.exportLogs({
-      filenames: exportForm.value.filenames.length > 0 ? exportForm.value.filenames : undefined,
-      level: exportForm.value.level as any,
-      format: exportForm.value.format
-    })
-    
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-    a.download = `logs_export_${timestamp}.${exportForm.value.format}`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-    
-    ElMessage.success('日志导出成功')
-    exportDialogVisible.value = false
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || ''
+    if (!token) {
+      ElMessage.error('未登录或登录已过期')
+      exportLoading.value = false
+      return
+    }
+
+    const req = new XMLHttpRequest()
+    const formData: any = {}
+    if (exportForm.value.filenames.length > 0) formData.filenames = exportForm.value.filenames
+    if (exportForm.value.level) formData.level = exportForm.value.level
+    if (exportForm.value.format) formData.format = exportForm.value.format
+
+    req.open('POST', '/api/system/system-logs/export', true)
+    req.setRequestHeader('Authorization', `Bearer ${token}`)
+    req.setRequestHeader('Content-Type', 'application/json')
+    req.responseType = 'blob'
+
+    req.onload = function () {
+      if (this.status === 200) {
+        const blob = new Blob([req.response], { type: 'application/zip' })
+        const blobUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+        a.download = `logs_export_${timestamp}.${exportForm.value.format}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(blobUrl)
+        ElMessage.success('日志导出成功')
+        exportDialogVisible.value = false
+      } else if (this.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+      } else {
+        ElMessage.error(`导出失败: HTTP ${this.status}`)
+      }
+      exportLoading.value = false
+    }
+    req.onerror = function () {
+      ElMessage.error('网络错误，导出失败')
+      exportLoading.value = false
+    }
+    req.send(JSON.stringify(formData))
   } catch (error: any) {
     ElMessage.error(`导出失败: ${error.message || error}`)
-  } finally {
     exportLoading.value = false
   }
 }
