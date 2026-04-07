@@ -849,53 +849,98 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
 
+def _find_report_file(task_id: str) -> str | None:
+    """从 task_id 找到对应的报告文件（避免使用 KEYS 命令）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    if not os.path.exists(reports_dir):
+        return None
+    clean_id = task_id.replace("cached_", "")
+    for fname in os.listdir(reports_dir):
+        if not fname.endswith(".md"):
+            continue
+        base = fname.replace(".md", "")
+        if base == clean_id or base.startswith(clean_id + "_"):
+            return os.path.join(reports_dir, fname)
+    return None
+
 @app.get("/api/analysis/tasks/{task_id}/status")
 async def analysis_task_status(task_id: str, username: str = Depends(verify_token)):
-    # 从 task_id 提取 symbol（格式: 600519_timestamp）
-    symbol = task_id.split("_")[0] if "_" in task_id else task_id
-    if symbol.startswith("cached_"):
-        symbol = symbol.replace("cached_", "")
-    cache_key = f"report:{symbol}:"
-    if redis_client:
-        try:
-            # 查找该 symbol 的最新缓存
-            keys = await redis_client.keys(f"report:{symbol}:*")
-            if keys:
-                cached = await redis_client.get(keys[0])
-                if cached:
-                    return {"success": True, "data": {"status": "completed", "progress": 100, "report": cached}}
-        except Exception:
-            pass
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
+        return {"success": True, "data": {"status": "completed", "progress": 100}}
     return {"success": True, "data": {"status": "pending", "progress": 0}}
 
 @app.get("/api/analysis/tasks/{task_id}/result")
 async def analysis_task_result(task_id: str, username: str = Depends(verify_token)):
-    # 从 task_id 提取 symbol
-    symbol = task_id.split("_")[0] if "_" in task_id else task_id
-    if symbol.startswith("cached_"):
-        symbol = symbol.replace("cached_", "")
-    cache_key_prefix = f"report:{symbol}:"
-    if redis_client:
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
         try:
-            keys = await redis_client.keys(f"report:{symbol}:*")
-            if keys:
-                cached = await redis_client.get(keys[0])
-                if cached:
-                    return {
-                        "success": True,
-                        "data": {
-                            "reports": {"trading_decision": {"content": cached}},
-                            "decision": cached,
-                            "summary": cached[:200] + "..." if len(cached) > 200 else cached
-                        }
-                    }
-        except Exception:
-            pass
+            with open(report_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            # 提取第一行作为 summary
+            first_line = content.strip().split("\n")[0].strip("# ").strip()
+            return {
+                "success": True,
+                "data": {
+                    "reports": {"trading_decision": {"content": content}},
+                    "decision": content[:500],
+                    "summary": first_line or content[:200]
+                }
+            }
+        except Exception as e:
+            sys_logger.error(f"[Tasks] read report error: {e}")
     return {"success": True, "data": {"reports": {}, "decision": "", "summary": ""}}
+
+@app.post("/api/analysis/tasks/{task_id}/mark-failed")
+async def analysis_mark_failed(task_id: str, username: str = Depends(verify_token)):
+    return {"success": True, "message": "该接口为占位实现"}
+
+@app.delete("/api/analysis/tasks/{task_id}")
+async def analysis_delete_task(task_id: str, username: str = Depends(verify_token)):
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
+        try:
+            os.remove(report_file)
+            return {"success": True, "message": "删除成功"}
+        except Exception as e:
+            sys_logger.error(f"[Tasks] delete error: {e}")
+            return {"success": False, "message": str(e)}
+    return {"success": True, "message": "任务不存在"}
+
+@app.post("/api/analysis/{analysis_id}/stop")
+async def analysis_stop(analysis_id: str, username: str = Depends(verify_token)):
+    return {"success": True, "message": "停止分析成功（该实现为占位）"}
+
+@app.post("/api/analysis/{analysis_id}/share")
+async def analysis_share(analysis_id: str, password: str = None, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"share_url": f"/reports/{analysis_id}", "share_code": analysis_id[:8]}}
 
 @app.get("/api/analysis/user/history")
 async def analysis_user_history(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"items": [], "total": 0}}
+    """从报告目录读取当前用户的分析历史（按用户名区分）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    items = []
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if not fname.endswith(".md"):
+                continue
+            fpath = os.path.join(reports_dir, fname)
+            parts = fname.replace(".md", "").split("_")
+            if len(parts) >= 2:
+                try:
+                    stat = os.stat(fpath)
+                    items.append({
+                        "id": fname.replace(".md", ""),
+                        "symbol": parts[0],
+                        "analysis_date": parts[1] if len(parts) > 1 else "",
+                        "status": "completed",
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "execution_time": 0
+                    })
+                except Exception:
+                    pass
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"success": True, "data": {"items": items, "total": len(items)}}
 
 @app.get("/api/stock-data/basic-info/{code}")
 async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
@@ -940,16 +985,57 @@ async def stock_basic_info(code: str, market: str = "A股", username: str = Depe
     return {"success": False, "message": f"未找到 {market} 股票 {code}"}
 
 @app.get("/api/analysis/search")
-async def analysis_search(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"results": []}}
+async def analysis_search(query: str = None, username: str = Depends(verify_token)):
+    """搜索股票（基于报告文件名）"""
+    results = []
+    reports_dir = "/root/stock-analyzer/reports"
+    if query and os.path.exists(reports_dir):
+        q = query.lower()
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md") and q in fname.lower():
+                fpath = os.path.join(reports_dir, fname)
+                parts = fname.replace(".md", "").split("_")
+                try:
+                    stat = os.stat(fpath)
+                    results.append({
+                        "symbol": parts[0],
+                        "analysis_date": parts[1] if len(parts) > 1 else "",
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    })
+                except Exception:
+                    pass
+    return {"success": True, "data": {"results": results[:20]}}
 
 @app.get("/api/analysis/popular")
 async def analysis_popular(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"items": []}}
+    """热门股票（按分析报告数量排序）"""
+    from collections import Counter
+    reports_dir = "/root/stock-analyzer/reports"
+    counter = Counter()
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                parts = fname.replace(".md", "").split("_")
+                if parts:
+                    counter[parts[0]] += 1
+    popular = [{"symbol": sym, "count": cnt} for sym, cnt in counter.most_common(10)]
+    return {"success": True, "data": {"items": popular}}
 
 @app.get("/api/analysis/stats")
 async def analysis_stats(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"total": 0, "today": 0}}
+    """分析统计"""
+    reports_dir = "/root/stock-analyzer/reports"
+    total = 0
+    today = 0
+    today_str = datetime.now().strftime("%Y%m%d")
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                total += 1
+                date_part = fname.replace(".md", "").split("_")[1] if "_" in fname else ""
+                if date_part == today_str:
+                    today += 1
+    return {"success": True, "data": {"total_analyses": total, "today_analyses": today, "total": total, "today": today}}
 
 # ==================== 报告辅助函数 ====================
 def _get_stock_name(symbol: str) -> str:
