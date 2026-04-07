@@ -8308,3 +8308,1258 @@ UnicodeEncodeError: 'latin-1' codec can't encode characters in position 36-39: o
 2026-04-07 22:20:09,931 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
 2026-04-07 22:20:09,932 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
 2026-04-07 22:20:09,932 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:20:20,069 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:20:20,069 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:20:20,070 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:20:29,958 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:20:29,958 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:20:29,959 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:20:39,955 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:20:39,956 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:20:39,956 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:20:50,031 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:20:50,032 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:20:50,032 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:20:52,826 [INFO] [api_server.py:162] - ✅ [登录成功] 用户: admin | Token 有效期: 1440min
+2026-04-07 22:21:00,030 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:00,031 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:00,031 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:21:09,976 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:09,976 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:09,977 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:21:19,991 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:19,992 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:19,992 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:21:30,044 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:30,045 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:30,046 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:21:40,093 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:40,094 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:40,094 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:21:50,104 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:21:50,105 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:21:50,105 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:00,065 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:00,065 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:00,066 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:10,032 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:10,033 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:10,033 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:20,066 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:20,067 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:20,067 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:30,038 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:30,039 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:30,040 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:40,027 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:40,027 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:40,028 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:22:50,122 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:22:50,123 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:22:50,123 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:00,926 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:00,926 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:00,927 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:10,113 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:10,113 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:10,114 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:20,111 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:20,111 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:20,112 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:30,077 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:30,077 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:30,078 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:40,201 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:40,202 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:40,202 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:23:50,174 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:23:50,175 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:23:50,175 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:00,200 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:00,201 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:00,201 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:10,148 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:10,148 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:10,149 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:20,325 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:20,326 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:20,327 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:30,287 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:30,288 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:30,288 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:40,243 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:40,243 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:40,244 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:24:50,158 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:24:50,159 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:24:50,159 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:00,159 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:00,160 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:00,160 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:10,226 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:10,226 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:10,227 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:20,195 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:20,195 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:20,196 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:30,291 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:30,292 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:30,292 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:40,193 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:40,194 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:40,194 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:25:50,240 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:25:50,241 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:25:50,241 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:00,206 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:00,207 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:00,207 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:11,103 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:11,104 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:11,105 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:20,206 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:20,206 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:20,207 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:30,248 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:30,249 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:30,249 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:40,221 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:40,222 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:40,223 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:26:50,267 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:26:50,267 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:26:50,268 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:00,267 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:00,268 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:00,268 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:10,267 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:10,267 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:10,268 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:20,295 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:20,296 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:20,296 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:30,295 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:30,296 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:30,296 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:40,288 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:40,289 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:40,290 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:27:50,310 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:27:50,310 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:27:50,311 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:00,328 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:00,329 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:00,329 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:10,317 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:10,317 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:10,318 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:20,311 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:20,312 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:20,313 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:30,476 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:30,476 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:30,477 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:40,356 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:40,357 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:40,358 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:28:50,348 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:28:50,349 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:28:50,350 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:00,344 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:00,345 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:00,345 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:10,358 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:10,359 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:10,360 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:20,404 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:20,404 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:20,405 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:30,531 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:30,532 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:30,532 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:40,536 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:40,537 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:40,537 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:29:50,406 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:29:50,406 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:29:50,407 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:00,439 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:00,439 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:00,440 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:10,522 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:10,523 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:10,523 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:20,452 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:20,452 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:20,453 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:31,836 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:31,837 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:31,837 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:40,431 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:40,432 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:40,432 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:30:50,706 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:30:50,707 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:30:50,707 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:00,596 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:00,597 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:00,597 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:10,554 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:10,555 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:10,555 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:20,499 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:20,499 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:20,500 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:30,523 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:30,524 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:30,524 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:40,603 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:40,604 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:40,605 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:31:50,535 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:31:50,536 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:31:50,536 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:00,550 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:00,550 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:00,551 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:10,547 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:10,548 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:10,549 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:20,540 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:20,540 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:20,541 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:30,542 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:30,543 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:30,543 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:40,848 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:40,849 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:40,849 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:32:50,543 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:32:50,544 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:32:50,544 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:00,580 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:00,581 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:00,581 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:10,629 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:10,630 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:10,630 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:20,593 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:20,593 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:20,594 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:30,614 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:30,614 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:30,615 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:40,601 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:40,602 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:40,602 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:33:50,635 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:33:50,636 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:33:50,637 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:00,634 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:00,634 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:00,635 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:10,630 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:10,630 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:10,631 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:20,630 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:20,631 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:20,631 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:30,747 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:30,748 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:30,748 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:40,647 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:40,647 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:40,648 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:34:50,652 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:34:50,653 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:34:50,653 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:00,700 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:00,701 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:00,701 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:10,685 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:10,685 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:10,686 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:20,683 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:20,684 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:20,685 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:30,692 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:30,692 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:30,693 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:40,669 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:40,669 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:40,670 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:35:50,715 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:35:50,716 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:35:50,716 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:00,711 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:00,711 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:00,712 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:10,704 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:10,705 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:10,705 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:20,726 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:20,726 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:20,727 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:30,746 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:30,746 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:30,747 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:40,806 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:40,807 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:40,807 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:36:50,754 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:36:50,754 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:36:50,755 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:00,826 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:00,826 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:00,827 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:10,773 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:10,773 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:10,774 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:20,793 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:20,794 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:20,795 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:30,813 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:30,814 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:30,814 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:40,877 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:40,877 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:40,878 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:37:50,824 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:37:50,825 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:37:50,826 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:00,824 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:00,825 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:00,825 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:10,934 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:10,935 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:10,935 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:20,833 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:20,834 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:20,834 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:30,861 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:30,862 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:30,862 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:40,861 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:40,862 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:40,862 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:38:50,873 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:38:50,874 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:38:50,874 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:00,910 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:00,911 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:00,912 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:10,919 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:10,920 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:10,920 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:20,864 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:20,864 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:20,865 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:30,886 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:30,887 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:30,887 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:40,910 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:40,911 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:40,912 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:39:50,921 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:39:50,921 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:39:50,922 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:00,947 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:00,947 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:00,948 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:10,964 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:10,965 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:10,965 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:21,037 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:21,038 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:21,039 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:30,968 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:30,969 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:30,969 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:40,982 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:40,982 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:40,983 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:40:50,978 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:40:50,978 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:40:50,979 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:01,004 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:01,005 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:01,006 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:11,022 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:11,023 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:11,025 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:21,030 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:21,031 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:21,033 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:30,992 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:30,993 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:30,993 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:41,019 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:41,019 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:41,020 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:41:50,993 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:41:50,994 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:41:50,994 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:01,037 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:01,037 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:01,038 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:11,043 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:11,044 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:11,045 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:21,069 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:21,070 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:21,071 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:31,113 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:31,114 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:31,115 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:41,103 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:41,103 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:41,104 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:42:51,061 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:42:51,062 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:42:51,062 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:01,103 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:01,103 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:01,104 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:11,111 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:11,112 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:11,112 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:21,098 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:21,098 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:21,099 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:31,129 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:31,130 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:31,131 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:41,097 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:41,098 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:41,099 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:43:51,100 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:43:51,101 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:43:51,102 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:01,176 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:01,177 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:01,177 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:11,136 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:11,137 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:11,138 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:21,148 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:21,148 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:21,149 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:31,167 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:31,168 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:31,168 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:41,177 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:41,178 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:41,179 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:44:51,177 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:44:51,177 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:44:51,178 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:01,194 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:01,195 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:01,196 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:11,217 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:11,218 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:11,218 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:21,177 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:21,177 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:21,178 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:31,269 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:31,269 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:31,270 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:41,287 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:41,288 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:41,289 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:45:51,251 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:45:51,251 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:45:51,252 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:01,233 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:01,233 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:01,234 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:11,242 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:11,243 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:11,244 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:21,329 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:21,329 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:21,330 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:31,271 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:31,272 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:31,272 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:41,273 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:41,274 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:41,275 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:46:51,249 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:46:51,250 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:46:51,251 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:01,356 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:01,357 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:01,357 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:11,333 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:11,333 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:11,335 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:21,299 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:21,300 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:21,301 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:31,339 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:31,339 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:31,340 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:41,312 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:41,313 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:41,314 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:47:51,449 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:47:51,449 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:47:51,450 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:01,333 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:01,334 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:01,335 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:11,337 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:11,338 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:11,339 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:21,340 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:21,341 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:21,342 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:31,374 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:31,374 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:31,375 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:41,417 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:41,418 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:41,419 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:48:51,357 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:48:51,358 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:48:51,358 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:01,429 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:01,430 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:01,430 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:11,375 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:11,376 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:11,377 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:21,418 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:21,418 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:21,419 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:33,617 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:33,618 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:33,619 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:42,950 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:42,950 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:42,951 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:49:51,456 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:49:51,457 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:49:51,458 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:01,506 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:01,507 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:01,508 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:11,731 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:11,732 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:11,732 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:21,492 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:21,492 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:21,493 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:31,513 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:31,513 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:31,514 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:41,540 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:41,541 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:41,542 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:50:51,524 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:50:51,525 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:50:51,526 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:01,536 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:01,537 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:01,537 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:11,560 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:11,561 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:11,562 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:21,534 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:21,535 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:21,536 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:31,566 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:31,567 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:31,568 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:41,623 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:41,624 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:41,624 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:51:51,545 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:51:51,546 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:51:51,547 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:01,645 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:01,646 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:01,647 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:11,588 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:11,589 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:11,591 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:21,602 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:21,603 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:21,603 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:31,604 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:31,605 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:31,606 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:41,592 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:41,593 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:41,594 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:52:51,622 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:52:51,624 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:52:51,624 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:01,660 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:01,660 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:01,661 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:11,657 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:11,658 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:11,659 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:21,658 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:21,659 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:21,659 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:31,642 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:31,642 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:31,643 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:41,643 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:41,644 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:41,644 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:53:51,664 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:53:51,664 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:53:51,665 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:01,713 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:01,713 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:01,714 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:11,690 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:11,690 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:11,692 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:21,659 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:21,660 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:21,661 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:31,690 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:31,691 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:31,692 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:41,671 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:41,672 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:41,673 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:54:51,723 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:54:51,724 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:54:51,725 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:01,799 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:01,799 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:01,800 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:11,735 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:11,736 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:11,736 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:21,778 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:21,779 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:21,779 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:31,782 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:31,782 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:31,783 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:41,757 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:41,758 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:41,759 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:55:51,743 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:55:51,744 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:55:51,744 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:01,833 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:01,834 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:01,835 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:11,781 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:11,782 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:11,782 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:21,808 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:21,809 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:21,810 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:31,815 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:31,816 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:31,817 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:41,782 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:41,783 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:41,784 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:56:51,874 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:56:51,874 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:56:51,876 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:01,887 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:01,888 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:01,889 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:11,880 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:11,881 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:11,882 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:21,875 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:21,875 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:21,876 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:31,870 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:31,871 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:31,872 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:41,855 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:41,856 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:41,857 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:57:51,848 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:57:51,849 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:57:51,850 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:02,122 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:02,123 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:02,124 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:11,966 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:11,967 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:11,967 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:21,961 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:21,961 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:21,962 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:31,932 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:31,932 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:31,933 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:41,910 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:41,910 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:41,911 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:58:51,949 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:58:51,950 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:58:51,950 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:02,889 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:02,890 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:02,890 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:11,944 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:11,945 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:11,946 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:22,004 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:22,005 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:22,005 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:32,069 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:32,070 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:32,071 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:42,091 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:42,092 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:42,092 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 22:59:52,044 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 22:59:52,045 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 22:59:52,045 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:02,169 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:02,171 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:02,171 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:12,132 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:12,133 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:12,133 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:22,056 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:22,057 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:22,057 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:32,204 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:32,205 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:32,205 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:42,175 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:42,175 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:42,176 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:00:52,209 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:00:52,210 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:00:52,211 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:04,688 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:04,689 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:04,690 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:14,401 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:14,403 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:14,403 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:22,453 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:22,455 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:22,455 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:32,216 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:32,217 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:32,217 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:42,116 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:42,117 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:42,117 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:01:52,124 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:01:52,124 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:01:52,125 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:02,191 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:02,191 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:02,192 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:12,108 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:12,109 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:12,109 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:22,230 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:22,231 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:22,231 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:32,188 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:32,189 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:32,189 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:42,972 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:42,973 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:42,973 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:02:52,173 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:02:52,174 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:02:52,175 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:02,235 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:02,236 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:02,236 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:12,208 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:12,209 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:12,209 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:22,341 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:22,341 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:22,342 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:32,223 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:32,224 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:32,224 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:42,244 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:42,244 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:42,245 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:03:52,231 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:03:52,231 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:03:52,232 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:02,397 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:02,398 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:02,399 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:12,318 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:12,318 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:12,319 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:22,447 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:22,448 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:22,448 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:32,399 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:32,400 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:32,400 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:42,365 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:42,365 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:42,366 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:04:52,441 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:04:52,442 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:04:52,442 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:02,448 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:02,449 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:02,450 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:12,390 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:12,391 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:12,391 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:22,335 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:22,335 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:22,336 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:32,556 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:32,556 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:32,557 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:42,479 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:42,480 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:42,481 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:05:52,373 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:05:52,373 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:05:52,374 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:02,479 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:02,480 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:02,480 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:12,443 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:12,444 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:12,444 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:22,512 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:22,513 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:22,514 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:32,399 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:32,400 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:32,400 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:42,365 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:42,366 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:42,366 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:06:52,368 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:06:52,368 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:06:52,369 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:03,116 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:03,117 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:03,117 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:12,411 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:12,411 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:12,412 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:24,060 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:24,061 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:24,061 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:32,464 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:32,465 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:32,465 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:42,424 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:42,425 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:42,425 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:07:52,581 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:07:52,582 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:07:52,582 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:02,552 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:02,552 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:02,553 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:12,487 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:12,488 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:12,489 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:22,492 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:22,493 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:22,493 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:32,503 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:32,504 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:32,504 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:42,488 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:42,488 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:42,489 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:08:52,533 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:08:52,534 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:08:52,534 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:03,096 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:03,097 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:03,097 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:12,575 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:12,576 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:12,576 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:23,082 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:23,083 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:23,083 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:33,698 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:33,699 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:33,700 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:42,596 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:42,596 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:42,597 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:09:52,553 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:09:52,554 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:09:52,554 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:02,749 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:02,750 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:02,750 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:12,673 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:12,674 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:12,674 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:22,633 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:22,633 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:22,634 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:32,756 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:32,757 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:32,758 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:42,614 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:42,614 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:42,615 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:10:52,654 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:10:52,655 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:10:52,655 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:02,676 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:02,676 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:02,677 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:12,676 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:12,677 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:12,677 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:22,673 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:22,674 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:22,674 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:32,793 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:32,793 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:32,794 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:42,852 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:42,853 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:42,854 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:11:52,686 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:11:52,687 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:11:52,687 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:02,777 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:02,777 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:02,778 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:12,714 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:12,715 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:12,715 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:22,834 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:22,835 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:22,835 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:32,790 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:32,791 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:32,792 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:42,735 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:42,736 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:42,737 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:12:52,743 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:12:52,743 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:12:52,744 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:02,916 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:02,917 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:02,917 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:12,728 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:12,729 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:12,729 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:24,361 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:24,362 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:24,363 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:32,810 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:32,811 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:32,811 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:42,760 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:42,761 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:42,761 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:13:52,882 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:13:52,882 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:13:52,883 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:02,922 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:02,923 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:02,923 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:13,013 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:13,013 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:13,014 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:22,806 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:22,807 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:22,807 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:32,858 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:32,859 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:32,859 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:42,800 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:42,801 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:42,801 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:14:52,815 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:14:52,816 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:14:52,816 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:02,997 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:02,998 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:02,999 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:12,831 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:12,832 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:12,832 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:22,890 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:22,891 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:22,891 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:32,985 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:32,986 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:32,987 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:42,963 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:42,964 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:42,964 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:15:52,950 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:15:52,951 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:15:52,951 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:02,963 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:02,964 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:02,964 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:14,251 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:14,252 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:14,252 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:22,958 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:22,958 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:22,959 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:33,054 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:33,055 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:33,056 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:44,179 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:44,179 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:44,180 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:16:53,053 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:16:53,053 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:16:53,054 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:03,025 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:03,026 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:03,026 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:12,999 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:13,000 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:13,000 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:23,035 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:23,036 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:23,036 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:33,167 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:33,168 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:33,168 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:43,007 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:43,008 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:43,008 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:17:53,013 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:17:53,014 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:17:53,015 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:03,123 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:03,124 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:03,125 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:13,033 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:13,033 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:13,034 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:23,257 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:23,257 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:23,258 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:33,155 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:33,155 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:33,156 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:43,324 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:43,325 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:43,325 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:18:53,073 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:18:53,074 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:18:53,074 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:03,138 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:03,139 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:03,140 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:13,163 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:13,164 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:13,164 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:23,160 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:23,160 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:23,161 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:33,137 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:33,138 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:33,138 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:43,113 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:43,113 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:43,114 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:19:53,284 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:19:53,285 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:19:53,285 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:05,005 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:05,006 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:05,007 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:13,184 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:13,185 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:13,185 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:23,291 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:23,292 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:23,292 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:33,282 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:33,282 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:33,283 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:43,179 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:43,179 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:43,180 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:20:53,284 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:20:53,285 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:20:53,285 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:03,347 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:03,347 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:03,348 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:13,190 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:13,191 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:13,191 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:24,896 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:24,896 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:24,897 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:33,282 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:33,283 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:33,283 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:43,260 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:43,260 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:43,261 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:21:53,240 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:21:53,240 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:21:53,241 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:04,645 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:04,646 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:04,647 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:13,337 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:13,337 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:13,338 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:23,315 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:23,316 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:23,316 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:33,283 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:33,284 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:33,284 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:43,339 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:43,340 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:43,340 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:22:53,305 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:22:53,306 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:22:53,306 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:03,482 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:03,483 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:03,484 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:14,082 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:14,083 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:14,083 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:23,393 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:23,394 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:23,394 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:33,513 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:33,513 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:33,514 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:43,452 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:43,453 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:43,453 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:23:53,475 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:23:53,475 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:23:53,476 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:03,539 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:03,540 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:03,540 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:13,376 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:13,377 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:13,377 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:24,252 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:24,253 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:24,254 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:33,409 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:33,410 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:33,410 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:43,420 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:43,420 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:43,421 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:24:53,589 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:24:53,590 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:24:53,590 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:03,527 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:03,527 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:03,528 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:13,443 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:13,444 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:13,444 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:23,453 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:23,453 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:23,454 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:33,498 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:33,499 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:33,499 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:43,451 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:43,452 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:43,453 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:25:53,508 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:25:53,509 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:25:53,509 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:03,542 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:03,542 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:03,543 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:14,101 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:14,102 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:14,102 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:23,525 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:23,526 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:23,526 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:33,550 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:33,551 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:33,552 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:43,572 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:43,573 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:43,573 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:26:53,542 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:26:53,543 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:26:53,543 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:03,630 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:03,630 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:03,631 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:13,663 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:13,663 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:13,664 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:23,589 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:23,590 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:23,590 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:33,697 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:33,697 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:33,698 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:43,598 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:43,599 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:43,599 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:27:53,708 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:27:53,709 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:27:53,709 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:03,628 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:03,628 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:03,629 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:13,682 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:13,683 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:13,683 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:23,598 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:23,598 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:23,599 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:33,728 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:33,728 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:33,729 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:43,751 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:43,752 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:43,753 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:28:53,759 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:28:53,759 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:28:53,760 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:03,689 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:03,690 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:03,690 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:13,647 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:13,647 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:13,648 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:23,772 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:23,773 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:23,774 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:33,700 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:33,701 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:33,701 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:43,709 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:43,710 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:43,710 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
+2026-04-07 23:29:53,707 [INFO] [api_server.py:47] - ✅ API: Redis 缓存大脑连接已初始化（aioredis）！
+2026-04-07 23:29:53,708 [INFO] [api_server.py:55] - [API] ✅ 用量追踪数据库已初始化
+2026-04-07 23:29:53,708 [INFO] [api_server.py:58] - === FastAPI 后端服务启动 (JWT 鉴权已启用) ===
