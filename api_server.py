@@ -1171,11 +1171,26 @@ async def reports_list(
             import datetime as dt
             created_at = dt.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d %H:%M:%S")
 
+            # 判断市场
+            if symbol.isdigit() and len(symbol) == 6:
+                market = "A股"
+            elif symbol.upper().startswith("HK"):
+                market = "港股"
+            elif symbol.isalpha() and symbol.isupper():
+                market = "美股"
+            else:
+                market = "其他"
+
+            # 应用市场筛选
+            if market_filter and market_filter != market:
+                continue
+
             reports.append({
                 "id": fname.replace(".md", "").replace(".txt", ""),
                 "symbol": symbol,
                 "stock_code": symbol,
                 "stock_name": _get_stock_name(symbol),  # 股票名称查询
+                "market": market,
                 "title": title,
                 "type": _guess_report_type(content),  # 报告类型
                 "format": file_ext,  # MD / TXT
