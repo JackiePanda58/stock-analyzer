@@ -196,7 +196,7 @@ const connectTaskWebSocket = (taskId: string) => {
   }
 
   try {
-    const token = localStorage.getItem('token') || ''
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || ''
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
     const wsUrl = `${wsProtocol}//${host}/api/ws/task/${taskId}`

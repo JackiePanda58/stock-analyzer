@@ -288,7 +288,7 @@ const downloadLog = async (file: LogFileInfo) => {
   try {
     ElMessage.info('正在下载...')
     // 使用 fetch 直接下载，携带 auth token
-    const token = localStorage.getItem('token') || ''
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || ''
     const response = await fetch('/api/system/system-logs/export', {
       method: 'POST',
       headers: {
