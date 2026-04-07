@@ -58,6 +58,27 @@ app = FastAPI(title="TradingAgents Enterprise API", version="1.0.0-preview")
 sys_logger.info("=== FastAPI 后端服务启动 (JWT 鉴权已启用) ===")
 set_config(TRADING_CONFIG)
 
+# ==================== 分析辅助函数 ====================
+def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level, selected_analysts, parameters):
+    """
+    运行 TradingAgentsGraph，使用 stream() 而非 invoke() 避免挂起。
+    stream() 在 LangGraph 1.1.3 中工作正常，invoke() 有已知挂起问题。
+    """
+    init_state = ta.propagator.create_initial_state(symbol, target_date,
+        user_context=user_context,
+        risk_level=risk_level,
+        selected_analysts=selected_analysts,
+        **(parameters or {})
+    )
+    args = ta.propagator.get_graph_args()
+    final_state = None
+    for chunk in ta.graph.stream(init_state, **args):
+        final_state = chunk
+    if final_state is None:
+        raise RuntimeError("TradingAgentsGraph produced no output")
+    return final_state, ta.process_signal(final_state.get("final_trade_decision", ""))
+
+
 # ==================== JWT 鉴权依赖 ====================
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """解码并校验 JWT Token，无效或过期返回 401"""
@@ -1142,13 +1163,14 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
             callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
-            local_ta.propagate,
+            _run_trading_graph_stream,
+            local_ta,
             symbol,
             target_date,
-            user_context=req.user_context or {},
-            risk_level=req.risk_level or "medium",
-            selected_analysts=req.selected_analysts or ["market", "news", "fundamentals"],
-            **(req.parameters or {})
+            req.user_context or {},
+            req.risk_level or "medium",
+            req.selected_analysts or ["market", "news", "fundamentals"],
+            req.parameters or {}
         )
         elapsed = time.time() - t0
         final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
