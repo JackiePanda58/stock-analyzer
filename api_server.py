@@ -1376,9 +1376,10 @@ async def usage_statistics(days: int = 7, username: str = Depends(verify_token))
         return {
             "success": True,
             "data": {
-                "total": stats["total_requests"],
+                "total_requests": stats["total_requests"],
                 "total_input_tokens": stats["total_prompt_tokens"],
                 "total_output_tokens": stats["total_completion_tokens"],
+                "total_tokens": stats["total_prompt_tokens"] + stats["total_completion_tokens"],
                 "total_cost": stats["total_cost"],
                 "cost_by_currency": {"CNY": stats["total_cost"]},
                 "by_provider": stats["by_provider"],
@@ -1388,7 +1389,7 @@ async def usage_statistics(days: int = 7, username: str = Depends(verify_token))
         }
     except Exception as e:
         sys_logger.error(f"[Usage] statistics error: {e}")
-        return {"success": True, "data": {"total": 0, "by_provider": {}, "by_model": {}, "by_date": {}}}
+        return {"success": True, "data": {"total_requests": 0, "total_input_tokens": 0, "total_output_tokens": 0, "total_tokens": 0, "total_cost": 0, "by_provider": {}, "by_model": {}, "by_date": {}}}
 
 @app.get("/api/usage/records")
 async def usage_records(

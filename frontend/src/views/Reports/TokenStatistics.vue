@@ -259,7 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Coin,
@@ -268,6 +268,8 @@ import {
   Search
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { usageApi } from '@/api/usage'
+import { getDailyCost, getCostByProvider, getCostByModel } from '@/api/usage'
 
 // 响应式数据
 const loading = ref(false)
@@ -335,53 +337,85 @@ const getProviderName = (provider: string): string => {
   return names[provider] || provider
 }
 
+const timeRangeDays = (range: string): number => {
+  switch (range) {
+    case 'today': return 1
+    case 'week': return 7
+    case 'month': return 30
+    case 'quarter': return 90
+    case 'all': return 365
+    default: return 30
+  }
+}
+
 const loadStatistics = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 模拟数据
-    Object.assign(overview, {
-      totalRequests: 1234,
-      totalTokens: 567890,
-      totalCost: 123.45,
-      avgCostPerRequest: 0.1,
-      requestsChange: 15.2,
-      tokensChange: 23.8,
-      costChange: 18.5,
-      avgCostChange: 2.1
-    })
-    
-    // 加载图表数据
+    const days = timeRangeDays(timeRange.value)
+    const [statsRes, dailyRes, providerRes, modelRes] = await Promise.all([
+      usageApi.getUsageStatistics({ days, provider: providerFilter.value || undefined }),
+      getDailyCost(days),
+      getCostByProvider(days),
+      getCostByModel(days)
+    ])
+
+    const stats = (statsRes as any)?.data
+    if (stats) {
+      Object.assign(overview, {
+        totalRequests: stats.total_requests ?? 0,
+        totalTokens: stats.total_tokens ?? (stats.total_input_tokens + stats.total_output_tokens) ?? 0,
+        totalCost: stats.total_cost ?? 0,
+        avgCostPerRequest: stats.total_requests > 0 ? stats.total_cost / stats.total_requests : 0,
+        requestsChange: 0,
+        tokensChange: 0,
+        costChange: 0,
+        avgCostChange: 0
+      })
+    }
+
+    // 渲染图表
+    const dailyCosts = (dailyRes as any)?.data?.costs ?? []
+    const providerCosts = (providerRes as any)?.data?.costs ?? {}
+    const modelCosts = (modelRes as any)?.data?.costs ?? {}
+
     await nextTick()
-    renderCharts()
-    
-  } catch (error) {
-    ElMessage.error('加载统计数据失败')
+    renderCharts({ dailyCosts, providerCosts, modelCosts })
+
+  } catch (error: any) {
+    console.error('加载统计数据失败:', error)
+    ElMessage.error(error?.message || '加载统计数据失败')
   } finally {
     loading.value = false
   }
 }
 
 const loadRecords = async () => {
-  // 模拟加载记录数据
-  records.value = [
-    {
-      timestamp: '2024-01-18T14:30:00Z',
-      provider: 'dashscope',
-      model: 'qwen-turbo',
-      stock_symbol: '000001',
-      prompt_tokens: 1500,
-      completion_tokens: 800,
-      total_tokens: 2300,
-      cost: 0.023,
-      duration: 1200
+  try {
+    const res = await usageApi.getUsageRecords({
+      provider: providerFilter.value || undefined,
+      limit: pageSize.value,
+      start_date: undefined,
+      end_date: undefined
+    })
+    const data = (res as any)?.data
+    if (data?.records) {
+      // 映射后端字段到前端期望的字段名
+      records.value = data.records.map((r: any) => ({
+        ...r,
+        model: r.model_name || r.model || '',
+        stock_symbol: r.symbol || r.stock_symbol || ''
+      }))
+      totalRecords.value = data.total ?? records.value.length
+    } else {
+      records.value = []
+      totalRecords.value = 0
     }
-  ]
-  
-  totalRecords.value = 50
-  filterRecords()
+    filterRecords()
+  } catch (error: any) {
+    console.error('加载记录失败:', error)
+    records.value = []
+    totalRecords.value = 0
+  }
 }
 
 const filterRecords = () => {
@@ -396,51 +430,82 @@ const filterRecords = () => {
   }
 }
 
-const renderCharts = () => {
+interface ChartData {
+  dailyCosts: Array<{ date: string; cost: number; prompt_tokens?: number; completion_tokens?: number }>
+  providerCosts: Record<string, number>
+  modelCosts: Record<string, number>
+}
+
+const renderCharts = (chartData: ChartData) => {
+  const providerName = (p: string) => ({
+    'minimax': 'MiniMax',
+    'dashscope': '阿里百炼',
+    'openai': 'OpenAI',
+    'google': 'Google',
+    'deepseek': 'DeepSeek'
+  }[p] || p)
+
   // Token使用趋势图
   if (tokenTrendChart.value) {
     const chart1 = echarts.init(tokenTrendChart.value)
+    const dates = chartData.dailyCosts.map(d => d.day?.slice(5) || d.date?.slice(5) || '') // MM-DD
+    const tokens = chartData.dailyCosts.map(d => (d.prompt_tokens || 0) + (d.completion_tokens || 0))
     chart1.setOption({
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月'] },
+      xAxis: { type: 'category', data: dates },
       yAxis: { type: 'value' },
       series: [{
-        data: [120, 200, 150, 80, 70],
+        data: tokens,
         type: 'line',
-        smooth: true
+        smooth: true,
+        areaStyle: { opacity: 0.2 },
+        name: 'Token数'
       }]
-    })
+    }, true)
   }
-  
+
   // 成本分布图
   if (costDistributionChart.value) {
     const chart2 = echarts.init(costDistributionChart.value)
+    const pieData = Object.entries(chartData.providerCosts)
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => ({ name: providerName(k), value: Math.round(v * 10000) / 10000 }))
     chart2.setOption({
-      tooltip: { trigger: 'item' },
+      tooltip: { trigger: 'item', formatter: '{b}: ¥{c}' },
+      legend: { orient: 'vertical', right: 10 },
       series: [{
         type: 'pie',
-        data: [
-          { value: 1048, name: '阿里百炼' },
-          { value: 735, name: 'OpenAI' },
-          { value: 580, name: 'Google' }
-        ]
+        radius: ['40%', '70%'],
+        data: pieData.length ? pieData : [{ name: '无数据', value: 0 }]
       }]
-    })
+    }, true)
   }
-  
+
   // 供应商统计图
   if (providerChart.value) {
     const chart3 = echarts.init(providerChart.value)
+    const providers = Object.keys(chartData.providerCosts)
+    const costs = providers.map(p => chartData.providerCosts[p] || 0)
     chart3.setOption({
-      tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: ['阿里百炼', 'OpenAI', 'Google', 'DeepSeek'] },
+      tooltip: { trigger: 'axis', formatter: (params: any) => `${params[0].name}: ¥${params[0].value}` },
+      xAxis: { type: 'category', data: providers.map(providerName) },
       yAxis: { type: 'value' },
       series: [{
-        data: [120, 200, 150, 80],
-        type: 'bar'
+        data: costs,
+        type: 'bar',
+        itemStyle: { color: '#409eff' }
       }]
-    })
+    }, true)
   }
+
+  // 模型排行
+  const sortedModels = Object.entries(chartData.modelCosts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([name, cost]) => ({ name, cost, requests: 0, tokens: 0 }))
+  modelRanking.value = sortedModels.length ? sortedModels : [
+    { name: '无数据', requests: 0, tokens: 0, cost: 0 }
+  ]
 }
 
 const exportData = () => {
@@ -455,13 +520,12 @@ const viewDetails = (row: any) => {
 onMounted(() => {
   loadStatistics()
   loadRecords()
-  
-  // 模拟模型排行数据
-  modelRanking.value = [
-    { name: 'qwen-turbo', requests: 500, tokens: 150000, cost: 15.0 },
-    { name: 'gpt-4', requests: 300, tokens: 120000, cost: 24.0 },
-    { name: 'gemini-pro', requests: 200, tokens: 80000, cost: 8.0 }
-  ]
+})
+
+// 筛选条件变化时同时刷新记录表
+watch([timeRange, providerFilter], () => {
+  currentPage.value = 1
+  loadRecords()
 })
 </script>
 
