@@ -1,0 +1,36 @@
+{
+  "categories": [
+    {
+      "id": "a_share",
+      "name": "A股",
+      "display_name": "A股",
+      "description": "中国A股市场（上交所、深交所）",
+      "enabled": true,
+      "sort_order": 1
+    },
+    {
+      "id": "hk_stock",
+      "name": "港股",
+      "display_name": "港股",
+      "description": "香港股票市场（港交所）",
+      "enabled": true,
+      "sort_order": 2
+    },
+    {
+      "id": "us_stock",
+      "name": "美股",
+      "display_name": "美股",
+      "description": "美国股票市场（NYSE、NASDAQ）",
+      "enabled": true,
+      "sort_order": 3
+    },
+    {
+      "id": "fund_etf",
+      "name": "ETF",
+      "display_name": "ETF基金",
+      "description": "交易所交易基金",
+      "enabled": true,
+      "sort_order": 4
+    }
+  ]
+}

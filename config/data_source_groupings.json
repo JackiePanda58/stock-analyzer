@@ -1,0 +1,28 @@
+{
+  "groupings": [
+    {
+      "id": "cn_a_share",
+      "name": "A股市场",
+      "display_name": "A股市场",
+      "description": "中国A股市场数据源组合",
+      "datasource_ids": ["baostock", "akshare", "tencent_finance"],
+      "sort_order": 1
+    },
+    {
+      "id": "hk_stock",
+      "name": "港股市场",
+      "display_name": "港股市场",
+      "description": "香港股票市场数据源组合",
+      "datasource_ids": ["akshare", "tencent_finance"],
+      "sort_order": 2
+    },
+    {
+      "id": "us_stock",
+      "name": "美股市场",
+      "display_name": "美股市场",
+      "description": "美国股票市场数据源组合",
+      "datasource_ids": ["akshare", "tencent_finance"],
+      "sort_order": 3
+    }
+  ]
+}

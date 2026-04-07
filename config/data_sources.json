@@ -1,0 +1,61 @@
+{
+  "datasources": [
+    {
+      "id": "baostock",
+      "name": "BaoStock",
+      "display_name": "BaoStock",
+      "type": "stock_data",
+      "provider": "BaoStock",
+      "description": "A股股票数据库，提供OHLCV、财务报表等",
+      "api_key": "",
+      "endpoint": "",
+      "timeout": 30,
+      "rate_limit": 100,
+      "enabled": true,
+      "priority": 1,
+      "market_categories": ["A股"],
+      "config_params": {
+        "frequency": ["d", "w", "m"],
+        "adjustflag": ["3", "2", "1"]
+      },
+      "created_at": "2026-04-01T00:00:00Z",
+      "updated_at": "2026-04-07T00:00:00Z"
+    },
+    {
+      "id": "akshare",
+      "name": "AkShare",
+      "display_name": "AkShare",
+      "type": "stock_data",
+      "provider": "AkShare",
+      "description": "免费财经数据接口，支持A股、港股、美股",
+      "api_key": "",
+      "endpoint": "",
+      "timeout": 30,
+      "rate_limit": 50,
+      "enabled": true,
+      "priority": 2,
+      "market_categories": ["A股", "港股", "美股"],
+      "config_params": {},
+      "created_at": "2026-04-01T00:00:00Z",
+      "updated_at": "2026-04-07T00:00:00Z"
+    },
+    {
+      "id": "tencent_finance",
+      "name": "TencentFinance",
+      "display_name": "腾讯财经",
+      "type": "stock_data",
+      "provider": "Tencent",
+      "description": "腾讯财经实时行情数据",
+      "api_key": "",
+      "endpoint": "https://qt.gtimg.cn",
+      "timeout": 10,
+      "rate_limit": 200,
+      "enabled": true,
+      "priority": 3,
+      "market_categories": ["A股", "港股", "美股"],
+      "config_params": {},
+      "created_at": "2026-04-01T00:00:00Z",
+      "updated_at": "2026-04-07T00:00:00Z"
+    }
+  ]
+}

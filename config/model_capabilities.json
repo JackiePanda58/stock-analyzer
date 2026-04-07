@@ -1,0 +1,52 @@
+{
+  "providers": [
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "capabilities": {
+        "chat": true,
+        "tool_calling": true,
+        "vision": true,
+        "long_context": true,
+        "fast_response": true
+      }
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "capabilities": {
+        "chat": true,
+        "tool_calling": true,
+        "vision": false,
+        "long_context": true,
+        "reasoning": true
+      }
+    }
+  ],
+  "models": {
+    "abab6.5s-chat": {
+      "provider": "minimax",
+      "capability_level": 4,
+      "suitable_roles": ["quick_analysis", "deep_analysis"],
+      "features": ["tool_calling", "long_context", "fast_response"],
+      "recommended_depths": ["快速", "标准", "深度"],
+      "performance_metrics": {"speed": 5, "cost": 3, "quality": 4}
+    },
+    "deepseek-chat": {
+      "provider": "deepseek",
+      "capability_level": 4,
+      "suitable_roles": ["quick_analysis", "deep_analysis"],
+      "features": ["tool_calling", "long_context", "cost_effective"],
+      "recommended_depths": ["快速", "标准"],
+      "performance_metrics": {"speed": 4, "cost": 5, "quality": 4}
+    },
+    "deepseek-reasoner": {
+      "provider": "deepseek",
+      "capability_level": 5,
+      "suitable_roles": ["deep_analysis"],
+      "features": ["reasoning", "long_context"],
+      "recommended_depths": ["深度", "全面"],
+      "performance_metrics": {"speed": 2, "cost": 3, "quality": 5}
+    }
+  }
+}

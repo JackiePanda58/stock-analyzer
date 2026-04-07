@@ -1,0 +1,58 @@
+{
+  "catalog": [
+    {
+      "id": "abab6.5s-chat",
+      "name": "MiniMax-M2.7",
+      "provider": "minimax",
+      "type": "chat",
+      "display_name": "MiniMax M2.7",
+      "description": "MiniMax 最新一代大模型，支持超长上下文",
+      "context_window": 32000,
+      "capability_level": 4,
+      "suitable_roles": ["quick_analysis", "deep_analysis"],
+      "features": ["tool_calling", "long_context", "fast_response"],
+      "recommended_depths": ["快速", "标准", "深度"],
+      "performance_metrics": {"speed": 5, "cost": 3, "quality": 4},
+      "input_price_per_1k": 0.01,
+      "output_price_per_1k": 0.03,
+      "currency": "CNY",
+      "is_active": true
+    },
+    {
+      "id": "deepseek-chat",
+      "name": "DeepSeek-V3",
+      "provider": "deepseek",
+      "type": "chat",
+      "display_name": "DeepSeek V3",
+      "description": "DeepSeek 最新开源大模型，性价比极高",
+      "context_window": 64000,
+      "capability_level": 4,
+      "suitable_roles": ["quick_analysis", "deep_analysis"],
+      "features": ["tool_calling", "long_context", "cost_effective"],
+      "recommended_depths": ["快速", "标准"],
+      "performance_metrics": {"speed": 4, "cost": 5, "quality": 4},
+      "input_price_per_1k": 0.001,
+      "output_price_per_1k": 0.002,
+      "currency": "CNY",
+      "is_active": false
+    },
+    {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek-R1",
+      "provider": "deepseek",
+      "type": "chat",
+      "display_name": "DeepSeek R1",
+      "description": "DeepSeek 推理模型，擅长复杂推理任务",
+      "context_window": 64000,
+      "capability_level": 5,
+      "suitable_roles": ["deep_analysis"],
+      "features": ["reasoning", "long_context"],
+      "recommended_depths": ["深度", "全面"],
+      "performance_metrics": {"speed": 2, "cost": 3, "quality": 5},
+      "input_price_per_1k": 0.004,
+      "output_price_per_1k": 0.015,
+      "currency": "CNY",
+      "is_active": false
+    }
+  ]
+}

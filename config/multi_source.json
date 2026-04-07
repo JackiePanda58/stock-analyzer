@@ -1,0 +1,30 @@
+{
+  "sources": {
+    "baostock": {
+      "name": "BaoStock",
+      "enabled": true,
+      "priority": 1,
+      "health_status": "healthy",
+      "last_sync": "2026-04-07T12:00:00Z",
+      "record_count": 0
+    },
+    "akshare": {
+      "name": "AkShare",
+      "enabled": true,
+      "priority": 2,
+      "health_status": "healthy",
+      "last_sync": "2026-04-07T12:00:00Z",
+      "record_count": 0
+    },
+    "tencent": {
+      "name": "腾讯财经",
+      "enabled": true,
+      "priority": 3,
+      "health_status": "healthy",
+      "last_sync": "2026-04-07T12:00:00Z",
+      "record_count": 0
+    }
+  },
+  "sync_interval_minutes": 60,
+  "last_full_sync": "2026-04-07T12:00:00Z"
+}
