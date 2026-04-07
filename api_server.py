@@ -991,8 +991,11 @@ async def report_download(
     format: str = "markdown",
     username: str = Depends(verify_token)
 ):
-    """下载报告为指定格式"""
+    """下载报告为指定格式（支持 markdown / pdf）"""
     import os
+    import io
+    import markdown
+    import pdfkit
     from fastapi.responses import Response
     reports_dir = "/root/stock-analyzer/reports"
     candidates = [
@@ -1011,10 +1014,51 @@ async def report_download(
 
     # 提取 symbol 用于文件名
     symbol = report_id.split("_")[0] if "_" in report_id else report_id
-    ext = "md" if format == "markdown" else "txt"
-    filename = f"{symbol}_分析报告.{ext}"
 
-    # 使用 ASCII 文件名避免编码问题
+    # PDF 格式：markdown -> HTML -> PDF
+    if format == "pdf":
+        # 简单 HTML 模板，使 PDF 排版更美观
+        html_content = markdown.markdown(
+            content,
+            extensions=['tables', 'fenced_code', 'codehilite']
+        )
+        html_full = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; padding: 40px; font-size: 14px; line-height: 1.8; }}
+  h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+  h2 {{ color: #34495e; margin-top: 24px; }}
+  h3 {{ color: #7f8c8d; }}
+  code {{ background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 13px; }}
+  pre {{ background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 16px 0; }}
+  th, td {{ border: 1px solid #ddd; padding: 8px 12px; text-align: left; }}
+  th {{ background: #3498db; color: white; }}
+  tr:nth-child(even) {{ background: #f9f9f9; }}
+  blockquote {{ border-left: 4px solid #3498db; margin: 16px 0; padding: 8px 16px; background: #f0f8ff; color: #555; }}
+</style>
+</head>
+<body>
+{html_content}
+</body>
+</html>
+"""
+        try:
+            pdf_bytes = pdfkit.from_string(html_full, False)
+            safe_filename = f"{symbol}_report.pdf"
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={safe_filename}"}
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"PDF 生成失败: {str(e)}")
+
+    # Markdown / txt 格式
+    ext = "md" if format == "markdown" else "txt"
     safe_filename = f"{symbol}_report.{ext}"
     return Response(
         content=content.encode("utf-8"),
