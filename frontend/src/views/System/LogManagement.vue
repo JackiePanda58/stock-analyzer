@@ -415,7 +415,7 @@ const exportLogs = async () => {
   }
 }
 
-const getLogTypeColor = (type: string) => {
+const getLogTypeColor = (type: string): string | undefined => {
   const colors: Record<string, string> = {
     error: 'danger',
     webapi: 'primary',
@@ -423,7 +423,7 @@ const getLogTypeColor = (type: string) => {
     access: 'info',
     other: ''
   }
-  return colors[type] || ''
+  return colors[type] || undefined
 }
 
 const formatDate = (dateStr: string) => {
