@@ -12,6 +12,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ConfigDict
 import redis.asyncio as aioredis
+import json
+import baostock as bs
 import uvicorn
 
 sys.path.insert(0, '/root/stock-analyzer')
@@ -369,25 +371,145 @@ async def ws_notifications(websocket):
         sys_logger.error(f"WebSocket error: {type(e).__name__}: {e}")
 
 # ==================== 收藏夹 (Favorites) ====================
+def _fav_key(username: str) -> str:
+    return f"favorites:{username}"
+
+def _validate_stock(code: str, market: str) -> dict:
+    """验证股票代码并返回标准化的股票信息"""
+    code = code.strip()
+    if market == "A股":
+        # A股：尝试 sh/sz 前缀
+        for prefix in ["sh.", "sz."]:
+            lg = bs.login()
+            rs = bs.query_stock_basic(code=prefix + code)
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                name = rows[0][1]
+                return {"stock_code": code, "stock_name": name, "market": market, "valid": True}
+        raise ValueError(f"A股代码 {code} 不存在或已退市")
+    elif market == "港股":
+        # 简化：港股不校验，直接存储
+        return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+    elif market == "美股":
+        return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+    return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+
 @app.get("/api/favorites/")
 async def favorites_list(username: str = Depends(verify_token)):
-    return {"success": True, "data": []}
+    if not redis_client:
+        return {"success": True, "data": []}
+    try:
+        raw = await redis_client.hgetall(_fav_key(username))
+        items = []
+        for code, val in raw.items():
+            item = json.loads(val)
+            item["id"] = code
+            items.append(item)
+        return {"success": True, "data": items}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] list error: {e}")
+        return {"success": True, "data": []}
+
+class FavoriteReq(BaseModel):
+    stock_code: str
+    stock_name: str = ""
+    market: str = "A股"
+    tags: list = []
+    notes: str = ""
 
 @app.post("/api/favorites/")
-async def favorites_add(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"id": "stub"}}
+async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        # 校验股票代码有效性（A股）
+        if req.market == "A股":
+            validated = _validate_stock(req.stock_code, req.market)
+            stock_name = validated["stock_name"] or req.stock_name
+        else:
+            stock_name = req.stock_name
 
-@app.delete("/api/favorites/{fav_id}")
-async def favorites_delete(fav_id: str, username: str = Depends(verify_token)):
-    return {"success": True}
+        key = _fav_key(username)
+        # 检查是否已存在
+        existing = await redis_client.hget(key, req.stock_code)
+        if existing:
+            return {"success": False, "message": "该股票已在自选列表中"}
+
+        fav_data = {
+            "stock_code": req.stock_code,
+            "stock_name": stock_name,
+            "market": req.market,
+            "tags": req.tags,
+            "notes": req.notes,
+            "added_at": datetime.now().isoformat()
+        }
+        await redis_client.hset(key, req.stock_code, json.dumps(fav_data, ensure_ascii=False))
+        sys_logger.info(f"[Favorites] [{username}] added {req.stock_code} ({stock_name})")
+        return {"success": True, "data": {"id": req.stock_code, **fav_data}}
+    except ValueError as ve:
+        return {"success": False, "message": str(ve)}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] add error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/favorites/{stock_code}")
+async def favorites_delete(stock_code: str, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        deleted = await redis_client.hdel(_fav_key(username), stock_code)
+        if deleted:
+            sys_logger.info(f"[Favorites] [{username}] deleted {stock_code}")
+        return {"success": True}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class FavoriteUpdateReq(BaseModel):
+    tags: list = []
+    notes: str = ""
+
+@app.put("/api/favorites/{stock_code}")
+async def favorites_update(stock_code: str, req: FavoriteUpdateReq, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        key = _fav_key(username)
+        raw = await redis_client.hget(key, stock_code)
+        if not raw:
+            raise HTTPException(status_code=404, detail="该股票不在自选列表中")
+        data = json.loads(raw)
+        data["tags"] = req.tags
+        data["notes"] = req.notes
+        await redis_client.hset(key, stock_code, json.dumps(data, ensure_ascii=False))
+        return {"success": True, "data": {"id": stock_code, **data}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        sys_logger.error(f"[Favorites] update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/favorites/tags")
 async def favorites_tags(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tags": []}}
+    if not redis_client:
+        return {"success": True, "data": {"tags": []}}
+    try:
+        raw = await redis_client.hgetall(_fav_key(username))
+        all_tags = set()
+        for val in raw.values():
+            item = json.loads(val)
+            all_tags.update(item.get("tags", []))
+        return {"success": True, "data": {"tags": list(all_tags)}}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] tags error: {e}")
+        return {"success": True, "data": {"tags": []}}
 
 @app.get("/api/favorites/sync-realtime")
 async def favorites_sync_realtime(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"synced": True}}
+    return {"success": True, "data": {"synced": True, "count": 0}}
 
 # ==================== 多源数据同步 (Multi-Source Sync) ====================
 @app.get("/api/sync/multi-source/status")
