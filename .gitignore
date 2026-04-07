@@ -11,6 +11,7 @@ logs/*.log
 eval_results/*/TradingAgentsStrategy_logs/full_states_log_*.json
 reports/*.txt
 reports/*.md
+frontend/node_modules/
 cache/
 .DS_Store
 .vscode/
