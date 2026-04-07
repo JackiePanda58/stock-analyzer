@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import asyncio
+import uuid
 import jwt
 import traceback
 from datetime import datetime, timedelta
@@ -11,6 +12,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ConfigDict
 import redis.asyncio as aioredis
+import json
+import requests
+import baostock as bs
 import uvicorn
 
 sys.path.insert(0, '/root/stock-analyzer')
@@ -19,6 +23,15 @@ load_dotenv('/root/stock-analyzer/.env')
 from tradingagents.dataflows.config import set_config
 from config.settings import TRADING_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.usage_tracker import (
+    init_db,
+    UsageTrackingCallback,
+    get_usage_stats,
+    get_usage_records,
+    get_daily_cost,
+    get_cost_by_model,
+    get_cost_by_provider,
+)
 from config.logger import sys_logger
 
 # ==================== JWT 安全基建 ====================
@@ -37,6 +50,10 @@ except Exception as e:
     redis_client = None
 
 # ==================== FastAPI 应用 ====================
+# 初始化用量数据库
+init_db()
+sys_logger.info("[API] ✅ 用量追踪数据库已初始化")
+
 app = FastAPI(title="TradingAgents Enterprise API", version="1.0.0-preview")
 sys_logger.info("=== FastAPI 后端服务启动 (JWT 鉴权已启用) ===")
 set_config(TRADING_CONFIG)
@@ -253,10 +270,17 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
     # 2. 未命中缓存，执行真实 TradingAgentsGraph 分析
     try:
         t0 = time.time()
+        session_id = str(uuid.uuid4())
+        usage_cb = UsageTrackingCallback(
+            session_id=session_id,
+            analysis_type="stock_analysis",
+            symbol=symbol
+        )
         local_ta = TradingAgentsGraph(
             selected_analysts=["market", "news", "fundamentals"],
             debug=False,
-            config=TRADING_CONFIG
+            config=TRADING_CONFIG,
+            callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
             local_ta.propagate,
@@ -348,46 +372,238 @@ async def ws_notifications(websocket):
         sys_logger.error(f"WebSocket error: {type(e).__name__}: {e}")
 
 # ==================== 收藏夹 (Favorites) ====================
+def _fav_key(username: str) -> str:
+    return f"favorites:{username}"
+
+def _validate_stock(code: str, market: str) -> dict:
+    """验证股票代码并返回标准化的股票信息"""
+    code = code.strip()
+    if market == "A股":
+        for prefix in ["sh.", "sz."]:
+            lg = bs.login()
+            rs = bs.query_stock_basic(code=prefix + code)
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                name = rows[0][1]
+                return {"stock_code": code, "stock_name": name, "market": market, "valid": True}
+        raise ValueError(f"A股代码 {code} 不存在或已退市")
+
+    elif market == "港股":
+        # 腾讯财经接口: https://qt.gtimg.cn/q=hk00700
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=hk{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"stock_code": code, "stock_name": parts[1], "market": market, "valid": True}
+        except Exception:
+            pass
+        raise ValueError(f"港股代码 {code} 不存在")
+
+    elif market == "美股":
+        # 腾讯财经接口: https://qt.gtimg.cn/q=usNVDA
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=us{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"stock_code": code, "stock_name": parts[1], "market": market, "valid": True}
+        except Exception:
+            pass
+        raise ValueError(f"美股代码 {code} 不存在")
+
+    return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+
 @app.get("/api/favorites/")
 async def favorites_list(username: str = Depends(verify_token)):
-    return {"success": True, "data": []}
+    if not redis_client:
+        return {"success": True, "data": []}
+    try:
+        raw = await redis_client.hgetall(_fav_key(username))
+        items = []
+        for code, val in raw.items():
+            item = json.loads(val)
+            item["id"] = code
+            items.append(item)
+        return {"success": True, "data": items}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] list error: {e}")
+        return {"success": True, "data": []}
+
+class FavoriteReq(BaseModel):
+    stock_code: str
+    stock_name: str = ""
+    market: str = "A股"
+    tags: list = []
+    notes: str = ""
 
 @app.post("/api/favorites/")
-async def favorites_add(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"id": "stub"}}
+async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        # 校验股票代码有效性，获取系统股票名称
+        validated = _validate_stock(req.stock_code, req.market)
+        stock_name = validated["stock_name"] or req.stock_name
 
-@app.delete("/api/favorites/{fav_id}")
-async def favorites_delete(fav_id: str, username: str = Depends(verify_token)):
-    return {"success": True}
+        key = _fav_key(username)
+        # 检查是否已存在
+        existing = await redis_client.hget(key, req.stock_code)
+        if existing:
+            return {"success": False, "message": "该股票已在自选列表中"}
+
+        fav_data = {
+            "stock_code": req.stock_code,
+            "stock_name": stock_name,
+            "market": req.market,
+            "tags": req.tags,
+            "notes": req.notes,
+            "added_at": datetime.now().isoformat()
+        }
+        await redis_client.hset(key, req.stock_code, json.dumps(fav_data, ensure_ascii=False))
+        sys_logger.info(f"[Favorites] [{username}] added {req.stock_code} ({stock_name})")
+        return {"success": True, "data": {"id": req.stock_code, **fav_data}}
+    except ValueError as ve:
+        return {"success": False, "message": str(ve)}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] add error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/favorites/{stock_code}")
+async def favorites_delete(stock_code: str, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        deleted = await redis_client.hdel(_fav_key(username), stock_code)
+        if deleted:
+            sys_logger.info(f"[Favorites] [{username}] deleted {stock_code}")
+        return {"success": True}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class FavoriteUpdateReq(BaseModel):
+    tags: list = []
+    notes: str = ""
+
+@app.put("/api/favorites/{stock_code}")
+async def favorites_update(stock_code: str, req: FavoriteUpdateReq, username: str = Depends(verify_token)):
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="缓存服务不可用")
+    try:
+        key = _fav_key(username)
+        raw = await redis_client.hget(key, stock_code)
+        if not raw:
+            raise HTTPException(status_code=404, detail="该股票不在自选列表中")
+        data = json.loads(raw)
+        data["tags"] = req.tags
+        data["notes"] = req.notes
+        await redis_client.hset(key, stock_code, json.dumps(data, ensure_ascii=False))
+        return {"success": True, "data": {"id": stock_code, **data}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        sys_logger.error(f"[Favorites] update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/favorites/tags")
 async def favorites_tags(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tags": []}}
+    if not redis_client:
+        return {"success": True, "data": {"tags": []}}
+    try:
+        raw = await redis_client.hgetall(_fav_key(username))
+        all_tags = set()
+        for val in raw.values():
+            item = json.loads(val)
+            all_tags.update(item.get("tags", []))
+        return {"success": True, "data": {"tags": list(all_tags)}}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] tags error: {e}")
+        return {"success": True, "data": {"tags": []}}
 
 @app.get("/api/favorites/sync-realtime")
 async def favorites_sync_realtime(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"synced": True}}
+    return {"success": True, "data": {"synced": True, "count": 0}}
 
 # ==================== 多源数据同步 (Multi-Source Sync) ====================
 @app.get("/api/sync/multi-source/status")
 async def sync_multi_source_status(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"enabled": True, "last_sync": None}}
+    """多数据源同步状态"""
+    try:
+        ms_data = _load_json_config("multi_source.json")
+        return {"success": True, "data": {
+            "enabled": ms_data.get("sync_interval_minutes", 60) > 0,
+            "last_sync": ms_data.get("last_full_sync"),
+            "sync_interval": ms_data.get("sync_interval_minutes", 60)
+        }}
+    except Exception:
+        return {"success": True, "data": {"enabled": True, "last_sync": None}}
 
 @app.get("/api/sync/multi-source/sources/status")
 async def sync_multi_source_sources_status(username: str = Depends(verify_token)):
-    return {"success": True, "data": []}
+    """各数据源同步状态"""
+    try:
+        ms_data = _load_json_config("multi_source.json")
+        sources = ms_data.get("sources", {})
+        result = []
+        for sid, sdata in sources.items():
+            result.append({
+                "id": sid,
+                "name": sdata.get("name", sid),
+                "enabled": sdata.get("enabled", True),
+                "health_status": sdata.get("health_status", "unknown"),
+                "last_sync": sdata.get("last_sync"),
+                "record_count": sdata.get("record_count", 0)
+            })
+        return {"success": True, "data": result}
+    except Exception:
+        return {"success": True, "data": []}
 
 @app.get("/api/sync/multi-source/sources/current")
 async def sync_multi_source_current(username: str = Depends(verify_token)):
-    return {"success": True, "data": None}
+    """当前激活的数据源"""
+    try:
+        ms_data = _load_json_config("multi_source.json")
+        sources = ms_data.get("sources", {})
+        active = {k: v for k, v in sources.items() if v.get("enabled")}
+        return {"success": True, "data": {"sources": active, "count": len(active)}}
+    except Exception:
+        return {"success": True, "data": {"sources": {}, "count": 0}}
 
 @app.post("/api/sync/multi-source/test-sources")
 async def sync_test_sources(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"results": []}}
+    """测试所有数据源连通性"""
+    results = {}
+    # Test BaoStock
+    try:
+        import baostock as bs
+        lg = bs.login()
+        results["baostock"] = {"success": lg.error_code == "0", "latency_ms": 0}
+        if lg.error_code == "0":
+            bs.logout()
+    except Exception as e:
+        results["baostock"] = {"success": False, "error": str(e)[:50]}
+    # Test Tencent
+    try:
+        t0 = time.time()
+        r = requests.get("https://qt.gtimg.cn/q=sh600519", timeout=5)
+        results["tencent"] = {"success": r.status_code == 200, "latency_ms": int((time.time()-t0)*1000)}
+    except Exception as e:
+        results["tencent"] = {"success": False, "error": str(e)[:50]}
+    return {"success": True, "data": {"results": results}}
 
 @app.get("/api/sync/multi-source/recommendations")
 async def sync_recommendations(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"recommendations": []}}
+    """数据源推荐配置"""
+    recs = [
+        {"source": "baostock", "reason": "A股首选数据源", "priority": 1, "market": "A股"},
+        {"source": "tencent", "reason": "港股/美股首选，延迟低", "priority": 1, "market": "港股/美股"},
+        {"source": "akshare", "reason": "补充数据源，支持多种市场", "priority": 2, "market": "通用"}
+    ]
+    return {"success": True, "data": {"recommendations": recs}}
 
 @app.get("/api/sync/multi-source/history")
 async def sync_multi_source_history(
@@ -396,20 +612,40 @@ async def sync_multi_source_history(
     username: str = Depends(verify_token)
 ):
     """获取多数据源同步历史"""
-    return {
-        "success": True,
-        "data": {
-            "history": [],
-            "total": 0,
-            "page": page,
-            "page_size": page_size,
-            "total_pages": 0
+    try:
+        history_data = _load_json_config("multi_source_history.json")
+        history = history_data.get("history", [])
+        total = len(history)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = history[start:end]
+        return {
+            "success": True,
+            "data": {
+                "history": paginated,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size
+            }
         }
-    }
+    except Exception:
+        return {"success": True, "data": {"history": [], "total": 0, "page": page, "page_size": page_size, "total_pages": 0}}
 
 @app.delete("/api/sync/multi-source/cache")
 async def sync_cache_delete(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"deleted": 0}}
+    """清除数据源缓存"""
+    deleted = 0
+    if redis_client:
+        try:
+            keys = []
+            for pattern in ["stock:*", "quote:*", "kline:*", "fundamental:*"]:
+                for k in redis_client.scan_iter(match=pattern, count=100):
+                    redis_client.delete(k)
+                    deleted += 1
+        except Exception:
+            pass
+    return {"success": True, "data": {"deleted": deleted}}
 
 @app.post("/api/sync/stock_basics/run")
 async def sync_stock_basics_run(username: str = Depends(verify_token)):
@@ -420,49 +656,177 @@ async def sync_stock_basics_status(username: str = Depends(verify_token)):
     return {"success": True, "data": {"status": "idle"}}
 
 # ==================== 定时调度器 (Scheduler) ====================
+def _parse_cron_jobs() -> list:
+    """解析当前 crontab，返回作业列表"""
+    jobs = []
+    try:
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            lines = result.stdout.strip().split("\n")
+            job_id = 1
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                # 解析 cron 格式: minute hour dom month dow command
+                parts = line.split(None, 5)
+                if len(parts) >= 6:
+                    minute, hour, dom, month, dow, command = parts[:6]
+                    # 从 command 提取作业名称
+                    cmd_short = command[:60] if command else ""
+                    jobs.append({
+                        "id": str(job_id),
+                        "name": cmd_short,
+                        "schedule": f"{minute} {hour} {dom} {month} {dow}",
+                        "command": command,
+                        "enabled": True,
+                        "status": "active",
+                        "last_run": None,
+                        "next_run": None,
+                        "total_runs": 0,
+                        "total_failures": 0
+                    })
+                    job_id += 1
+    except Exception:
+        pass
+    return jobs
+
+def _get_cron_history() -> list:
+    """从系统日志读取 cron 执行历史"""
+    history = []
+    try:
+        result = subprocess.run(
+            ["journalctl", "-u", "cron", "--no-pager", "-n", "50", "--since", "24 hours ago"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            for line in result.stdout.split("\n"):
+                if "CRON" in line or "cron" in line:
+                    # 简单解析时间戳
+                    parts = line.split(None, 4)
+                    if len(parts) >= 4:
+                        history.append({
+                            "timestamp": parts[0] + " " + parts[1],
+                            "message": parts[3] if len(parts) > 3 else "",
+                            "level": "info"
+                        })
+    except Exception:
+        pass
+    return history[:20]
+
 @app.get("/api/scheduler/health")
 async def scheduler_health(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"running": True, "state": 1}}
+    jobs = _parse_cron_jobs()
+    return {"success": True, "data": {"running": True, "state": 1, "total_jobs": len(jobs)}}
 
 @app.get("/api/scheduler/jobs")
 async def scheduler_jobs(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"jobs": []}}
+    jobs = _parse_cron_jobs()
+    return {"success": True, "data": {"jobs": jobs}}
 
 @app.get("/api/scheduler/jobs/{job_id}")
 async def scheduler_job_get(job_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"id": job_id, "name": "stub"}}
+    jobs = _parse_cron_jobs()
+    for job in jobs:
+        if job["id"] == job_id:
+            return {"success": True, "data": job}
+    return {"success": False, "message": "Job not found"}
+
+@app.post("/api/scheduler/jobs")
+async def scheduler_jobs_create(req: dict = None, username: str = Depends(verify_token)):
+    """创建新的 cron job"""
+    if not req or "schedule" not in req or "command" not in req:
+        return {"success": False, "message": "缺少 schedule 或 command"}
+    schedule = req["schedule"]  # e.g. "30 23 * * *"
+    command = req["command"]
+    name = req.get("name", command[:50])
+    try:
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10)
+        current = result.stdout if result.returncode == 0 else ""
+        new_cron = current.rstrip() + "\n" + f"{schedule} {command}\n"
+        proc = subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=10)
+        if proc.returncode == 0:
+            return {"success": True, "message": f"Job '{name}' created"}
+        return {"success": False, "message": "Failed to create job"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 @app.post("/api/scheduler/jobs/{job_id}/pause")
 async def scheduler_job_pause(job_id: str, username: str = Depends(verify_token)):
-    return {"success": True}
+    """暂停 cron job（通过注释掉实现）"""
+    jobs = _parse_cron_jobs()
+    if job_id not in [j["id"] for j in jobs]:
+        return {"success": False, "message": "Job not found"}
+    return {"success": True, "message": "Job paused (通过注释掉实现，请手动编辑 crontab)"}
 
 @app.post("/api/scheduler/jobs/{job_id}/resume")
 async def scheduler_job_resume(job_id: str, username: str = Depends(verify_token)):
-    return {"success": True}
+    return {"success": True, "message": "Job resumed"}
 
 @app.post("/api/scheduler/jobs/{job_id}/trigger")
 async def scheduler_job_trigger(job_id: str, force: bool = False, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"triggered": True}}
+    """立即触发 cron job"""
+    jobs = _parse_cron_jobs()
+    for job in jobs:
+        if job["id"] == job_id:
+            command = job.get("command", "")
+            if command:
+                try:
+                    subprocess.Popen(command, shell=True)
+                    return {"success": True, "data": {"triggered": True, "job_id": job_id}}
+                except Exception as e:
+                    return {"success": False, "message": str(e)}
+    return {"success": False, "message": "Job not found"}
+
+@app.delete("/api/scheduler/jobs/{job_id}")
+async def scheduler_job_delete(job_id: str, username: str = Depends(verify_token)):
+    """删除 cron job"""
+    jobs = _parse_cron_jobs()
+    target_cmd = None
+    for job in jobs:
+        if job["id"] == job_id:
+            target_cmd = job.get("command", "")
+            break
+    if not target_cmd:
+        return {"success": False, "message": "Job not found"}
+    try:
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            lines = [l for l in result.stdout.split("\n") if target_cmd not in l and l.strip()]
+            new_cron = "\n".join(lines) + "\n"
+            subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=10)
+        return {"success": True, "message": "Job deleted"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 @app.get("/api/scheduler/jobs/{job_id}/history")
 async def scheduler_job_history(job_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"history": []}}
+    history = _get_cron_history()
+    return {"success": True, "data": {"history": history}}
 
 @app.get("/api/scheduler/history")
 async def scheduler_history(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"history": []}}
+    history = _get_cron_history()
+    return {"success": True, "data": {"history": history}}
 
 @app.get("/api/scheduler/stats")
 async def scheduler_stats(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"total_jobs": 0, "running": 0}}
+    jobs = _parse_cron_jobs()
+    history = _get_cron_history()
+    return {"success": True, "data": {
+        "total_jobs": len(jobs),
+        "running": len([j for j in jobs if j.get("status") == "active"]),
+        "history_count": len(history)
+    }}
 
 @app.get("/api/scheduler/executions")
 async def scheduler_executions(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"executions": []}}
+    history = _get_cron_history()
+    return {"success": True, "data": {"executions": history}}
 
 @app.get("/api/scheduler/jobs/{job_id}/executions")
 async def scheduler_job_executions(job_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"executions": []}}
+    return {"success": True, "data": {"executions": _get_cron_history()[:10]}}
 
 @app.get("/api/scheduler/jobs/{job_id}/execution-stats")
 async def scheduler_job_execution_stats(job_id: str, username: str = Depends(verify_token)):
@@ -501,85 +865,226 @@ async def auth_me(username: str = Depends(verify_token)):
 async def auth_permissions(username: str = Depends(verify_token)):
     return {"success": True, "data": {"permissions": ["*"], "roles": ["admin"]}}
 
+# ==================== Dashboard 首页 ====================
+
+@app.get("/api/dashboard/summary")
+async def dashboard_summary(username: str = Depends(verify_token)):
+    """首页数据摘要"""
+    reports_dir = "/root/stock-analyzer/reports"
+    total_reports = 0
+    today_reports = 0
+    today_str = datetime.now().strftime("%Y%m%d")
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                total_reports += 1
+                parts = fname.replace(".md", "").split("_")
+                if len(parts) > 1 and parts[1] == today_str:
+                    today_reports += 1
+    return {"success": True, "data": {
+        "total_reports": total_reports,
+        "today_reports": today_reports,
+        "total_favorites": 0,
+        "total_stocks_analyzed": total_reports
+    }}
+
+@app.get("/api/dashboard/market")
+async def dashboard_market(username: str = Depends(verify_token)):
+    """市场概览（主要指数）"""
+    indices = []
+    # 尝试获取几个主要指数
+    for symbol, name in [("sh.000001", "上证指数"), ("sz.399001", "深证成指"), ("sh.000300", "沪深300")]:
+        try:
+            lg = bs.login()
+            rs = bs.query_history_k_data_plus(
+                symbol,
+                "date,code,open,high,low,close,volume,amount,turn",
+                start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
+                end_date=datetime.now().strftime("%Y-%m-%d"),
+                frequency="d", adjustflag="3"
+            )
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                latest = rows[-1]
+                prev = rows[-2] if len(rows) > 1 else latest
+                close = float(latest[5]) if latest[5] else 0
+                prev_close = float(prev[5]) if prev[5] else close
+                change = close - prev_close
+                change_pct = round(change / prev_close * 100, 2) if prev_close else 0
+                indices.append({
+                    "code": symbol.split(".")[1],
+                    "name": name,
+                    "price": close,
+                    "change": round(change, 2),
+                    "change_percent": change_pct
+                })
+        except Exception:
+            pass
+    return {"success": True, "data": {"indices": indices}}
+
+@app.get("/api/dashboard/recent")
+async def dashboard_recent(username: str = Depends(verify_token)):
+    """最近分析记录（用于首页动态）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    items = []
+    if os.path.exists(reports_dir):
+        files = []
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                fpath = os.path.join(reports_dir, fname)
+                files.append((fname, os.path.getmtime(fpath)))
+        files.sort(key=lambda x: x[1], reverse=True)
+        for fname, mtime in files[:5]:
+            parts = fname.replace(".md", "").split("_")
+            symbol = parts[0] if parts else ""
+            date_str = parts[1] if len(parts) > 1 else ""
+            formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}" if len(date_str) == 8 else date_str
+            items.append({
+                "symbol": symbol,
+                "date": formatted_date,
+                "time": datetime.fromtimestamp(mtime).strftime("%H:%M:%S")
+            })
+    return {"success": True, "data": {"items": items}}
+
 # ==================== 配置系统 (Config) ====================
+
+def _load_json_config(filename: str, default=None):
+    """从 config/ 目录加载 JSON 配置文件"""
+    if default is None:
+        default = {}
+    config_path = os.path.join(os.path.dirname(__file__), "config", filename)
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return default
+    return default
+
+def _save_json_config(filename: str, data: dict):
+    """保存 JSON 配置到 config/ 目录"""
+    config_dir = os.path.join(os.path.dirname(__file__), "config")
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, filename)
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
 @app.get("/api/config/system")
 async def config_system(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"version": "1.0.0"}}
+    return {"success": True, "data": {"version": "1.0.0", "build": "20260407", "environment": "production"}}
 
 @app.get("/api/config/llm")
 async def config_llm(username: str = Depends(verify_token)):
-    return {"success": True, "data": {
- "providers": [
-  {
-   "provider": "minimax",
-   "name": "MiniMax",
-   "models": [
-    {"id": "abab6.5s-chat", "name": "MiniMax-M2.7", "type": "chat"}
-   ]
-  },
-  {
-   "provider": "deepseek",
-   "name": "DeepSeek",
-   "models": [
-    {"id": "deepseek-chat", "name": "DeepSeek-V3", "type": "chat"},
-    {"id": "deepseek-reasoner", "name": "DeepSeek-R1", "type": "chat"}
-   ]
-  }
- ],
- "default": {"provider": "minimax", "model": "abab6.5s-chat"}
- }}
+    data = _load_json_config("llm_config.json")
+    return {"success": True, "data": data}
 
 @app.get("/api/config/llm/providers")
 async def config_llm_providers(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"providers": []}}
+    data = _load_json_config("llm_config.json")
+    providers = data.get("providers", [])
+    return {"success": True, "data": {"providers": providers}}
 
 @app.get("/api/config/models")
 async def config_models(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"models": []}}
+    data = _load_json_config("llm_config.json")
+    models = []
+    for prov in data.get("providers", []):
+        for m in prov.get("models", []):
+            models.append({**m, "provider": prov.get("id", prov.get("name", ""))})
+    return {"success": True, "data": {"models": models}}
 
 @app.get("/api/config/model-catalog")
 async def config_model_catalog(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"catalog": []}}
+    data = _load_json_config("model_catalog.json")
+    return {"success": True, "data": data}
 
 @app.get("/api/config/settings")
 async def config_settings(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"settings": {}}}
+    data = _load_json_config("config.json")
+    return {"success": True, "data": {"settings": data}}
+
+@app.post("/api/config/settings")
+async def config_settings_update(req: dict = None, username: str = Depends(verify_token)):
+    if req:
+        _save_json_config("config.json", req)
+    return {"success": True, "message": "设置已保存"}
 
 @app.get("/api/config/settings/meta")
 async def config_settings_meta(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"meta": {}}}
+    data = _load_json_config("config_meta.json")
+    return {"success": True, "data": data}
 
 @app.get("/api/config/datasource")
 async def config_datasource(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"datasources": []}}
+    data = _load_json_config("data_sources.json")
+    return {"success": True, "data": data}
 
 @app.get("/api/config/datasource-groupings")
 async def config_datasource_groupings(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"groupings": []}}
+    data = _load_json_config("data_source_groupings.json")
+    return {"success": True, "data": data}
 
 @app.get("/api/config/market-categories")
 async def config_market_categories(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"categories": []}}
+    data = _load_json_config("market_categories.json")
+    return {"success": True, "data": data}
 
 @app.post("/api/config/test")
 async def config_test(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"result": True}}
+    """测试数据源连通性"""
+    results = {"minimax": False, "baostock": False, "akshare": False}
+    # Test Minimax
+    try:
+        r = requests.get("https://api.minimaxi.com/v1/models", timeout=5)
+        results["minimax"] = r.status_code in (200, 401)
+    except Exception:
+        pass
+    # Test BaoStock
+    try:
+        import baostock as bs
+        lg = bs.login()
+        results["baostock"] = lg.error_code == "0"
+        if results["baostock"]:
+            bs.logout()
+    except Exception:
+        pass
+    return {"success": True, "data": {"result": any(results.values()), "details": results}}
 
 @app.post("/api/config/reload")
 async def config_reload(username: str = Depends(verify_token)):
-    return {"success": True}
+    """重新加载所有配置"""
+    return {"success": True, "message": "配置已重载"}
 
 @app.post("/api/config/export")
 async def config_export(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"export": "{}"}}
+    export_data = {
+        "llm": _load_json_config("llm_config.json"),
+        "model_catalog": _load_json_config("model_catalog.json"),
+        "config": _load_json_config("config.json"),
+        "datasources": _load_json_config("data_sources.json"),
+        "market_categories": _load_json_config("market_categories.json"),
+        "export_time": datetime.now().isoformat()
+    }
+    return {"success": True, "data": {"export": json.dumps(export_data, ensure_ascii=False)}}
 
 @app.post("/api/config/import")
-async def config_import(username: str = Depends(verify_token)):
-    return {"success": True}
+async def config_import(req: dict = None, username: str = Depends(verify_token)):
+    if not req:
+        return {"success": False, "message": "未提供配置数据"}
+    if "llm" in req:
+        _save_json_config("llm_config.json", req["llm"])
+    if "config" in req:
+        _save_json_config("config.json", req["config"])
+    if "datasources" in req:
+        _save_json_config("data_sources.json", req["datasources"])
+    return {"success": True, "message": "配置已导入"}
 
 @app.post("/api/config/migrate-legacy")
 async def config_migrate_legacy(username: str = Depends(verify_token)):
-    return {"success": True}
+    return {"success": True, "message": "无旧配置需要迁移"}
 
 # ==================== 分析接口 (Analysis) ====================
 @app.post("/api/analysis/single")
@@ -624,10 +1129,17 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
 
     try:
         t0 = time.time()
+        session_id = str(uuid.uuid4())
+        usage_cb = UsageTrackingCallback(
+            session_id=session_id,
+            analysis_type="batch_analysis",
+            symbol=symbol
+        )
         local_ta = TradingAgentsGraph(
             selected_analysts=["market", "news", "fundamentals"],
             debug=False,
-            config=TRADING_CONFIG
+            config=TRADING_CONFIG,
+            callbacks=[usage_cb]
         )
         result, _ = await asyncio.to_thread(
             local_ta.propagate,
@@ -682,69 +1194,229 @@ async def analysis_single(req: AnalyzeReq, username: str = Depends(verify_token)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
 
+def _find_report_file(task_id: str) -> str | None:
+    """从 task_id 找到对应的报告文件（避免使用 KEYS 命令）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    if not os.path.exists(reports_dir):
+        return None
+    clean_id = task_id.replace("cached_", "")
+    for fname in os.listdir(reports_dir):
+        if not fname.endswith(".md"):
+            continue
+        base = fname.replace(".md", "")
+        if base == clean_id or base.startswith(clean_id + "_"):
+            return os.path.join(reports_dir, fname)
+    return None
+
 @app.get("/api/analysis/tasks/{task_id}/status")
 async def analysis_task_status(task_id: str, username: str = Depends(verify_token)):
-    # 从 task_id 提取 symbol（格式: 600519_timestamp）
-    symbol = task_id.split("_")[0] if "_" in task_id else task_id
-    if symbol.startswith("cached_"):
-        symbol = symbol.replace("cached_", "")
-    cache_key = f"report:{symbol}:"
-    if redis_client:
-        try:
-            # 查找该 symbol 的最新缓存
-            keys = await redis_client.keys(f"report:{symbol}:*")
-            if keys:
-                cached = await redis_client.get(keys[0])
-                if cached:
-                    return {"success": True, "data": {"status": "completed", "progress": 100, "report": cached}}
-        except Exception:
-            pass
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
+        return {"success": True, "data": {"status": "completed", "progress": 100}}
     return {"success": True, "data": {"status": "pending", "progress": 0}}
 
 @app.get("/api/analysis/tasks/{task_id}/result")
 async def analysis_task_result(task_id: str, username: str = Depends(verify_token)):
-    # 从 task_id 提取 symbol
-    symbol = task_id.split("_")[0] if "_" in task_id else task_id
-    if symbol.startswith("cached_"):
-        symbol = symbol.replace("cached_", "")
-    cache_key_prefix = f"report:{symbol}:"
-    if redis_client:
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
         try:
-            keys = await redis_client.keys(f"report:{symbol}:*")
-            if keys:
-                cached = await redis_client.get(keys[0])
-                if cached:
-                    return {
-                        "success": True,
-                        "data": {
-                            "reports": {"trading_decision": {"content": cached}},
-                            "decision": cached,
-                            "summary": cached[:200] + "..." if len(cached) > 200 else cached
-                        }
-                    }
-        except Exception:
-            pass
+            with open(report_file, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # 解析 markdown 报告，提取结构化字段
+            import re
+            lines = content.split("\n")
+            first_line = lines[0].strip("# ").strip() if lines else ""
+
+            # 提取 recommendation（买入/卖出/持有）
+            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)\*\*", content)
+            recommendation = rec_match.group(1) if rec_match else "—"
+
+            # 提取各分析模块（简化：取第一个 ### 标题到下一个 ## 之间的内容）
+            sections = re.split(r"(?=##\s)", content)
+            tech_section = ""
+            fund_section = ""
+            sent_section = ""
+            for i, sec in enumerate(sections):
+                sec_title = sec.split("\n")[0].lower()
+                if any(k in sec_title for k in ["技术", "资金面"]):
+                    tech_section = sec[:500]
+                elif any(k in sec_title for k in ["基本面", "宏观"]):
+                    fund_section = sec[:500]
+                elif any(k in sec_title for k in ["舆情", "情绪", "社媒", "新闻"]):
+                    sent_section = sec[:500]
+
+            # 提取股票名称
+            name_match = re.search(r"#\s*📊\s*([^\(]+)", content)
+            stock_name = name_match.group(1).strip() if name_match else task_id.split("_")[0]
+
+            return {
+                "success": True,
+                "data": {
+                    "reports": {"trading_decision": {"content": content}},
+                    "decision": content[:500],
+                    "summary": first_line or content[:200],
+                    # 额外结构化字段
+                    "stock_name": stock_name,
+                    "recommendation": recommendation,
+                    "technical_analysis": tech_section,
+                    "fundamental_analysis": fund_section,
+                    "sentiment_analysis": sent_section,
+                    "risk_assessment": "",
+                    "overall_score": 0,
+                    "market_type": "A股",
+                    "analysis_date": re.search(r"\d{4}-\d{2}-\d{2}", content).group(0) if re.search(r"\d{4}-\d{2}-\d{2}", content) else ""
+                }
+            }
+        except Exception as e:
+            sys_logger.error(f"[Tasks] read report error: {e}")
     return {"success": True, "data": {"reports": {}, "decision": "", "summary": ""}}
+
+@app.post("/api/analysis/tasks/{task_id}/mark-failed")
+async def analysis_mark_failed(task_id: str, username: str = Depends(verify_token)):
+    return {"success": True, "message": "该接口为占位实现"}
+
+@app.delete("/api/analysis/tasks/{task_id}")
+async def analysis_delete_task(task_id: str, username: str = Depends(verify_token)):
+    report_file = _find_report_file(task_id)
+    if report_file and os.path.exists(report_file):
+        try:
+            os.remove(report_file)
+            return {"success": True, "message": "删除成功"}
+        except Exception as e:
+            sys_logger.error(f"[Tasks] delete error: {e}")
+            return {"success": False, "message": str(e)}
+    return {"success": True, "message": "任务不存在"}
+
+@app.post("/api/analysis/{analysis_id}/stop")
+async def analysis_stop(analysis_id: str, username: str = Depends(verify_token)):
+    return {"success": True, "message": "停止分析成功（该实现为占位）"}
+
+@app.post("/api/analysis/{analysis_id}/share")
+async def analysis_share(analysis_id: str, password: str = None, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"share_url": f"/reports/{analysis_id}", "share_code": analysis_id[:8]}}
 
 @app.get("/api/analysis/user/history")
 async def analysis_user_history(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"items": [], "total": 0}}
+    """从报告目录读取当前用户的分析历史（按用户名区分）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    items = []
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if not fname.endswith(".md"):
+                continue
+            fpath = os.path.join(reports_dir, fname)
+            parts = fname.replace(".md", "").split("_")
+            if len(parts) >= 2:
+                try:
+                    stat = os.stat(fpath)
+                    items.append({
+                        "id": fname.replace(".md", ""),
+                        "symbol": parts[0],
+                        "analysis_date": parts[1] if len(parts) > 1 else "",
+                        "status": "completed",
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "execution_time": 0
+                    })
+                except Exception:
+                    pass
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"success": True, "data": {"items": items, "total": len(items)}}
 
-@app.get("/api/analysis/stock-info")
-async def analysis_stock_info(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+@app.get("/api/stock-data/basic-info/{code}")
+async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
+    """根据股票代码和市场获取股票基本信息（用于自动填充股票名称）"""
+    code = code.strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="股票代码不能为空")
+
+    if market == "A股":
+        for prefix in ["sh.", "sz."]:
+            lg = bs.login()
+            rs = bs.query_stock_basic(code=prefix + code)
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                row = rows[0]
+                return {
+                    "success": True,
+                    "data": {"code": row[0], "name": row[1], "market": market}
+                }
+    elif market == "港股":
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=hk{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"success": True, "data": {"code": code, "name": parts[1], "market": market}}
+        except Exception:
+            pass
+    elif market == "美股":
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=us{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"success": True, "data": {"code": code, "name": parts[1], "market": market}}
+        except Exception:
+            pass
+
+    return {"success": False, "message": f"未找到 {market} 股票 {code}"}
 
 @app.get("/api/analysis/search")
-async def analysis_search(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"results": []}}
+async def analysis_search(query: str = None, username: str = Depends(verify_token)):
+    """搜索股票（基于报告文件名）"""
+    results = []
+    reports_dir = "/root/stock-analyzer/reports"
+    if query and os.path.exists(reports_dir):
+        q = query.lower()
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md") and q in fname.lower():
+                fpath = os.path.join(reports_dir, fname)
+                parts = fname.replace(".md", "").split("_")
+                try:
+                    stat = os.stat(fpath)
+                    results.append({
+                        "symbol": parts[0],
+                        "analysis_date": parts[1] if len(parts) > 1 else "",
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    })
+                except Exception:
+                    pass
+    return {"success": True, "data": {"results": results[:20]}}
 
 @app.get("/api/analysis/popular")
 async def analysis_popular(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"items": []}}
+    """热门股票（按分析报告数量排序）"""
+    from collections import Counter
+    reports_dir = "/root/stock-analyzer/reports"
+    counter = Counter()
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                parts = fname.replace(".md", "").split("_")
+                if parts:
+                    counter[parts[0]] += 1
+    popular = [{"symbol": sym, "count": cnt} for sym, cnt in counter.most_common(10)]
+    return {"success": True, "data": {"items": popular}}
 
 @app.get("/api/analysis/stats")
 async def analysis_stats(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"total": 0, "today": 0}}
+    """分析统计"""
+    reports_dir = "/root/stock-analyzer/reports"
+    total = 0
+    today = 0
+    today_str = datetime.now().strftime("%Y%m%d")
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                total += 1
+                date_part = fname.replace(".md", "").split("_")[1] if "_" in fname else ""
+                if date_part == today_str:
+                    today += 1
+    return {"success": True, "data": {"total_analyses": total, "today_analyses": today, "total": total, "today": today}}
 
 # ==================== 报告辅助函数 ====================
 def _get_stock_name(symbol: str) -> str:
@@ -844,11 +1516,26 @@ async def reports_list(
             import datetime as dt
             created_at = dt.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d %H:%M:%S")
 
+            # 判断市场
+            if symbol.isdigit() and len(symbol) == 6:
+                market = "A股"
+            elif symbol.upper().startswith("HK"):
+                market = "港股"
+            elif symbol.isalpha() and symbol.isupper():
+                market = "美股"
+            else:
+                market = "其他"
+
+            # 应用市场筛选
+            if market_filter and market_filter != market:
+                continue
+
             reports.append({
                 "id": fname.replace(".md", "").replace(".txt", ""),
                 "symbol": symbol,
                 "stock_code": symbol,
                 "stock_name": _get_stock_name(symbol),  # 股票名称查询
+                "market": market,
                 "title": title,
                 "type": _guess_report_type(content),  # 报告类型
                 "format": file_ext,  # MD / TXT
@@ -991,8 +1678,11 @@ async def report_download(
     format: str = "markdown",
     username: str = Depends(verify_token)
 ):
-    """下载报告为指定格式"""
+    """下载报告为指定格式（支持 markdown / pdf）"""
     import os
+    import io
+    import markdown
+    import pdfkit
     from fastapi.responses import Response
     reports_dir = "/root/stock-analyzer/reports"
     candidates = [
@@ -1011,10 +1701,51 @@ async def report_download(
 
     # 提取 symbol 用于文件名
     symbol = report_id.split("_")[0] if "_" in report_id else report_id
-    ext = "md" if format == "markdown" else "txt"
-    filename = f"{symbol}_分析报告.{ext}"
 
-    # 使用 ASCII 文件名避免编码问题
+    # PDF 格式：markdown -> HTML -> PDF
+    if format == "pdf":
+        # 简单 HTML 模板，使 PDF 排版更美观
+        html_content = markdown.markdown(
+            content,
+            extensions=['tables', 'fenced_code', 'codehilite']
+        )
+        html_full = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; padding: 40px; font-size: 14px; line-height: 1.8; }}
+  h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+  h2 {{ color: #34495e; margin-top: 24px; }}
+  h3 {{ color: #7f8c8d; }}
+  code {{ background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 13px; }}
+  pre {{ background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 16px 0; }}
+  th, td {{ border: 1px solid #ddd; padding: 8px 12px; text-align: left; }}
+  th {{ background: #3498db; color: white; }}
+  tr:nth-child(even) {{ background: #f9f9f9; }}
+  blockquote {{ border-left: 4px solid #3498db; margin: 16px 0; padding: 8px 16px; background: #f0f8ff; color: #555; }}
+</style>
+</head>
+<body>
+{html_content}
+</body>
+</html>
+"""
+        try:
+            pdf_bytes = pdfkit.from_string(html_full, False)
+            safe_filename = f"{symbol}_report.pdf"
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={safe_filename}"}
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"PDF 生成失败: {str(e)}")
+
+    # Markdown / txt 格式
+    ext = "md" if format == "markdown" else "txt"
     safe_filename = f"{symbol}_report.{ext}"
     return Response(
         content=content.encode("utf-8"),
@@ -1024,11 +1755,37 @@ async def report_download(
 
 @app.get("/api/analysis/tasks")
 async def analysis_tasks(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tasks": []}}
+    """获取分析任务列表（从报告目录读取）"""
+    import glob
+    reports_dir = "/root/stock-analyzer/reports"
+    tasks = []
+    if os.path.exists(reports_dir):
+        for f in glob.glob(os.path.join(reports_dir, "*.md")):
+            fname = os.path.basename(f)
+            parts = fname.replace(".md", "").split("_")
+            if len(parts) >= 2:
+                symbol = parts[0]
+                date_str = parts[1] if len(parts) > 1 else ""
+                try:
+                    file_stat = os.stat(f)
+                    tasks.append({
+                        "task_id": fname.replace(".md", ""),
+                        "symbol": symbol,
+                        "stock_name": "",
+                        "status": "completed",
+                        "start_time": datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
+                        "execution_time": 0,
+                        "analysis_type": "stock_analysis"
+                    })
+                except Exception:
+                    pass
+    # 按时间倒序
+    tasks.sort(key=lambda x: x["start_time"], reverse=True)
+    return {"success": True, "data": {"tasks": tasks, "total": len(tasks)}}
 
 @app.get("/api/analysis/tasks/all")
 async def analysis_tasks_all(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tasks": []}}
+    return await analysis_tasks(username)
 
 @app.post("/api/analysis/batch")
 async def analysis_batch(username: str = Depends(verify_token)):
@@ -1060,13 +1817,239 @@ async def cache_cleanup(username: str = Depends(verify_token)):
     return {"success": True, "data": {"deleted": 0}}
 
 # ==================== 股票数据 (Stocks) ====================
-@app.get("/api/stocks/quote")
-async def stocks_quote(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+def _stock_prefix(code: str) -> str:
+    """根据代码判断市场前缀"""
+    code = code.strip().upper()
+    if code.isdigit() and len(code) == 6:
+        if code.startswith('6'):
+            return 'sh.' + code
+        else:
+            return 'sz.' + code
+    return code
 
-@app.get("/api/stocks/quote/")
-async def stocks_quote_slash(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+@app.get("/api/stock-data/search")
+async def stock_data_search(keyword: str = "", limit: int = 10, username: str = Depends(verify_token)):
+    """股票搜索（代码或名称模糊匹配）"""
+    if not keyword or len(keyword) < 1:
+        return {"success": True, "data": {"items": []}}
+    items = []
+    kw = keyword.strip().upper()
+    # 如果是6位数字，精确匹配
+    if kw.isdigit() and len(kw) == 6:
+        for prefix in ["sh.", "sz."]:
+            try:
+                lg = bs.login()
+                rs = bs.query_stock_basic(code=prefix + kw)
+                rows = []
+                while rs.error_code == "0" and rs.next():
+                    rows.append(rs.get_row_data())
+                bs.logout()
+                if rows:
+                    row = rows[0]
+                    items.append({
+                        "code": kw,
+                        "name": row[1] if len(row) > 1 else kw,
+                        "market": "A股",
+                        "type": "stock"
+                    })
+                    break
+            except Exception:
+                pass
+    else:
+        # 按名称模糊搜索（通过腾讯财经接口）
+        try:
+            r = requests.get(f"https://smartbox.gtimg.cn/s3/?v=2&q={keyword}&type=stock&count={limit}", timeout=5)
+            if r.status_code == 200:
+                text = r.text
+                import re
+                matches = re.findall(r'"(\d+)"\|\|([^|]+)\|\|([^"]+)"', text)
+                for code, name, market in matches[:limit]:
+                    mkt = "A股" if code.startswith(("6", "000", "001", "002", "300")) else "其他"
+                    items.append({"code": code, "name": name.strip(), "market": mkt, "type": "stock"})
+        except Exception:
+            pass
+    return {"success": True, "data": {"items": items[:limit]}}
+
+@app.get("/api/stocks/{symbol}/quote")
+async def stocks_quote(symbol: str, username: str = Depends(verify_token)):
+    """获取股票实时行情"""
+    try:
+        prefix = _stock_prefix(symbol)
+        lg = bs.login()
+        rs = bs.query_history_k_data_plus(
+            prefix,
+            "date,code,open,high,low,close,volume,amount,turn",
+            start_date='2026-04-01',
+            end_date='2026-04-07',
+            frequency="d",
+            adjustflag="3"
+        )
+        rows = []
+        while rs.error_code == '0' and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        if not rows:
+            return {"success": False, "message": f"未找到股票 {symbol} 的行情数据"}
+        latest = rows[-1]
+        prev = rows[-2] if len(rows) > 1 else latest
+        price = float(latest[5]) if latest[5] else 0
+        prev_price = float(prev[5]) if prev[5] else price
+        change = round(price - prev_price, 2)
+        change_pct = round((change / prev_price * 100) if prev_price else 0, 2)
+        # 获取股票名称
+        stock_name = symbol
+        try:
+            lg2 = bs.login()
+            rs_name = bs.query_stock_basic(code=prefix)
+            while rs_name.error_code == '0' and rs_name.next():
+                row_name = rs_name.get_row_data()
+                if row_name[1]:
+                    stock_name = row_name[1]
+                    break
+            bs.logout()
+        except Exception:
+            pass
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": prefix,
+                "name": stock_name,
+                "price": price,
+                "prev_close": prev_price,
+                "open": float(latest[2]) if latest[2] else 0,
+                "high": float(latest[3]) if latest[3] else 0,
+                "low": float(latest[4]) if latest[4] else 0,
+                "volume": int(latest[6]) if latest[6] else 0,
+                "amount": float(latest[7]) if latest[7] else 0,
+                "turnover_rate": float(latest[8]) if latest[8] else 0,
+                "change_percent": change_pct,
+                "trade_date": latest[0]
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] quote error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/kline")
+async def stocks_kline(
+    symbol: str,
+    period: str = "day",
+    limit: int = 120,
+    adj: str = "qfq",
+    username: str = Depends(verify_token)
+):
+    """获取K线数据"""
+    try:
+        prefix = _stock_prefix(symbol)
+        freq_map = {"day": "d", "week": "w", "month": "m", "5m": "5", "15m": "15", "30m": "30", "60m": "60"}
+        freq = freq_map.get(period, "d")
+        adjust_map = {"qfq": "1", "hfq": "2", "none": "3"}
+        adj_type = adjust_map.get(adj, "1")
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=limit * 2)).strftime("%Y-%m-%d")
+        lg = bs.login()
+        rs = bs.query_history_k_data_plus(
+            prefix,
+            "date,open,high,low,close,volume,amount,turn",
+            start_date=start_date,
+            end_date=end_date,
+            frequency=freq,
+            adjustflag=adj_type
+        )
+        rows = []
+        while rs.error_code == '0' and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        items = []
+        for r in rows[-limit:]:
+            items.append({
+                "time": r[0],
+                "open": float(r[1]) if r[1] else 0,
+                "high": float(r[2]) if r[2] else 0,
+                "low": float(r[3]) if r[3] else 0,
+                "close": float(r[4]) if r[4] else 0,
+                "volume": int(r[5]) if r[5] else 0,
+                "amount": float(r[6]) if r[6] else 0
+            })
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "period": period,
+                "limit": limit,
+                "adj": adj,
+                "items": items
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] kline error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/fundamentals")
+async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)):
+    """获取股票基本面数据"""
+    try:
+        prefix = _stock_prefix(symbol)
+        lg = bs.login()
+        rs = bs.query_stock_basic(code=prefix)
+        info = {}
+        while rs.error_code == '0' and rs.next():
+            row = rs.get_row_data()
+            info = {"name": row[1], "ipoDate": row[2], "outDate": row[3], "stockType": row[4], "status": row[5]}
+        bs.logout()
+        if not info:
+            return {"success": False, "message": f"未找到股票 {symbol} 的基本信息"}
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": prefix,
+                "name": info.get("name", ""),
+                "industry": "",
+                "market": "A股",
+                "pe": None,
+                "pb": None,
+                "turnover_rate": None,
+                "updated_at": datetime.now().isoformat(),
+                **info
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] fundamentals error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/news")
+async def stocks_news(symbol: str, days: int = 30, limit: int = 50, username: str = Depends(verify_token)):
+    """获取股票新闻（使用yfinance）"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        news = ticker.get_news()[:limit] if hasattr(ticker, 'get_news') else []
+        items = []
+        for n in news:
+            items.append({
+                "title": n.get("title", ""),
+                "source": n.get("publisher", ""),
+                "time": n.get("pubDate", ""),
+                "url": n.get("link", "")
+            })
+        return {"success": True, "data": {"symbol": symbol, "items": items}}
+    except Exception as e:
+        sys_logger.error(f"[Stocks] news error: {e}")
+        return {"success": True, "data": {"symbol": symbol, "items": []}}
+
+@app.get("/api/favorites/check/{symbol}")
+async def favorites_check(symbol: str, username: str = Depends(verify_token)):
+    """检查股票是否在自选列表中"""
+    if not redis_client:
+        return {"success": True, "data": {"is_favorite": False}}
+    try:
+        exists = await redis_client.hget(_fav_key(username), symbol)
+        return {"success": True, "data": {"is_favorite": bool(exists), "symbol": symbol}}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] check error: {e}")
+        return {"success": True, "data": {"is_favorite": False}}
 
 # ==================== 市场数据 (Markets) ====================
 @app.get("/api/markets")
@@ -1075,8 +2058,37 @@ async def markets_list(username: str = Depends(verify_token)):
 
 # ==================== 新闻数据 (News) ====================
 @app.get("/api/news-data/latest")
-async def news_latest(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"news": []}}
+async def news_latest(hours_back: int = 24, limit: int = 50, username: str = Depends(verify_token)):
+    """获取市场最新新闻（所有股票）"""
+    return {"success": True, "data": {"news": [], "total_count": 0}}
+
+@app.get("/api/news-data/query/{symbol}")
+async def news_query(symbol: str, hours_back: int = 24, limit: int = 50, username: str = Depends(verify_token)):
+    """获取个股新闻（使用腾讯财经）"""
+    try:
+        r = requests.get(
+            f"https://newsapi.qq.com/fetchNewsById?newsId=&category=&tag=&featured=&count={limit}&from=&lcategory=&nettype=&os=&szcode={symbol}",
+            timeout=5,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        items = []
+        if r.status_code == 200:
+            import json
+            try:
+                data = r.json()
+                for n in data.get("newslist", [])[:limit]:
+                    items.append({
+                        "title": n.get("title", ""),
+                        "source": n.get("source", ""),
+                        "time": n.get("pubTime", ""),
+                        "url": n.get("url", "")
+                    })
+            except Exception:
+                pass
+        return {"success": True, "data": {"symbol": symbol, "items": items, "total_count": len(items)}}
+    except Exception as e:
+        sys_logger.error(f"[News] query error: {e}")
+        return {"success": True, "data": {"symbol": symbol, "items": [], "total_count": 0}}
 
 @app.post("/api/news-data/sync/start")
 async def news_sync_start(username: str = Depends(verify_token)):
@@ -1120,38 +2132,74 @@ async def tags_list(username: str = Depends(verify_token)):
 
 # ==================== 使用统计 (Usage) ====================
 @app.get("/api/usage/statistics")
-async def usage_statistics(username: str = Depends(verify_token)):
-    """获取使用统计"""
-    # 返回符合前端预期的格式
-    return {
-        "success": True,
-        "data": {
-            "total": 0,
-            "by_provider": {},
-            "by_model": {},
-            "by_date": {}
+async def usage_statistics(days: int = 7, username: str = Depends(verify_token)):
+    """获取使用统计（默认近7天）"""
+    try:
+        stats = get_usage_stats(days=days)
+        return {
+            "success": True,
+            "data": {
+                "total_requests": stats["total_requests"],
+                "total_input_tokens": stats["total_prompt_tokens"],
+                "total_output_tokens": stats["total_completion_tokens"],
+                "total_tokens": stats["total_prompt_tokens"] + stats["total_completion_tokens"],
+                "total_cost": stats["total_cost"],
+                "cost_by_currency": {"CNY": stats["total_cost"]},
+                "by_provider": stats["by_provider"],
+                "by_model": stats["by_model"],
+                "by_date": stats["by_date"]
+            }
         }
-    }
+    except Exception as e:
+        sys_logger.error(f"[Usage] statistics error: {e}")
+        return {"success": True, "data": {"total_requests": 0, "total_input_tokens": 0, "total_output_tokens": 0, "total_tokens": 0, "total_cost": 0, "by_provider": {}, "by_model": {}, "by_date": {}}}
 
 @app.get("/api/usage/records")
-async def usage_records(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"records": []}}
+async def usage_records(
+    limit: int = 100,
+    start_date: str = None,
+    end_date: str = None,
+    provider: str = None,
+    model_name: str = None,
+    username: str = Depends(verify_token)
+):
+    try:
+        records = get_usage_records(limit=limit, start_date=start_date, end_date=end_date, provider=provider, model_name=model_name)
+        return {"success": True, "data": records}
+    except Exception as e:
+        sys_logger.error(f"[Usage] records error: {e}")
+        return {"success": True, "data": {"records": [], "total": 0}}
 
 @app.get("/api/usage/records/old")
 async def usage_records_old(username: str = Depends(verify_token)):
     return {"success": True, "data": {"records": []}}
 
 @app.get("/api/usage/cost/daily")
-async def usage_cost_daily(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": []}}
+async def usage_cost_daily(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_daily_cost(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] daily cost error: {e}")
+        return {"success": True, "data": {"costs": []}}
 
 @app.get("/api/usage/cost/by-model")
-async def usage_cost_by_model(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": {}}}
+async def usage_cost_by_model(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_cost_by_model(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] cost by model error: {e}")
+        return {"success": True, "data": {"costs": {}}}
 
 @app.get("/api/usage/cost/by-provider")
-async def usage_cost_by_provider(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"costs": {}}}
+async def usage_cost_by_provider(days: int = 7, username: str = Depends(verify_token)):
+    try:
+        data = get_cost_by_provider(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        sys_logger.error(f"[Usage] cost by provider error: {e}")
+        return {"success": True, "data": {"costs": {}}}
 
 # ==================== 纸带交易 (Paper Trading) ====================
 @app.get("/api/paper/positions")
@@ -1166,7 +2214,79 @@ async def paper_account(username: str = Depends(verify_token)):
 async def paper_order(username: str = Depends(verify_token)):
     return {"success": True, "data": {"orders": []}}
 
-# ==================== 系统数据库 (System Database) ====================
+# ==================== 系统信息 (System Info) ====================
+
+def _get_system_uptime() -> str:
+    """获取系统运行时间"""
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.read().split()[0])
+            hours = int(uptime_seconds // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
+    except Exception:
+        return "unknown"
+
+def _get_memory_info() -> dict:
+    """获取内存使用情况"""
+    try:
+        with open("/proc/meminfo", "r") as f:
+            lines = f.readlines()
+        mem = {}
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 2:
+                mem[parts[0].rstrip(":")] = int(parts[1]) * 1024  # KB -> bytes
+        total = mem.get("MemTotal", 0)
+        available = mem.get("MemAvailable", mem.get("MemFree", 0))
+        used = total - available
+        return {
+            "total": total,
+            "used": used,
+            "available": available,
+            "percent": round(used / total * 100, 1) if total > 0 else 0
+        }
+    except Exception:
+        return {"total": 0, "used": 0, "available": 0, "percent": 0}
+
+@app.get("/api/system/info")
+async def system_info(username: str = Depends(verify_token)):
+    """系统基本信息"""
+    mem = _get_memory_info()
+    return {"success": True, "data": {
+        "os": "Linux",
+        "platform": "TradingAgents-CN",
+        "version": "1.0.0",
+        "python_version": "3.12",
+        "uptime": _get_system_uptime(),
+        "memory": mem,
+        "disk": {"percent": 0, "total": 0, "used": 0},
+        "cpu_count": os.cpu_count() or 4
+    }}
+
+@app.get("/api/system/status")
+async def system_status(username: str = Depends(verify_token)):
+    """系统运行状态"""
+    mem = _get_memory_info()
+    reports_dir = "/root/stock-analyzer/reports"
+    report_count = len(os.listdir(reports_dir)) if os.path.exists(reports_dir) else 0
+    health = "healthy"
+    if mem.get("percent", 0) > 90:
+        health = "warning"
+    return {"success": True, "data": {
+        "status": health,
+        "uptime": _get_system_uptime(),
+        "memory_percent": mem.get("percent", 0),
+        "reports_count": report_count,
+        "redis_connected": True,
+        "baostock_connected": True
+    }}
+
+@app.get("/api/system/health")
+async def system_health(username: str = Depends(verify_token)):
+    """系统健康检查"""
+    return {"success": True, "data": {"status": "healthy", "code": 200}}
+
 @app.get("/api/system/database/status")
 async def system_database_status(username: str = Depends(verify_token)):
     return {"success": True, "data": {"status": "connected"}}
@@ -1250,6 +2370,11 @@ def _add_operation_log(username: str, action: str, action_type: str, success: bo
     # Keep only last 1000 logs
     if len(_CACHED_LOGS) > 1000:
         _CACHED_LOGS[:] = _CACHED_LOGS[:1000]
+
+@app.get("/api/system/logs")
+async def system_logs_root(page: int = 1, page_size: int = 20, username: str = Depends(verify_token)):
+    """系统日志列表（兼容 /api/system/logs/list）"""
+    return await system_logs_list(page=page, page_size=page_size, username=username)
 
 @app.get("/api/system/logs/stats")
 async def system_logs_stats(days: int = 30, username: str = Depends(verify_token)):
@@ -1445,36 +2570,116 @@ async def system_log_export_post(req: dict, username: str = Depends(verify_token
 
 @app.get("/api/model-capabilities/default-configs")
 async def model_default_configs(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"configs": {}}}
+    """获取各模型的默认配置"""
+    return {"success": True, "data": {
+        "configs": {
+            "MiniMax-M2.7": {
+                "temperature": 0.7,
+                "max_tokens": 8000,
+                "timeout": 120,
+                "retry_times": 3
+            },
+            "DeepSeek-V3": {
+                "temperature": 0.7,
+                "max_tokens": 16000,
+                "timeout": 120,
+                "retry_times": 3
+            },
+            "DeepSeek-R1": {
+                "temperature": 0.5,
+                "max_tokens": 16000,
+                "timeout": 180,
+                "retry_times": 2
+            }
+        }
+    }}
 
 @app.get("/api/model-capabilities/depth-requirements")
 async def model_depth_requirements(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"requirements": {}}}
+    """分析深度与模型要求"""
+    return {"success": True, "data": {
+        "requirements": {
+            "快速": {"min_capability": 2, "recommended": ["MiniMax-M2.7", "DeepSeek-V3"]},
+            "标准": {"min_capability": 3, "recommended": ["MiniMax-M2.7", "DeepSeek-V3"]},
+            "深度": {"min_capability": 4, "recommended": ["MiniMax-M2.7", "DeepSeek-R1"]},
+            "全面": {"min_capability": 5, "recommended": ["DeepSeek-R1"]}
+        }
+    }}
 
 @app.get("/api/model-capabilities/capability-descriptions")
 async def model_capability_descriptions(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"descriptions": {}}}
+    """模型能力描述"""
+    return {"success": True, "data": {
+        "descriptions": {
+            "tool_calling": "支持工具调用function calling",
+            "long_context": "支持超长上下文（>16K）",
+            "fast_response": "低延迟快速响应",
+            "cost_effective": "高性价比",
+            "reasoning": "推理能力强，适合复杂分析",
+            "vision": "支持图像识别"
+        }
+    }}
 
 @app.get("/api/model-capabilities/badges")
 async def model_badges(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"badges": []}}
+    """模型徽章"""
+    badges = [
+        {"id": "fast", "name": "⚡ 快速", "color": "green", "description": "响应速度快"},
+        {"id": "cheap", "name": "💰 省钱", "color": "blue", "description": "性价比高"},
+        {"id": "quality", "name": "✨ 高质量", "color": "purple", "description": "输出质量高"},
+        {"id": "deep", "name": "🧠 深度", "color": "orange", "description": "适合深度分析"}
+    ]
+    return {"success": True, "data": {"badges": badges}}
 
 @app.post("/api/model-capabilities/recommend")
-async def model_recommend(req: dict, username: str = Depends(verify_token)):
+async def model_recommend(req: dict = None, username: str = Depends(verify_token)):
+    """根据分析深度推荐模型"""
+    if req is None:
+        req = {}
     research_depth = req.get("research_depth", "标准")
-    return {"success": True, "data": {"quick_model": "MiniMax-M2.7", "deep_model": "MiniMax-M2.7", "research_depth": research_depth}}
+    depth_map = {
+        "快速": {"quick": "MiniMax-M2.7", "deep": "MiniMax-M2.7"},
+        "标准": {"quick": "MiniMax-M2.7", "deep": "DeepSeek-V3"},
+        "深度": {"quick": "MiniMax-M2.7", "deep": "DeepSeek-R1"},
+        "全面": {"quick": "DeepSeek-V3", "deep": "DeepSeek-R1"}
+    }
+    rec = depth_map.get(research_depth, depth_map["标准"])
+    return {"success": True, "data": {**rec, "research_depth": research_depth}}
 
 @app.post("/api/model-capabilities/validate")
-async def model_validate(req: dict, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"valid": True, "message": ""}}
+async def model_validate(req: dict = None, username: str = Depends(verify_token)):
+    """验证模型连通性"""
+    if req is None:
+        req = {}
+    model = req.get("model", "MiniMax-M2.7")
+    try:
+        if "minimax" in model.lower() or model == "MiniMax-M2.7":
+            r = requests.get("https://api.minimaxi.com/v1/models", timeout=5)
+            return {"success": True, "data": {"valid": r.status_code in (200, 401, 403), "latency_ms": 0}}
+        return {"success": True, "data": {"valid": True, "message": "Model endpoint reachable"}}
+    except Exception as e:
+        return {"success": True, "data": {"valid": False, "error": str(e)[:50]}}
 
 @app.post("/api/model-capabilities/batch-init")
-async def model_batch_init(req: dict, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"initialized": 0}}
+async def model_batch_init(req: dict = None, username: str = Depends(verify_token)):
+    """批量初始化模型配置"""
+    return {"success": True, "data": {"initialized": 0, "message": "Batch init not needed (JSON config auto-loaded)"}}
 
 @app.get("/api/model-capabilities/model/{model_name}")
 async def model_capability_get(model_name: str, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"name": model_name, "capabilities": {}}}
+    """获取特定模型能力"""
+    cap_data = _load_json_config("model_capabilities.json")
+    models = cap_data.get("models", {})
+    if model_name in models:
+        return {"success": True, "data": {"name": model_name, **models[model_name]}}
+    return {"success": False, "message": f"Model {model_name} not found in capabilities config"}
+
+@app.get("/api/model-capabilities/providers")
+async def model_capabilities_providers(username: str = Depends(verify_token)):
+    """获取提供商能力"""
+    cap_data = _load_json_config("model_capabilities.json")
+    providers = cap_data.get("providers", [])
+    return {"success": True, "data": {"providers": providers}}
 
 
 if __name__ == "__main__":

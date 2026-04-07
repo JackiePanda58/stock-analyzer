@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "analysis": {
+      "default_risk_level": {
+        "type": "select",
+        "options": ["low", "medium", "high"],
+        "default": "medium",
+        "label": "默认风险等级"
+      },
+      "max_analysis_per_day": {
+        "type": "number",
+        "min": 1,
+        "max": 500,
+        "default": 50,
+        "label": "每日最大分析次数"
+      },
+      "enable_cache": {
+        "type": "boolean",
+        "default": true,
+        "label": "启用缓存"
+      },
+      "auto_save_reports": {
+        "type": "boolean",
+        "default": true,
+        "label": "自动保存报告"
+      }
+    },
+    "ui": {
+      "theme": {
+        "type": "select",
+        "options": ["light", "dark", "auto"],
+        "default": "light",
+        "label": "界面主题"
+      },
+      "language": {
+        "type": "select",
+        "options": ["zh-CN", "en-US"],
+        "default": "zh-CN",
+        "label": "界面语言"
+      }
+    }
+  }
+}

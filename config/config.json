@@ -1,0 +1,26 @@
+{
+  "analysis": {
+    "default_risk_level": "medium",
+    "max_analysis_per_day": 50,
+    "enable_cache": true,
+    "cache_ttl_hours": 12,
+    "auto_save_reports": true,
+    "report_format": "markdown"
+  },
+  "notification": {
+    "enable_email": false,
+    "enable_webhook": false,
+    "webhook_url": ""
+  },
+  "ui": {
+    "theme": "light",
+    "language": "zh-CN",
+    "default_market": "A股",
+    "default_stock": "600519"
+  },
+  "api": {
+    "request_timeout": 120,
+    "retry_times": 3,
+    "max_concurrent_requests": 5
+  }
+}

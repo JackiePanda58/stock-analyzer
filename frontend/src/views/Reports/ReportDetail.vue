@@ -321,10 +321,11 @@ const fetchReportDetail = async () => {
   loading.value = true
   try {
     const reportId = route.params.id as string
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
 
     const response = await fetch(`/api/reports/${reportId}/detail`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
@@ -365,32 +366,42 @@ const downloadReport = async (format: string = 'markdown') => {
       duration: 0
     })
 
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const response = await fetch(`/api/reports/${report.value.id}/download?format=${format}`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
     loadingMsg.close()
 
     if (!response.ok) {
+      if (response.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        return
+      }
       const errorText = await response.text()
       throw new Error(errorText || `HTTP ${response.status}`)
     }
 
     const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-
-    // 根据格式设置文件扩展名
-    const ext = getFileExtension(format)
-    a.download = `${report.value.stock_symbol}_分析报告_${report.value.analysis_date}.${ext}`
-
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      // 根据格式设置文件扩展名
+      const ext = getFileExtension(format)
+      a.download = `${report.value.stock_symbol}_分析报告_${report.value.analysis_date}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
 
     ElMessage.success(`${getFormatName(format)}报告下载成功`)
   } catch (error: any) {

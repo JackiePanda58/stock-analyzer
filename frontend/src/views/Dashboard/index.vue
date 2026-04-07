@@ -401,29 +401,38 @@ const viewAnalysis = (analysis: AnalysisTask) => {
 const downloadReport = async (analysis: AnalysisTask) => {
   try {
     const reportId = analysis.task_id
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const res = await fetch(`/api/reports/${reportId}/download?format=markdown`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       }
     })
     if (!res.ok) {
-      const msg = `下载失败：HTTP ${res.status}`
-      console.error(msg)
+      if (res.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        return
+      }
       ElMessage.error('下载失败，报告可能尚未生成')
       return
     }
     const blob = await res.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const code = (analysis as any).stock_code || (analysis as any).stock_symbol || 'stock'
-    const dateStr = (analysis as any).analysis_date || (analysis as any).start_time || ''
-    // 🔥 统一文件名格式：{code}_分析报告_{date}.md
-    a.download = `${code}_分析报告_${String(dateStr).slice(0,10)}.md`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      const code = (analysis as any).stock_code || (analysis as any).stock_symbol || 'stock'
+      const dateStr = (analysis as any).analysis_date || (analysis as any).start_time || ''
+      a.download = `${code}_分析报告_${String(dateStr).slice(0,10)}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
     ElMessage.success('报告已开始下载')
   } catch (err) {
     console.error('下载报告出错:', err)

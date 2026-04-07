@@ -1057,9 +1057,10 @@ const startPollingTaskStatus = () => {
         console.log('🎉 分析完成，正在获取完整结果...')
 
         try {
+          const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
           const resultResponse = await fetch(`/api/analysis/tasks/${currentTaskId.value}/result`, {
             headers: {
-              'Authorization': `Bearer ${authStore.token}`,
+              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           })
@@ -1414,38 +1415,50 @@ const downloadReport = async (format: string = 'markdown') => {
     })
 
     const reportId = (analysisResults.value?.id as any) || currentTaskId.value
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const res = await fetch(`/api/reports/${reportId}/download?format=${format}`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
     loadingMsg.close()
 
     if (!res.ok) {
+      if (res.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        return
+      }
       const errorText = await res.text()
       throw new Error(errorText || `HTTP ${res.status}`)
     }
 
     const blob = await res.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const code =
-      analysisResults.value?.stock_code ||
-      analysisResults.value?.stock_symbol ||
-      analysisResults.value?.symbol ||
-      'stock'
-    const dateStr = analysisResults.value?.analysis_date || new Date().toISOString().slice(0, 10)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      const code =
+        analysisResults.value?.stock_code ||
+        analysisResults.value?.stock_symbol ||
+        analysisResults.value?.symbol ||
+        'stock'
+      const dateStr = analysisResults.value?.analysis_date || new Date().toISOString().slice(0, 10)
 
-    // 根据格式设置文件扩展名
-    const ext = getFileExtension(format)
-    a.download = `${String(code)}_分析报告_${String(dateStr).slice(0, 10)}.${ext}`
+      // 根据格式设置文件扩展名
+      const ext = getFileExtension(format)
+      a.download = `${String(code)}_分析报告_${String(dateStr).slice(0, 10)}.${ext}`
 
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
 
     ElMessage.success(`${getFormatName(format)}报告下载成功`)
   } catch (err: any) {

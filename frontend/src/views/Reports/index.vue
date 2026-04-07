@@ -238,9 +238,10 @@ const fetchReports = async () => {
       params.append('end_date', dateRange.value[1])
     }
 
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const response = await fetch(`/api/reports/list?${params}`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
@@ -292,6 +293,7 @@ const viewReport = (report: any) => {
 
 const downloadReport = async (report: any, format: string = 'markdown') => {
   try {
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     // 显示加载提示
     const loadingMsg = ElMessage({
       message: `正在生成${getFormatName(format)}格式报告...`,
@@ -301,30 +303,39 @@ const downloadReport = async (report: any, format: string = 'markdown') => {
 
     const response = await fetch(`/api/reports/${report.id}/download?format=${format}`, {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
     loadingMsg.close()
 
     if (!response.ok) {
+      if (response.status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        return
+      }
       const errorText = await response.text()
       throw new Error(errorText || `HTTP ${response.status}`)
     }
 
     const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-
-    // 根据格式设置文件扩展名
-    const ext = getFileExtension(format)
-    a.download = `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
-
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
+    // 使用 FileReader + data URL 替代 blob URL，绕过 Chromium 对 HTTP 页面上 blob: 的安全警告
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const a = document.createElement('a')
+      a.href = dataUrl
+      // 根据格式设置文件扩展名
+      const ext = getFileExtension(format)
+      a.download = `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    reader.onerror = () => {
+      ElMessage.error('文件读取失败')
+    }
+    reader.readAsDataURL(blob)
 
     ElMessage.success(`${getFormatName(format)}报告下载成功`)
   } catch (error: any) {
@@ -377,10 +388,11 @@ const deleteReport = async (report: any) => {
     )
 
     // 调用删除API
+    const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
     const response = await fetch(`/api/reports/${report.id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })

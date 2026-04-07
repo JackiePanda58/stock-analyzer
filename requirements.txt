@@ -28,3 +28,5 @@ tqdm>=4.66.0
 # 可选：数据源
 yfinance>=0.2.0
 alpha_vantage>=1.0.0
+markdown>=3.4.0
+pdfkit>=1.0.0
