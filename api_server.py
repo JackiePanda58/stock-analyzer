@@ -1309,13 +1309,198 @@ async def cache_cleanup(username: str = Depends(verify_token)):
     return {"success": True, "data": {"deleted": 0}}
 
 # ==================== 股票数据 (Stocks) ====================
-@app.get("/api/stocks/quote")
-async def stocks_quote(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+def _stock_prefix(code: str) -> str:
+    """根据代码判断市场前缀"""
+    code = code.strip().upper()
+    # 6位数字 → A股
+    if code.isdigit() and len(code) == 6:
+        # 上交所以6开头，深交所以0/3开头
+        if code.startswith('6'):
+            return 'sh.' + code
+        else:
+            return 'sz.' + code
+    return code
 
-@app.get("/api/stocks/quote/")
-async def stocks_quote_slash(username: str = Depends(verify_token)):
-    return {"success": True, "data": {}}
+@app.get("/api/stocks/{symbol}/quote")
+async def stocks_quote(symbol: str, username: str = Depends(verify_token)):
+    """获取股票实时行情"""
+    try:
+        prefix = _stock_prefix(symbol)
+        lg = bs.login()
+        rs = bs.query_history_k_data_plus(
+            prefix,
+            "date,code,open,high,low,close,volume,amount,turn",
+            start_date='2026-04-01',
+            end_date='2026-04-07',
+            frequency="d",
+            adjustflag="3"
+        )
+        rows = []
+        while rs.error_code == '0' and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        if not rows:
+            return {"success": False, "message": f"未找到股票 {symbol} 的行情数据"}
+        latest = rows[-1]
+        prev = rows[-2] if len(rows) > 1 else latest
+        price = float(latest[5]) if latest[5] else 0
+        prev_price = float(prev[5]) if prev[5] else price
+        change = round(price - prev_price, 2)
+        change_pct = round((change / prev_price * 100) if prev_price else 0, 2)
+        # 获取股票名称
+        stock_name = symbol
+        try:
+            lg2 = bs.login()
+            rs_name = bs.query_stock_basic(code=prefix)
+            while rs_name.error_code == '0' and rs_name.next():
+                row_name = rs_name.get_row_data()
+                if row_name[1]:
+                    stock_name = row_name[1]
+                    break
+            bs.logout()
+        except Exception:
+            pass
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": prefix,
+                "name": stock_name,
+                "price": price,
+                "prev_close": prev_price,
+                "open": float(latest[2]) if latest[2] else 0,
+                "high": float(latest[3]) if latest[3] else 0,
+                "low": float(latest[4]) if latest[4] else 0,
+                "volume": int(latest[6]) if latest[6] else 0,
+                "amount": float(latest[7]) if latest[7] else 0,
+                "turnover_rate": float(latest[8]) if latest[8] else 0,
+                "change_percent": change_pct,
+                "trade_date": latest[0]
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] quote error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/kline")
+async def stocks_kline(
+    symbol: str,
+    period: str = "day",
+    limit: int = 120,
+    adj: str = "qfq",
+    username: str = Depends(verify_token)
+):
+    """获取K线数据"""
+    try:
+        prefix = _stock_prefix(symbol)
+        freq_map = {"day": "d", "week": "w", "month": "m", "5m": "5", "15m": "15", "30m": "30", "60m": "60"}
+        freq = freq_map.get(period, "d")
+        adjust_map = {"qfq": "1", "hfq": "2", "none": "3"}
+        adj_type = adjust_map.get(adj, "1")
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=limit * 2)).strftime("%Y-%m-%d")
+        lg = bs.login()
+        rs = bs.query_history_k_data_plus(
+            prefix,
+            "date,open,high,low,close,volume,amount,turn",
+            start_date=start_date,
+            end_date=end_date,
+            frequency=freq,
+            adjustflag=adj_type
+        )
+        rows = []
+        while rs.error_code == '0' and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        items = []
+        for r in rows[-limit:]:
+            items.append({
+                "time": r[0],
+                "open": float(r[1]) if r[1] else 0,
+                "high": float(r[2]) if r[2] else 0,
+                "low": float(r[3]) if r[3] else 0,
+                "close": float(r[4]) if r[4] else 0,
+                "volume": int(r[5]) if r[5] else 0,
+                "amount": float(r[6]) if r[6] else 0
+            })
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "period": period,
+                "limit": limit,
+                "adj": adj,
+                "items": items
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] kline error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/fundamentals")
+async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)):
+    """获取股票基本面数据"""
+    try:
+        prefix = _stock_prefix(symbol)
+        lg = bs.login()
+        rs = bs.query_stock_basic(code=prefix)
+        info = {}
+        while rs.error_code == '0' and rs.next():
+            row = rs.get_row_data()
+            info = {"name": row[1], "ipoDate": row[2], "outDate": row[3], "stockType": row[4], "status": row[5]}
+        bs.logout()
+        if not info:
+            return {"success": False, "message": f"未找到股票 {symbol} 的基本信息"}
+        return {
+            "success": True,
+            "data": {
+                "symbol": symbol,
+                "code": prefix,
+                "name": info.get("name", ""),
+                "industry": "",
+                "market": "A股",
+                "pe": None,
+                "pb": None,
+                "turnover_rate": None,
+                "updated_at": datetime.now().isoformat(),
+                **info
+            }
+        }
+    except Exception as e:
+        sys_logger.error(f"[Stocks] fundamentals error: {e}")
+        return {"success": False, "message": str(e)}
+
+@app.get("/api/stocks/{symbol}/news")
+async def stocks_news(symbol: str, days: int = 30, limit: int = 50, username: str = Depends(verify_token)):
+    """获取股票新闻（使用yfinance）"""
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        news = ticker.get_news()[:limit] if hasattr(ticker, 'get_news') else []
+        items = []
+        for n in news:
+            items.append({
+                "title": n.get("title", ""),
+                "source": n.get("publisher", ""),
+                "time": n.get("pubDate", ""),
+                "url": n.get("link", "")
+            })
+        return {"success": True, "data": {"symbol": symbol, "items": items}}
+    except Exception as e:
+        sys_logger.error(f"[Stocks] news error: {e}")
+        return {"success": True, "data": {"symbol": symbol, "items": []}}
+
+@app.get("/api/favorites/check/{symbol}")
+async def favorites_check(symbol: str, username: str = Depends(verify_token)):
+    """检查股票是否在自选列表中"""
+    if not redis_client:
+        return {"success": True, "data": {"is_favorite": False}}
+    try:
+        exists = await redis_client.hget(_fav_key(username), symbol)
+        return {"success": True, "data": {"is_favorite": bool(exists), "symbol": symbol}}
+    except Exception as e:
+        sys_logger.error(f"[Favorites] check error: {e}")
+        return {"success": True, "data": {"is_favorite": False}}
 
 # ==================== 市场数据 (Markets) ====================
 @app.get("/api/markets")
