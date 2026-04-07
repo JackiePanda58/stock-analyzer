@@ -251,12 +251,12 @@
         <el-form-item label="股票名称" prop="stock_name">
           <el-input
             v-model="addForm.stock_name"
-            :placeholder="addForm.market === 'A股' ? '系统将自动获取股票名称' : '请输入股票名称'"
-            :disabled="addForm.market === 'A股'"
+            placeholder="系统将自动获取股票名称"
+            disabled
             readonly
           />
-          <div style="font-size: 12px; margin-top: 4px;" :style="{ color: addForm.market === 'A股' ? '#67C23A' : '#E6A23C' }">
-            {{ addForm.market === 'A股' ? '输入代码后失焦自动获取名称' : '系统不支持，请手动输入（必填）' }}
+          <div style="font-size: 12px; color: #67C23A; margin-top: 4px;">
+            输入代码后失焦自动获取名称
           </div>
         </el-form-item>
 
@@ -931,23 +931,18 @@ const fetchStockInfo = async () => {
     const symbol = addForm.value.stock_code.trim()
     const market = addForm.value.market
 
-    // 🔥 只有A股支持自动获取股票名称
-    if (market === 'A股') {
-      // 从后台获取股票基础信息
-      const res = await ApiClient.get(`/api/stock-data/basic-info/${symbol}`)
+    // 三个市场都支持自动获取股票名称
+    const res = await ApiClient.get(`/api/stock-data/basic-info/${symbol}?market=${encodeURIComponent(market)}`)
 
-      if ((res as any)?.success && (res as any)?.data) {
-        const stockInfo = (res as any).data
-        // 自动填充股票名称
-        if (stockInfo.name) {
-          addForm.value.stock_name = stockInfo.name
-          ElMessage.success(`已自动填充股票名称: ${stockInfo.name}`)
-        }
-      } else {
-        ElMessage.warning('未找到该股票信息，请手动输入股票名称')
+    if ((res as any)?.success && (res as any)?.data) {
+      const stockInfo = (res as any).data
+      if (stockInfo.name) {
+        addForm.value.stock_name = stockInfo.name
+        ElMessage.success(`已自动填充股票名称: ${stockInfo.name}`)
       }
+    } else {
+      ElMessage.warning('未找到该股票信息，请确认代码是否正确')
     }
-    // 港股和美股不调用API，用户需要手动输入
   } catch (error: any) {
     console.error('获取股票信息失败:', error)
     ElMessage.warning('获取股票信息失败，请手动输入股票名称')

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ConfigDict
 import redis.asyncio as aioredis
 import json
+import requests
 import baostock as bs
 import uvicorn
 
@@ -378,7 +379,6 @@ def _validate_stock(code: str, market: str) -> dict:
     """验证股票代码并返回标准化的股票信息"""
     code = code.strip()
     if market == "A股":
-        # A股：尝试 sh/sz 前缀
         for prefix in ["sh.", "sz."]:
             lg = bs.login()
             rs = bs.query_stock_basic(code=prefix + code)
@@ -390,11 +390,31 @@ def _validate_stock(code: str, market: str) -> dict:
                 name = rows[0][1]
                 return {"stock_code": code, "stock_name": name, "market": market, "valid": True}
         raise ValueError(f"A股代码 {code} 不存在或已退市")
+
     elif market == "港股":
-        # 简化：港股不校验，直接存储
-        return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+        # 腾讯财经接口: https://qt.gtimg.cn/q=hk00700
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=hk{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"stock_code": code, "stock_name": parts[1], "market": market, "valid": True}
+        except Exception:
+            pass
+        raise ValueError(f"港股代码 {code} 不存在")
+
     elif market == "美股":
-        return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
+        # 腾讯财经接口: https://qt.gtimg.cn/q=usNVDA
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=us{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"stock_code": code, "stock_name": parts[1], "market": market, "valid": True}
+        except Exception:
+            pass
+        raise ValueError(f"美股代码 {code} 不存在")
+
     return {"stock_code": code, "stock_name": "", "market": market, "valid": True}
 
 @app.get("/api/favorites/")
@@ -425,12 +445,9 @@ async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token))
     if not redis_client:
         raise HTTPException(status_code=503, detail="缓存服务不可用")
     try:
-        # 校验股票代码有效性（A股）
-        if req.market == "A股":
-            validated = _validate_stock(req.stock_code, req.market)
-            stock_name = validated["stock_name"] or req.stock_name
-        else:
-            stock_name = req.stock_name
+        # 校验股票代码有效性，获取系统股票名称
+        validated = _validate_stock(req.stock_code, req.market)
+        stock_name = validated["stock_name"] or req.stock_name
 
         key = _fav_key(username)
         # 检查是否已存在
@@ -881,32 +898,46 @@ async def analysis_user_history(username: str = Depends(verify_token)):
     return {"success": True, "data": {"items": [], "total": 0}}
 
 @app.get("/api/stock-data/basic-info/{code}")
-async def stock_basic_info(code: str, username: str = Depends(verify_token)):
-    """根据股票代码获取A股股票基本信息（用于自动填充股票名称）"""
+async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
+    """根据股票代码和市场获取股票基本信息（用于自动填充股票名称）"""
     code = code.strip()
     if not code:
         raise HTTPException(status_code=400, detail="股票代码不能为空")
-    for prefix in ["sh.", "sz."]:
-        lg = bs.login()
-        rs = bs.query_stock_basic(code=prefix + code)
-        rows = []
-        while rs.error_code == "0" and rs.next():
-            rows.append(rs.get_row_data())
-        bs.logout()
-        if rows:
-            row = rows[0]
-            return {
-                "success": True,
-                "data": {
-                    "code": row[0],
-                    "name": row[1],
-                    "ipoDate": row[2],
-                    "outDate": row[3],
-                    "stockType": row[4],
-                    "status": row[5]
+
+    if market == "A股":
+        for prefix in ["sh.", "sz."]:
+            lg = bs.login()
+            rs = bs.query_stock_basic(code=prefix + code)
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                row = rows[0]
+                return {
+                    "success": True,
+                    "data": {"code": row[0], "name": row[1], "market": market}
                 }
-            }
-    return {"success": False, "message": f"未找到股票代码 {code}"}
+    elif market == "港股":
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=hk{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"success": True, "data": {"code": code, "name": parts[1], "market": market}}
+        except Exception:
+            pass
+    elif market == "美股":
+        try:
+            r = requests.get(f"https://qt.gtimg.cn/q=us{code}", timeout=5)
+            if r.status_code == 200 and '"' in r.text:
+                parts = r.text.split('"')[1].split('~')
+                if len(parts) > 1 and parts[1]:
+                    return {"success": True, "data": {"code": code, "name": parts[1], "market": market}}
+        except Exception:
+            pass
+
+    return {"success": False, "message": f"未找到 {market} 股票 {code}"}
 
 @app.get("/api/analysis/search")
 async def analysis_search(username: str = Depends(verify_token)):
