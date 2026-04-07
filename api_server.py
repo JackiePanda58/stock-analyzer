@@ -865,6 +865,90 @@ async def auth_me(username: str = Depends(verify_token)):
 async def auth_permissions(username: str = Depends(verify_token)):
     return {"success": True, "data": {"permissions": ["*"], "roles": ["admin"]}}
 
+# ==================== Dashboard 首页 ====================
+
+@app.get("/api/dashboard/summary")
+async def dashboard_summary(username: str = Depends(verify_token)):
+    """首页数据摘要"""
+    reports_dir = "/root/stock-analyzer/reports"
+    total_reports = 0
+    today_reports = 0
+    today_str = datetime.now().strftime("%Y%m%d")
+    if os.path.exists(reports_dir):
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                total_reports += 1
+                parts = fname.replace(".md", "").split("_")
+                if len(parts) > 1 and parts[1] == today_str:
+                    today_reports += 1
+    return {"success": True, "data": {
+        "total_reports": total_reports,
+        "today_reports": today_reports,
+        "total_favorites": 0,
+        "total_stocks_analyzed": total_reports
+    }}
+
+@app.get("/api/dashboard/market")
+async def dashboard_market(username: str = Depends(verify_token)):
+    """市场概览（主要指数）"""
+    indices = []
+    # 尝试获取几个主要指数
+    for symbol, name in [("sh.000001", "上证指数"), ("sz.399001", "深证成指"), ("sh.000300", "沪深300")]:
+        try:
+            lg = bs.login()
+            rs = bs.query_history_k_data_plus(
+                symbol,
+                "date,code,open,high,low,close,volume,amount,turn",
+                start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
+                end_date=datetime.now().strftime("%Y-%m-%d"),
+                frequency="d", adjustflag="3"
+            )
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                latest = rows[-1]
+                prev = rows[-2] if len(rows) > 1 else latest
+                close = float(latest[5]) if latest[5] else 0
+                prev_close = float(prev[5]) if prev[5] else close
+                change = close - prev_close
+                change_pct = round(change / prev_close * 100, 2) if prev_close else 0
+                indices.append({
+                    "code": symbol.split(".")[1],
+                    "name": name,
+                    "price": close,
+                    "change": round(change, 2),
+                    "change_percent": change_pct
+                })
+        except Exception:
+            pass
+    return {"success": True, "data": {"indices": indices}}
+
+@app.get("/api/dashboard/recent")
+async def dashboard_recent(username: str = Depends(verify_token)):
+    """最近分析记录（用于首页动态）"""
+    reports_dir = "/root/stock-analyzer/reports"
+    items = []
+    if os.path.exists(reports_dir):
+        files = []
+        for fname in os.listdir(reports_dir):
+            if fname.endswith(".md"):
+                fpath = os.path.join(reports_dir, fname)
+                files.append((fname, os.path.getmtime(fpath)))
+        files.sort(key=lambda x: x[1], reverse=True)
+        for fname, mtime in files[:5]:
+            parts = fname.replace(".md", "").split("_")
+            symbol = parts[0] if parts else ""
+            date_str = parts[1] if len(parts) > 1 else ""
+            formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}" if len(date_str) == 8 else date_str
+            items.append({
+                "symbol": symbol,
+                "date": formatted_date,
+                "time": datetime.fromtimestamp(mtime).strftime("%H:%M:%S")
+            })
+    return {"success": True, "data": {"items": items}}
+
 # ==================== 配置系统 (Config) ====================
 
 def _load_json_config(filename: str, default=None):
@@ -1736,14 +1820,55 @@ async def cache_cleanup(username: str = Depends(verify_token)):
 def _stock_prefix(code: str) -> str:
     """根据代码判断市场前缀"""
     code = code.strip().upper()
-    # 6位数字 → A股
     if code.isdigit() and len(code) == 6:
-        # 上交所以6开头，深交所以0/3开头
         if code.startswith('6'):
             return 'sh.' + code
         else:
             return 'sz.' + code
     return code
+
+@app.get("/api/stock-data/search")
+async def stock_data_search(keyword: str = "", limit: int = 10, username: str = Depends(verify_token)):
+    """股票搜索（代码或名称模糊匹配）"""
+    if not keyword or len(keyword) < 1:
+        return {"success": True, "data": {"items": []}}
+    items = []
+    kw = keyword.strip().upper()
+    # 如果是6位数字，精确匹配
+    if kw.isdigit() and len(kw) == 6:
+        for prefix in ["sh.", "sz."]:
+            try:
+                lg = bs.login()
+                rs = bs.query_stock_basic(code=prefix + kw)
+                rows = []
+                while rs.error_code == "0" and rs.next():
+                    rows.append(rs.get_row_data())
+                bs.logout()
+                if rows:
+                    row = rows[0]
+                    items.append({
+                        "code": kw,
+                        "name": row[1] if len(row) > 1 else kw,
+                        "market": "A股",
+                        "type": "stock"
+                    })
+                    break
+            except Exception:
+                pass
+    else:
+        # 按名称模糊搜索（通过腾讯财经接口）
+        try:
+            r = requests.get(f"https://smartbox.gtimg.cn/s3/?v=2&q={keyword}&type=stock&count={limit}", timeout=5)
+            if r.status_code == 200:
+                text = r.text
+                import re
+                matches = re.findall(r'"(\d+)"\|\|([^|]+)\|\|([^"]+)"', text)
+                for code, name, market in matches[:limit]:
+                    mkt = "A股" if code.startswith(("6", "000", "001", "002", "300")) else "其他"
+                    items.append({"code": code, "name": name.strip(), "market": mkt, "type": "stock"})
+        except Exception:
+            pass
+    return {"success": True, "data": {"items": items[:limit]}}
 
 @app.get("/api/stocks/{symbol}/quote")
 async def stocks_quote(symbol: str, username: str = Depends(verify_token)):
@@ -2089,7 +2214,79 @@ async def paper_account(username: str = Depends(verify_token)):
 async def paper_order(username: str = Depends(verify_token)):
     return {"success": True, "data": {"orders": []}}
 
-# ==================== 系统数据库 (System Database) ====================
+# ==================== 系统信息 (System Info) ====================
+
+def _get_system_uptime() -> str:
+    """获取系统运行时间"""
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.read().split()[0])
+            hours = int(uptime_seconds // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
+    except Exception:
+        return "unknown"
+
+def _get_memory_info() -> dict:
+    """获取内存使用情况"""
+    try:
+        with open("/proc/meminfo", "r") as f:
+            lines = f.readlines()
+        mem = {}
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 2:
+                mem[parts[0].rstrip(":")] = int(parts[1]) * 1024  # KB -> bytes
+        total = mem.get("MemTotal", 0)
+        available = mem.get("MemAvailable", mem.get("MemFree", 0))
+        used = total - available
+        return {
+            "total": total,
+            "used": used,
+            "available": available,
+            "percent": round(used / total * 100, 1) if total > 0 else 0
+        }
+    except Exception:
+        return {"total": 0, "used": 0, "available": 0, "percent": 0}
+
+@app.get("/api/system/info")
+async def system_info(username: str = Depends(verify_token)):
+    """系统基本信息"""
+    mem = _get_memory_info()
+    return {"success": True, "data": {
+        "os": "Linux",
+        "platform": "TradingAgents-CN",
+        "version": "1.0.0",
+        "python_version": "3.12",
+        "uptime": _get_system_uptime(),
+        "memory": mem,
+        "disk": {"percent": 0, "total": 0, "used": 0},
+        "cpu_count": os.cpu_count() or 4
+    }}
+
+@app.get("/api/system/status")
+async def system_status(username: str = Depends(verify_token)):
+    """系统运行状态"""
+    mem = _get_memory_info()
+    reports_dir = "/root/stock-analyzer/reports"
+    report_count = len(os.listdir(reports_dir)) if os.path.exists(reports_dir) else 0
+    health = "healthy"
+    if mem.get("percent", 0) > 90:
+        health = "warning"
+    return {"success": True, "data": {
+        "status": health,
+        "uptime": _get_system_uptime(),
+        "memory_percent": mem.get("percent", 0),
+        "reports_count": report_count,
+        "redis_connected": True,
+        "baostock_connected": True
+    }}
+
+@app.get("/api/system/health")
+async def system_health(username: str = Depends(verify_token)):
+    """系统健康检查"""
+    return {"success": True, "data": {"status": "healthy", "code": 200}}
+
 @app.get("/api/system/database/status")
 async def system_database_status(username: str = Depends(verify_token)):
     return {"success": True, "data": {"status": "connected"}}
@@ -2173,6 +2370,11 @@ def _add_operation_log(username: str, action: str, action_type: str, success: bo
     # Keep only last 1000 logs
     if len(_CACHED_LOGS) > 1000:
         _CACHED_LOGS[:] = _CACHED_LOGS[:1000]
+
+@app.get("/api/system/logs")
+async def system_logs_root(page: int = 1, page_size: int = 20, username: str = Depends(verify_token)):
+    """系统日志列表（兼容 /api/system/logs/list）"""
+    return await system_logs_list(page=page, page_size=page_size, username=username)
 
 @app.get("/api/system/logs/stats")
 async def system_logs_stats(days: int = 30, username: str = Depends(verify_token)):
