@@ -1273,11 +1273,37 @@ async def report_download(
 
 @app.get("/api/analysis/tasks")
 async def analysis_tasks(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tasks": []}}
+    """获取分析任务列表（从报告目录读取）"""
+    import glob
+    reports_dir = "/root/stock-analyzer/reports"
+    tasks = []
+    if os.path.exists(reports_dir):
+        for f in glob.glob(os.path.join(reports_dir, "*.md")):
+            fname = os.path.basename(f)
+            parts = fname.replace(".md", "").split("_")
+            if len(parts) >= 2:
+                symbol = parts[0]
+                date_str = parts[1] if len(parts) > 1 else ""
+                try:
+                    file_stat = os.stat(f)
+                    tasks.append({
+                        "task_id": fname.replace(".md", ""),
+                        "symbol": symbol,
+                        "stock_name": "",
+                        "status": "completed",
+                        "start_time": datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
+                        "execution_time": 0,
+                        "analysis_type": "stock_analysis"
+                    })
+                except Exception:
+                    pass
+    # 按时间倒序
+    tasks.sort(key=lambda x: x["start_time"], reverse=True)
+    return {"success": True, "data": {"tasks": tasks, "total": len(tasks)}}
 
 @app.get("/api/analysis/tasks/all")
 async def analysis_tasks_all(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"tasks": []}}
+    return await analysis_tasks(username)
 
 @app.post("/api/analysis/batch")
 async def analysis_batch(username: str = Depends(verify_token)):
