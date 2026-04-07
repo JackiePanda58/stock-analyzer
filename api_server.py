@@ -877,14 +877,50 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
         try:
             with open(report_file, "r", encoding="utf-8") as f:
                 content = f.read()
-            # 提取第一行作为 summary
-            first_line = content.strip().split("\n")[0].strip("# ").strip()
+
+            # 解析 markdown 报告，提取结构化字段
+            import re
+            lines = content.split("\n")
+            first_line = lines[0].strip("# ").strip() if lines else ""
+
+            # 提取 recommendation（买入/卖出/持有）
+            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)\*\*", content)
+            recommendation = rec_match.group(1) if rec_match else "—"
+
+            # 提取各分析模块（简化：取第一个 ### 标题到下一个 ## 之间的内容）
+            sections = re.split(r"(?=##\s)", content)
+            tech_section = ""
+            fund_section = ""
+            sent_section = ""
+            for i, sec in enumerate(sections):
+                sec_title = sec.split("\n")[0].lower()
+                if any(k in sec_title for k in ["技术", "资金面"]):
+                    tech_section = sec[:500]
+                elif any(k in sec_title for k in ["基本面", "宏观"]):
+                    fund_section = sec[:500]
+                elif any(k in sec_title for k in ["舆情", "情绪", "社媒", "新闻"]):
+                    sent_section = sec[:500]
+
+            # 提取股票名称
+            name_match = re.search(r"#\s*📊\s*([^\(]+)", content)
+            stock_name = name_match.group(1).strip() if name_match else task_id.split("_")[0]
+
             return {
                 "success": True,
                 "data": {
                     "reports": {"trading_decision": {"content": content}},
                     "decision": content[:500],
-                    "summary": first_line or content[:200]
+                    "summary": first_line or content[:200],
+                    # 额外结构化字段
+                    "stock_name": stock_name,
+                    "recommendation": recommendation,
+                    "technical_analysis": tech_section,
+                    "fundamental_analysis": fund_section,
+                    "sentiment_analysis": sent_section,
+                    "risk_assessment": "",
+                    "overall_score": 0,
+                    "market_type": "A股",
+                    "analysis_date": re.search(r"\d{4}-\d{2}-\d{2}", content).group(0) if re.search(r"\d{4}-\d{2}-\d{2}", content) else ""
                 }
             }
         except Exception as e:
