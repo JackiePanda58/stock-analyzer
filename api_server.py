@@ -1756,36 +1756,14 @@ async def reports_list(
 @app.get("/api/reports/{report_id}/detail")
 async def report_detail(report_id: str, username: str = Depends(verify_token)):
     """返回指定报告的完整内容"""
-    import os
-    reports_dir = "/root/stock-analyzer/reports"
-    # 尝试直接拼接路径
-    candidates = [
-        os.path.join(reports_dir, f"{report_id}.md"),
-        os.path.join(reports_dir, f"{report_id}.txt"),
-    ]
-    # 也尝试 symbol_date 格式
-    if "_" in report_id:
-        parts = report_id.split("_")
-        if len(parts) >= 2:
-            date_part = parts[1]
-            if len(date_part) == 8:
-                date_formatted = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"
-                cache_key = f"report:{parts[0]}:{date_formatted}"
-            else:
-                cache_key = None
-        else:
-            cache_key = None
-    else:
-        cache_key = None
-
+    # 使用 _find_report_file 查找报告（支持 cached_ 前缀匹配 symbol_date 格式）
+    report_file = _find_report_file(report_id)
     content = None
-    for candidate in candidates:
-        if os.path.exists(candidate):
-            with open(candidate, "r", encoding="utf-8") as f:
-                content = f.read()
-            break
+    if report_file and os.path.exists(report_file):
+        with open(report_file, "r", encoding="utf-8") as f:
+            content = f.read()
 
-    # 尝试从 Redis 缓存读取
+    # 尝试从 Redis 缓存读取（仅当前两步都失败时）
     if not content and cache_key and redis_client:
         try:
             cached = await redis_client.get(cache_key)
@@ -1878,17 +1856,12 @@ async def report_download(
     import markdown
     import pdfkit
     from fastapi.responses import Response
-    reports_dir = "/root/stock-analyzer/reports"
-    candidates = [
-        os.path.join(reports_dir, f"{report_id}.md"),
-        os.path.join(reports_dir, f"{report_id}.txt"),
-    ]
+    # 使用 _find_report_file 查找报告（支持 cached_ 前缀匹配）
+    report_file = _find_report_file(report_id)
     content = None
-    for candidate in candidates:
-        if os.path.exists(candidate):
-            with open(candidate, "r", encoding="utf-8") as f:
-                content = f.read()
-            break
+    if report_file and os.path.exists(report_file):
+        with open(report_file, "r", encoding="utf-8") as f:
+            content = f.read()
 
     if not content:
         raise HTTPException(status_code=404, detail="报告不存在")
