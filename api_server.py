@@ -1388,7 +1388,7 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             first_line = lines[0].strip("# ").strip() if lines else ""
 
             # 提取 recommendation（买入/卖出/持有）
-            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)[^(]*\)*", content)
+            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
             action = rec_match.group(1) if rec_match else "—"
 
             # 提取一句话逻辑作为 reasoning
@@ -1629,33 +1629,18 @@ async def analysis_stats(username: str = Depends(verify_token)):
 
 # ==================== 报告辅助函数 ====================
 def _get_stock_name(symbol: str) -> str:
-    """根据代码返回股票/ETF 名称"""
+    """根据代码返回股票/ETF 名称（仅用本地缓存，不走网络）"""
     KNOWN_NAMES = {
         "600519": "贵州茅台", "000001": "平安银行", "000002": "万科A",
         "000858": "五粮液", "600036": "招商银行", "601318": "中国平安",
         "600016": "民生银行", "601166": "兴业银行", "600000": "浦发银行",
         "510300": "沪深300ETF", "512170": "医疗ETF", "588000": "科创50ETF",
+        "560280": "工业出口ETF", "513180": "港股科技ETF", "512400": "有色金属ETF",
+        "513500": "港股通ETF", "159915": "创业板ETF", "510500": "中证500ETF",
     }
     if symbol in KNOWN_NAMES:
         return KNOWN_NAMES[symbol]
-    # 尝试从 BaoStock 查询
-    try:
-        import baostock as bs
-        lg = bs.login()
-        bs_code = "sh." + symbol if symbol.startswith(("6", "5")) else "sz." + symbol
-        rs = bs.query_stock_basic(code=bs_code)
-        name = None
-        while rs.error_code == "0" and rs.next():
-            row = rs.get_row_data()
-            if len(row) > 1:
-                name = row[1]
-                break
-        bs.logout()
-        if name:
-            return name
-    except Exception:
-        pass
-    return symbol  # fallback
+    return symbol  # fallback: 返回代码本身
 
 def _guess_report_type(content: str) -> str:
     """根据内容猜测报告类型"""
@@ -1712,7 +1697,7 @@ async def reports_list(
                     title = content.split("\n")[0].strip("# ").strip() or symbol
                     # 提取交易建议（查找 **买入/卖出/持有**）
                     import re
-                    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
+                    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
                     decision = decision_match.group(1) if decision_match else "—"
             except Exception:
                 title = symbol
@@ -1818,7 +1803,7 @@ async def report_detail(report_id: str, username: str = Depends(verify_token)):
     # 支持 "**买入**"、"**买入（Buy）**"、"**买入(Buy)**" 等格式
     decision_match = re.search(r"\*\*(买入|卖出|持有|观望)[（(]?(?:Buy)?[）)]?\*\*", content)
     if not decision_match:
-        decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
+        decision_match = re.search(r"\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
     decision = decision_match.group(1) if decision_match else "—"
 
     # 提取 recommendation
