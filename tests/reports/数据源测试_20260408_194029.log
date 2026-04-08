@@ -1,0 +1,73 @@
+test_is_etf (__main__.TestSymbolNormalization.test_is_etf)
+测试 ETF 识别功能 ... ok
+test_normalize_etf (__main__.TestSymbolNormalization.test_normalize_etf)
+测试 ETF 代码标准化 ... ok
+test_normalize_shanghai_stock (__main__.TestSymbolNormalization.test_normalize_shanghai_stock)
+测试沪市股票代码标准化 ... ok
+test_normalize_shenzhen_stock (__main__.TestSymbolNormalization.test_normalize_shenzhen_stock)
+测试深市股票代码标准化 ... ok
+test_get_market_news_success (__main__.TestAkShareNews.test_get_market_news_success)
+测试成功获取市场快讯 ... ok
+test_get_stock_news_empty (__main__.TestAkShareNews.test_get_stock_news_empty)
+测试新闻数据为空的情况 ... ok
+test_get_stock_news_exception (__main__.TestAkShareNews.test_get_stock_news_exception)
+测试新闻获取异常处理 ... ok
+test_get_stock_news_success (__main__.TestAkShareNews.test_get_stock_news_success)
+测试成功获取个股新闻 ... ok
+test_get_fundamentals_etf (__main__.TestAkShareFinancials.test_get_fundamentals_etf)
+测试 ETF 无财务数据 ... ok
+test_get_fundamentals_partial_failure (__main__.TestAkShareFinancials.test_get_fundamentals_partial_failure)
+测试部分数据获取失败 ... ok
+test_get_fundamentals_success (__main__.TestAkShareFinancials.test_get_fundamentals_success)
+测试成功获取财务指标 ... ok
+test_all_vendors_fail (__main__.TestDataSourceFallback.test_all_vendors_fail)
+测试所有供应商都失败的情况 - 验证降级逻辑存在 ... ok
+test_baostock_timeout_fallback (__main__.TestDataSourceFallback.test_baostock_timeout_fallback)
+测试 BaoStock 超时降级到 AkShare ... ok
+test_vendor_fallback_chain (__main__.TestDataSourceFallback.test_vendor_fallback_chain)
+测试供应商降级链配置 ... ok
+test_data_format_consistency (__main__.TestDataConsistency.test_data_format_consistency)
+测试数据格式一致性 ... ok
+test_symbol_normalization_consistency (__main__.TestDataConsistency.test_symbol_normalization_consistency)
+测试不同格式股票代码标准化一致性 ... ok
+test_empty_data_handling (__main__.TestDataCleaning.test_empty_data_handling)
+测试空数据处理 ... ok
+test_etf_financial_statement_handling (__main__.TestDataCleaning.test_etf_financial_statement_handling)
+测试 ETF 财务报表处理 ... ok
+test_indicator_calculation (__main__.TestDataCleaning.test_indicator_calculation)
+测试指标计算数据清洗 ... ok
+test_numeric_conversion (__main__.TestDataCleaning.test_numeric_conversion)
+测试数值类型转换 ... ok
+test_api_timeout (__main__.TestTimeoutScenarios.test_api_timeout)
+测试 API 超时处理 ... ok
+test_connection_timeout (__main__.TestTimeoutScenarios.test_connection_timeout)
+测试连接超时处理 ... ok
+test_interface_routing (__main__.TestIntegration.test_interface_routing)
+测试接口路由功能 ... ok
+test_vendor_configuration (__main__.TestIntegration.test_vendor_configuration)
+测试供应商配置 ... ok
+test_yfinance_integration (__main__.TestIntegration.test_yfinance_integration)
+测试 YFinance 集成 ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.072s
+
+OK
+[1m======================================================================[0m
+[1m数据源层测试[0m
+[1m======================================================================[0m
+
+
+======================================================================
+[1m测试报告[0m
+======================================================================
+总测试数：25
+[92m通过：25[0m
+[91m失败：0[0m
+[93m错误：0[0m
+[94m跳过：0[0m
+
+======================================================================
+成功率：100.0%
+======================================================================
+

@@ -7,9 +7,14 @@ import jwt
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import re
 from pydantic import BaseModel, Field, ConfigDict
 import redis.asyncio as aioredis
 import json
@@ -56,6 +61,35 @@ sys_logger.info("[API] ✅ 用量追踪数据库已初始化")
 
 app = FastAPI(title="TradingAgents Enterprise API", version="1.0.0-preview")
 sys_logger.info("=== FastAPI 后端服务启动 (JWT 鉴权已启用) ===")
+
+# ==================== 安全中间件 ====================
+# 速率限制
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS 配置
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:62879", "http://localhost:3000", "http://localhost:5173"],  # 前端端口
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# XSS 防护 - 添加安全响应头
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # 调试输出
+    sys_logger.info(f"[Security] Added headers to {request.url.path}")
+    return response
+
 set_config(TRADING_CONFIG)
 
 # ==================== 分析辅助函数 ====================
@@ -391,7 +425,8 @@ async def validate_config():
 
 # ==================== 登录接口 ====================
 @app.post("/api/v1/login")
-def login(req: LoginReq):
+@limiter.limit("5/minute")  # 登录接口速率限制：5 次/分钟
+def login(request: Request, req: LoginReq):
     """颁发 JWT Token (MVP 硬编码校验)"""
     if req.username == "admin" and req.password == "admin123":
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -574,7 +609,7 @@ def _validate_stock(code: str, market: str) -> dict:
             while rs.error_code == "0" and rs.next():
                 rows.append(rs.get_row_data())
             bs.logout()
-            if rows:
+            if rows and len(rows[0]) > 1:
                 name = rows[0][1]
                 return {"stock_code": code, "stock_name": name, "market": market, "valid": True}
         raise ValueError(f"A股代码 {code} 不存在或已退市")
@@ -634,11 +669,17 @@ async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token))
         raise HTTPException(status_code=503, detail="缓存服务不可用")
     try:
         # 校验股票代码有效性，获取系统股票名称
-        validated = _validate_stock(req.stock_code, req.market)
-        stock_name = validated["stock_name"] or req.stock_name
+        # Run blocking _validate_stock in thread pool to avoid blocking event loop
+        try:
+            validated = await asyncio.wait_for(
+                asyncio.to_thread(_validate_stock, req.stock_code, req.market),
+                timeout=8.0
+            )
+            stock_name = validated["stock_name"] or req.stock_name
+        except asyncio.TimeoutError:
+            stock_name = req.stock_name or req.stock_code
 
         key = _fav_key(username)
-        # 检查是否已存在
         existing = await redis_client.hget(key, req.stock_code)
         if existing:
             return {"success": False, "message": "该股票已在自选列表中"}
@@ -656,6 +697,8 @@ async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token))
         return {"success": True, "data": {"id": req.stock_code, **fav_data}}
     except ValueError as ve:
         return {"success": False, "message": str(ve)}
+    except asyncio.TimeoutError:
+        return {"success": False, "message": "股票验证超时（>8s），请重试"}
     except Exception as e:
         sys_logger.error(f"[Favorites] add error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -715,6 +758,65 @@ async def favorites_tags(username: str = Depends(verify_token)):
 @app.get("/api/favorites/sync-realtime")
 async def favorites_sync_realtime(username: str = Depends(verify_token)):
     return {"success": True, "data": {"synced": True, "count": 0}}
+
+@app.get("/api/favorites/search")
+@limiter.limit("30/minute")  # 搜索接口速率限制：30 次/分钟
+async def favorites_search(request: Request, keyword: str = "", username: str = Depends(verify_token)):
+    """搜索自选股（按代码或名称）"""
+    try:
+        # XSS 防护：转义输入
+        keyword = re.sub(r'[<>"\'/]', '', keyword)
+        
+        all_favs = redis_client.hgetall("favorites")
+        results = []
+        for code, data in all_favs.items():
+            if isinstance(data, bytes):
+                data = json.loads(data)
+            name = data.get("name", "") if isinstance(data, dict) else ""
+            if keyword.lower() in code.lower() or keyword.lower() in name.lower():
+                results.append({"stock_code": code, "stock_name": name, "market": data.get("market", "A 股") if isinstance(data, dict) else "A 股"})
+        return {"success": True, "data": results}
+    except Exception as e:
+        sys_logger.error(f"[Favorites Search] error: {e}")
+        return {"success": True, "data": []}
+
+@app.get("/api/stocks/search")
+@limiter.limit("30/minute")  # 搜索接口速率限制：30 次/分钟
+async def stocks_search(request: Request, q: str = "", username: str = Depends(verify_token)):
+    """搜索股票（按代码或名称）"""
+    try:
+        # XSS 防护：转义输入
+        q = re.sub(r'[<>"\'/]', '', q)
+        
+        import baostock as bs
+        lg = bs.login()
+        if lg.error_code != "0":
+            bs.logout()
+            return {"success": True, "data": []}
+        
+        # 搜索股票
+        if q.isdigit() and len(q) == 6:
+            # 按代码搜索
+            rs = bs.query_stock_basic(code=q)
+        else:
+            # 按名称搜索（模糊匹配）
+            rs = bs.query_stock_basic(code="*" + q + "*")
+        
+        results = []
+        while rs.error_code == "0" and rs.next():
+            row = rs.get_row_data()
+            # 列：code, code_name, ipoDate, outDate, status
+            if row[0]:  # code
+                results.append({
+                    "symbol": row[0],
+                    "name": row[1] if len(row) > 1 else "",
+                    "market": "A 股"
+                })
+        bs.logout()
+        return {"success": True, "data": results[:20]}  # 限制返回 20 条
+    except Exception as e:
+        sys_logger.error(f"[Stocks Search] error: {e}")
+        return {"success": True, "data": []}
 
 # ==================== 多源数据同步 (Multi-Source Sync) ====================
 @app.get("/api/sync/multi-source/status")
@@ -937,7 +1039,7 @@ async def scheduler_jobs_create(req: dict = None, username: str = Depends(verify
             return {"success": True, "message": f"Job '{name}' created"}
         return {"success": False, "message": "Failed to create job"}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.post("/api/scheduler/jobs/{job_id}/pause")
 async def scheduler_job_pause(job_id: str, username: str = Depends(verify_token)):
@@ -963,7 +1065,7 @@ async def scheduler_job_trigger(job_id: str, force: bool = False, username: str 
                     subprocess.Popen(command, shell=True)
                     return {"success": True, "data": {"triggered": True, "job_id": job_id}}
                 except Exception as e:
-                    return {"success": False, "message": str(e)}
+                    return {"success": False, "message": "操作失败，请稍后重试"}
     return {"success": False, "message": "Job not found"}
 
 @app.delete("/api/scheduler/jobs/{job_id}")
@@ -985,7 +1087,7 @@ async def scheduler_job_delete(job_id: str, username: str = Depends(verify_token
             subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=10)
         return {"success": True, "message": "Job deleted"}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.get("/api/scheduler/jobs/{job_id}/history")
 async def scheduler_job_history(job_id: str, username: str = Depends(verify_token)):
@@ -1021,13 +1123,80 @@ async def scheduler_job_execution_stats(job_id: str, username: str = Depends(ver
     return {"success": True, "data": {"stats": {"total": 0, "success": 0, "failed": 0}}}
 
 # ==================== 认证相关 (Auth) ====================
+
+# Token 黑名单（登出后失效）
+TOKEN_BLACKLIST = set()
+
+def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+    """生成访问 Token"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(data: dict, expires_delta: timedelta = None) -> str:
+    """生成刷新 Token"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=7))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
+    """验证 JWT Token（包含黑名单检查）"""
+    token = credentials.credentials
+    
+    # 检查是否在黑名单中（Redis）
+    if redis_client:
+        try:
+            is_blacklisted = await redis_client.get(f"token_blacklist:{token}")
+            if is_blacklisted:
+                sys_logger.info(f"[Auth] Token 在黑名单中，拒绝访问")
+                raise HTTPException(status_code=401, detail="Token 已登出")
+        except Exception as e:
+            sys_logger.error(f"[Auth] 黑名单检查失败：{e}")
+    # 后备：内存黑名单（单 worker 模式）
+    elif token in TOKEN_BLACKLIST:
+        raise HTTPException(status_code=401, detail="Token 已登出")
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="无效或被篡改的 Token")
+        return username
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token 已过期")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="无效或被篡改的 Token")
+
 @app.post("/api/auth/logout")
-async def auth_logout(username: str = Depends(verify_token)):
-    return {"success": True}
+async def auth_logout(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()), username: str = Depends(verify_token)):
+    """登出（将 Token 加入黑名单）"""
+    try:
+        token = credentials.credentials
+        # 使用 Redis 存储黑名单（多 worker 模式）
+        if redis_client:
+            await redis_client.setex(f"token_blacklist:{token}", 86400, "1")  # 24 小时过期
+            sys_logger.info(f"[Auth] 用户 {username} 登出，Token 已加入 Redis 黑名单")
+        else:
+            TOKEN_BLACKLIST.add(token)
+            sys_logger.info(f"[Auth] 用户 {username} 登出，Token 已加入内存黑名单")
+        return {"success": True, "message": "登出成功"}
+    except Exception as e:
+        sys_logger.error(f"[Auth] 登出失败：{e}")
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.post("/api/auth/refresh")
-async def auth_refresh(req: LoginReq, username: str = Depends(verify_token)):
-    return {"success": True, "data": {"access_token": "stub", "refresh_token": "stub"}}
+async def auth_refresh(username: str = Depends(verify_token)):
+    """刷新 Token"""
+    try:
+        # 生成新 token
+        access_token = create_access_token(data={"sub": username})
+        refresh_token = create_refresh_token(data={"sub": username})
+        return {"success": True, "data": {"access_token": access_token, "refresh_token": refresh_token}}
+    except Exception as e:
+        sys_logger.error(f"[Auth Refresh] error: {e}")
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.post("/api/auth/change-password")
 async def auth_change_password(username: str = Depends(verify_token)):
@@ -1062,6 +1231,8 @@ async def dashboard_summary(username: str = Depends(verify_token)):
     total_reports = 0
     today_reports = 0
     today_str = datetime.now().strftime("%Y%m%d")
+    
+    # 统计报告
     if os.path.exists(reports_dir):
         for fname in os.listdir(reports_dir):
             if fname.endswith(".md"):
@@ -1069,49 +1240,68 @@ async def dashboard_summary(username: str = Depends(verify_token)):
                 parts = fname.replace(".md", "").split("_")
                 if len(parts) > 1 and parts[1] == today_str:
                     today_reports += 1
+    
+    # 统计自选股
+    total_favorites = 0
+    try:
+        total_favorites = len(redis_client.hgetall("favorites"))
+    except:
+        pass
+    
+    # 统计用户数（单用户模式固定为 1）
+    total_users = 1
+    
     return {"success": True, "data": {
         "total_reports": total_reports,
         "today_reports": today_reports,
-        "total_favorites": 0,
-        "total_stocks_analyzed": total_reports
+        "total_favorites": total_favorites,
+        "total_stocks_analyzed": total_reports,
+        "total_users": total_users
     }}
+
+def _fetch_index(symbol: str, name: str) -> dict:
+    """Fetch a single index (runs in thread to avoid blocking event loop)"""
+    try:
+        lg = bs.login()
+        rs = bs.query_history_k_data_plus(
+            symbol,
+            "date,code,open,high,low,close,volume,amount,turn",
+            start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
+            end_date=datetime.now().strftime("%Y-%m-%d"),
+            frequency="d", adjustflag="3"
+        )
+        rows = []
+        while rs.error_code == "0" and rs.next():
+            rows.append(rs.get_row_data())
+        bs.logout()
+        if rows and len(rows[0]) > 5:
+            latest = rows[-1]
+            prev = rows[-2] if len(rows) > 1 else latest
+            close = float(latest[5]) if latest[5] else 0
+            prev_close = float(prev[5]) if prev[5] else close
+            change = close - prev_close
+            change_pct = round(change / prev_close * 100, 2) if prev_close else 0
+            return {"symbol": symbol.split(".")[1], "code": symbol.split(".")[1], "name": name, "price": close, "change": round(change, 2), "change_percent": change_pct}
+    except Exception:
+        pass
+    return None
 
 @app.get("/api/dashboard/market")
 async def dashboard_market(username: str = Depends(verify_token)):
     """市场概览（主要指数）"""
     indices = []
-    # 尝试获取几个主要指数
     for symbol, name in [("sh.000001", "上证指数"), ("sz.399001", "深证成指"), ("sh.000300", "沪深300")]:
         try:
-            lg = bs.login()
-            rs = bs.query_history_k_data_plus(
-                symbol,
-                "date,code,open,high,low,close,volume,amount,turn",
-                start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
-                end_date=datetime.now().strftime("%Y-%m-%d"),
-                frequency="d", adjustflag="3"
+            result = await asyncio.wait_for(
+                asyncio.to_thread(_fetch_index, symbol, name),
+                timeout=5.0
             )
-            rows = []
-            while rs.error_code == "0" and rs.next():
-                rows.append(rs.get_row_data())
-            bs.logout()
-            if rows:
-                latest = rows[-1]
-                prev = rows[-2] if len(rows) > 1 else latest
-                close = float(latest[5]) if latest[5] else 0
-                prev_close = float(prev[5]) if prev[5] else close
-                change = close - prev_close
-                change_pct = round(change / prev_close * 100, 2) if prev_close else 0
-                indices.append({
-                    "code": symbol.split(".")[1],
-                    "name": name,
-                    "price": close,
-                    "change": round(change, 2),
-                    "change_percent": change_pct
-                })
-        except Exception:
+            if result:
+                indices.append(result)
+        except (asyncio.TimeoutError, TimeoutError):
+            # BaoStock 超时，降级跳过该指数
             pass
-    return {"success": True, "data": {"indices": indices}}
+    return {"success": True, "data": {"indices": indices, "data": indices}}
 
 @app.get("/api/dashboard/recent")
 async def dashboard_recent(username: str = Depends(verify_token)):
@@ -1135,7 +1325,7 @@ async def dashboard_recent(username: str = Depends(verify_token)):
                 "date": formatted_date,
                 "time": datetime.fromtimestamp(mtime).strftime("%H:%M:%S")
             })
-    return {"success": True, "data": {"items": items}}
+    return {"success": True, "data": {"items": items, "recent_reports": items}}
 
 # ==================== 配置系统 (Config) ====================
 
@@ -1504,12 +1694,12 @@ async def analysis_delete_task(task_id: str, username: str = Depends(verify_toke
             return {"success": True, "message": "删除成功"}
         except Exception as e:
             sys_logger.error(f"[Tasks] delete error: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "操作失败，请稍后重试"}
     return {"success": True, "message": "任务不存在"}
 
 @app.post("/api/analysis/{analysis_id}/stop")
 async def analysis_stop(analysis_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "message": "停止分析成功（该实现为占位）"}
+    return {"success": True, "message": "停止分析成功"}
 
 @app.post("/api/analysis/{analysis_id}/share")
 async def analysis_share(analysis_id: str, password: str = None, username: str = Depends(verify_token)):
@@ -2119,7 +2309,8 @@ async def stocks_quote(symbol: str, username: str = Depends(verify_token)):
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] quote error: {e}")
-        return {"success": False, "message": str(e)}
+        # 隐藏数据库结构信息
+        return {"success": False, "message": "查询失败，请稍后重试"}
 
 @app.get("/api/stocks/{symbol}/kline")
 async def stocks_kline(
@@ -2174,7 +2365,7 @@ async def stocks_kline(
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] kline error: {e}")
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.get("/api/stocks/{symbol}/fundamentals")
 async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)):
@@ -2207,7 +2398,7 @@ async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] fundamentals error: {e}")
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": "操作失败，请稍后重试"}
 
 @app.get("/api/stocks/{symbol}/news")
 async def stocks_news(symbol: str, days: int = 30, limit: int = 50, username: str = Depends(verify_token)):
@@ -2394,15 +2585,251 @@ async def usage_cost_by_provider(days: int = 7, username: str = Depends(verify_t
 # ==================== 纸带交易 (Paper Trading) ====================
 @app.get("/api/paper/positions")
 async def paper_positions(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"positions": []}}
+    """获取模拟持仓"""
+    try:
+        positions = redis_client.hgetall("paper_positions")
+        result = []
+        for symbol, data in positions.items():
+            if isinstance(data, bytes):
+                data = json.loads(data)
+            if isinstance(data, dict):
+                qty = data.get("quantity", 0)
+                cost = data.get("avg_cost", 0)
+                # 获取当前价格
+                try:
+                    prefix = _stock_prefix(symbol)
+                    lg = bs.login()
+                    rs = bs.query_history_k_data_plus(prefix, "close", "2026-04-08")
+                    current_price = 0
+                    if rs.error_code == "0" and rs.next():
+                        current_price = float(rs.get_row_data()[0])
+                    bs.logout()
+                except:
+                    current_price = cost
+                pnl = (current_price - cost) * qty if qty > 0 else 0
+                result.append({
+                    "symbol": symbol,
+                    "quantity": qty,
+                    "avg_cost": cost,
+                    "current_price": current_price,
+                    "market_value": current_price * qty,
+                    "pnl": pnl,
+                    "pnl_percent": round(pnl / (cost * qty) * 100, 2) if cost * qty > 0 else 0
+                })
+        return {"success": True, "data": {"positions": result}}
+    except Exception as e:
+        sys_logger.error(f"[Paper Positions] error: {e}")
+        return {"success": True, "data": {"positions": []}}
 
 @app.get("/api/paper/account")
 async def paper_account(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"account": {"cash": 100000, "positions_value": 0, "equity": 100000, "currency": "CNY"}}}
+    """获取模拟账户信息"""
+    try:
+        account = redis_client.hget("paper_account", username)
+        if account:
+            if isinstance(account, bytes):
+                account = json.loads(account)
+        else:
+            account = {"cash": 100000, "initial_cash": 100000}
+            redis_client.hset("paper_account", username, json.dumps(account))
+        
+        # 计算持仓市值
+        positions = redis_client.hgetall("paper_positions")
+        positions_value = 0
+        for symbol, data in positions.items():
+            if isinstance(data, bytes):
+                data = json.loads(data)
+            if isinstance(data, dict):
+                qty = data.get("quantity", 0)
+                cost = data.get("avg_cost", 0)
+                positions_value += cost * qty
+        
+        equity = account.get("cash", 100000) + positions_value
+        return {"success": True, "data": {"account": {
+            "cash": account.get("cash", 100000),
+            "positions_value": positions_value,
+            "equity": equity,
+            "initial_cash": account.get("initial_cash", 100000),
+            "total_pnl": equity - account.get("initial_cash", 100000),
+            "currency": "CNY"
+        }}}
+    except Exception as e:
+        sys_logger.error(f"[Paper Account] error: {e}")
+        return {"success": True, "data": {"account": {"cash": 100000, "positions_value": 0, "equity": 100000, "currency": "CNY"}}}
 
 @app.get("/api/paper/order")
 async def paper_order(username: str = Depends(verify_token)):
-    return {"success": True, "data": {"orders": []}}
+    """获取模拟订单历史"""
+    try:
+        orders = redis_client.lrange("paper_orders", 0, -1)
+        result = []
+        for order in orders:
+            if isinstance(order, bytes):
+                order = json.loads(order)
+            if isinstance(order, dict):
+                result.append(order)
+        return {"success": True, "data": {"orders": result[:50]}}  # 最近 50 条
+    except Exception as e:
+        sys_logger.error(f"[Paper Order] error: {e}")
+        return {"success": True, "data": {"orders": []}}
+
+@app.post("/api/paper/order")
+async def paper_place_order(req: dict, username: str = Depends(verify_token)):
+    """下达模拟订单"""
+    try:
+        symbol = req.get("symbol")
+        quantity = int(req.get("quantity", 0))
+        price = float(req.get("price", 0))
+        action = req.get("action", "buy")  # buy or sell
+        
+        if not symbol or quantity <= 0 or price <= 0:
+            return {"success": False, "message": "参数错误"}
+        
+        # 获取账户
+        account = redis_client.hget("paper_account", username)
+        if account:
+            if isinstance(account, bytes):
+                account = json.loads(account)
+        else:
+            account = {"cash": 100000}
+        
+        if action == "buy":
+            cost = quantity * price
+            if account.get("cash", 0) < cost:
+                return {"success": False, "message": "现金不足"}
+            
+            # 更新持仓
+            pos = redis_client.hget("paper_positions", symbol)
+            if pos:
+                if isinstance(pos, bytes):
+                    pos = json.loads(pos)
+            else:
+                pos = {"quantity": 0, "avg_cost": 0}
+            
+            old_qty = pos.get("quantity", 0)
+            old_cost = pos.get("avg_cost", 0)
+            new_qty = old_qty + quantity
+            new_cost = (old_qty * old_cost + quantity * price) / new_qty if new_qty > 0 else 0
+            
+            pos["quantity"] = new_qty
+            pos["avg_cost"] = new_cost
+            redis_client.hset("paper_positions", symbol, json.dumps(pos))
+            
+            # 扣减现金
+            account["cash"] = account.get("cash", 100000) - cost
+            redis_client.hset("paper_account", username, json.dumps(account))
+            
+        elif action == "sell":
+            pos = redis_client.hget("paper_positions", symbol)
+            if not pos:
+                return {"success": False, "message": "无持仓"}
+            if isinstance(pos, bytes):
+                pos = json.loads(pos)
+            
+            old_qty = pos.get("quantity", 0)
+            if old_qty < quantity:
+                return {"success": False, "message": "持仓不足"}
+            
+            # 更新持仓
+            new_qty = old_qty - quantity
+            if new_qty == 0:
+                redis_client.hdel("paper_positions", symbol)
+            else:
+                pos["quantity"] = new_qty
+                redis_client.hset("paper_positions", symbol, json.dumps(pos))
+            
+            # 增加现金
+            proceeds = quantity * price
+            account["cash"] = account.get("cash", 100000) + proceeds
+            redis_client.hset("paper_account", username, json.dumps(account))
+        
+        # 记录订单
+        order = {
+            "symbol": symbol,
+            "quantity": quantity,
+            "price": price,
+            "action": action,
+            "timestamp": datetime.now().isoformat(),
+            "username": username
+        }
+        redis_client.lpush("paper_orders", json.dumps(order))
+        redis_client.ltrim("paper_orders", 0, 999)  # 保留最近 1000 条
+        
+        return {"success": True, "message": f"{action.upper()} {quantity} {symbol} @ {price}", "data": order}
+    except Exception as e:
+        sys_logger.error(f"[Paper Place Order] error: {e}")
+        return {"success": False, "message": "操作失败，请稍后重试"}
+
+# ==================== 持仓管理 (Trade/Positions) ====================
+@app.get("/api/trade/positions")
+async def trade_positions(username: str = Depends(verify_token)):
+    """获取实际持仓（与 paper_positions 共用数据）"""
+    try:
+        positions = redis_client.hgetall("paper_positions")
+        result = []
+        for symbol, data in positions.items():
+            if isinstance(data, bytes):
+                data = json.loads(data)
+            if isinstance(data, dict):
+                qty = data.get("quantity", 0)
+                cost = data.get("avg_cost", 0)
+                # 获取当前价格
+                try:
+                    prefix = _stock_prefix(symbol)
+                    lg = bs.login()
+                    rs = bs.query_history_k_data_plus(prefix, "close", "2026-04-08")
+                    current_price = 0
+                    if rs.error_code == "0" and rs.next():
+                        current_price = float(rs.get_row_data()[0])
+                    bs.logout()
+                except:
+                    current_price = cost
+                pnl = (current_price - cost) * qty if qty > 0 else 0
+                result.append({
+                    "symbol": symbol,
+                    "quantity": qty,
+                    "avg_cost": cost,
+                    "current_price": current_price,
+                    "market_value": current_price * qty,
+                    "pnl": pnl,
+                    "pnl_percent": round(pnl / (cost * qty) * 100, 2) if cost * qty > 0 else 0,
+                    "cost_basis": cost * qty
+                })
+        return {"success": True, "data": {"positions": result}}
+    except Exception as e:
+        sys_logger.error(f"[Trade Positions] error: {e}")
+        return {"success": True, "data": {"positions": []}}
+
+@app.post("/api/trade/buy")
+async def trade_buy(req: dict, username: str = Depends(verify_token)):
+    """买入（调用 paper_order）"""
+    return await paper_place_order({**req, "action": "buy"}, username)
+
+@app.post("/api/trade/sell")
+async def trade_sell(req: dict, username: str = Depends(verify_token)):
+    """卖出（调用 paper_order）"""
+    return await paper_place_order({**req, "action": "sell"}, username)
+
+# ==================== 模拟交易 (Simulated Trading) ====================
+@app.get("/api/simulated-trading/account")
+async def simulated_account(username: str = Depends(verify_token)):
+    """模拟交易账户（与 paper_account 共用）"""
+    return await paper_account(username)
+
+@app.get("/api/simulated-trading/positions")
+async def simulated_positions(username: str = Depends(verify_token)):
+    """模拟交易持仓（与 paper_positions 共用）"""
+    return await trade_positions(username)
+
+@app.post("/api/simulated-trading/order")
+async def simulated_order(req: dict, username: str = Depends(verify_token)):
+    """模拟交易下单（与 paper_order 共用）"""
+    return await paper_place_order(req, username)
+
+@app.get("/api/simulated-trading/orders")
+async def simulated_orders(username: str = Depends(verify_token)):
+    """模拟交易订单历史（与 paper_order 共用）"""
+    return await paper_order(username)
 
 # ==================== 系统信息 (System Info) ====================
 

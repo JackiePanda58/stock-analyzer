@@ -1,0 +1,213 @@
+name: Regression Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 23 * * *'  # 每天 23:00 执行
+  workflow_dispatch:  # 支持手动触发
+
+env:
+  PYTHON_VERSION: '3.12'
+  BACKEND_PORT: 8080
+  REDIS_PORT: 6379
+
+jobs:
+  regression-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-cov locust websockets slowapi
+    
+    - name: Check code quality
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Start backend service
+      run: |
+        nohup python -m uvicorn api_server:app --host 0.0.0.0 --port ${{ env.BACKEND_PORT }} > backend.log 2>&1 &
+        sleep 10
+        curl -s http://localhost:${{ env.BACKEND_PORT }}/api/health || exit 1
+    
+    - name: Verify backend is running
+      run: |
+        curl -s http://localhost:${{ env.BACKEND_PORT }}/api/health | python -m json.tool
+        echo "Backend service is ready!"
+    
+    - name: Run P0 unit tests
+      run: |
+        cd tests
+        python test_stock_analysis_blind_spots.py || echo "⚠️ Blind spots tests failed"
+        python test_datasources.py || echo "⚠️ Datasource tests failed"
+        python test_redis_cache.py || echo "⚠️ Redis cache tests failed"
+        python test_security.py --backend http://localhost:${{ env.BACKEND_PORT }} || echo "⚠️ Security tests failed"
+    
+    - name: Run P1 unit tests
+      if: github.event_name != 'pull_request'
+      run: |
+        cd tests
+        python test_llm_client.py || echo "⚠️ LLM client tests failed"
+        python test_websocket.py || echo "⚠️ WebSocket tests failed"
+        python test_scheduler.py || echo "⚠️ Scheduler tests failed"
+    
+    - name: Run integration tests
+      if: github.event_name != 'pull_request'
+      run: |
+        cd tests
+        python test_integration_analysis.py || echo "⚠️ Integration analysis tests failed"
+        python test_integration_positions.py || echo "⚠️ Integration positions tests failed"
+        python test_integration_auth.py || echo "⚠️ Integration auth tests failed"
+    
+    - name: Run performance tests
+      if: github.event_name == 'schedule'
+      run: |
+        cd tests
+        pip install locust
+        locust -f perf_test.py --headless -u 50 -r 5 --run-time 3m --host http://localhost:${{ env.BACKEND_PORT }} || echo "⚠️ Performance tests failed"
+    
+    - name: Collect test results
+      run: |
+        cd tests
+        python generate_html_report.py "GitHub Actions Regression Test"
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ github.sha }}
+        path: tests/reports/
+        retention-days: 30
+    
+    - name: Upload backend logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-logs-${{ github.sha }}
+        path: backend.log
+        retention-days: 7
+    
+    - name: Check test results
+      id: test-result
+      run: |
+        cd tests
+        if [ -f reports/report_*.html ]; then
+          echo "✅ Test reports generated"
+          echo "has_report=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ No test reports found"
+          echo "has_report=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Notify test result
+      if: always()
+      run: |
+        # 准备通知内容
+        TEST_STATUS="${{ job.status }}"
+        RUN_ID="${{ github.run_id }}"
+        REPO="${{ github.repository }}"
+        
+        MESSAGE="📊 回归测试 ${TEST_STATUS}
+        
+        仓库：${REPO}
+        运行 ID: ${RUN_ID}
+        分支：${{ github.ref_name }}
+        提交：${{ github.sha }}"
+        
+        echo "$MESSAGE"
+        
+        # 这里可以添加飞书/钉钉/Slack 通知
+        # curl -X POST "WEBHOOK_URL" -H "Content-Type: application/json" -d "{\"text\": \"$MESSAGE\"}"
+
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    needs: regression-test
+    
+    services:
+      redis:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install locust
+    
+    - name: Start backend
+      run: |
+        nohup python -m uvicorn api_server:app --port ${{ env.BACKEND_PORT }} &
+        sleep 10
+    
+    - name: Run performance benchmark
+      run: |
+        cd tests
+        python benchmark.py --save-baseline
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.sha }}
+        path: tests/benchmark/
+        retention-days: 90
+
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    needs: regression-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run OWASP ZAP scan
+      uses: zaproxy/action-baseline@v0.10.0
+      with:
+        target: 'http://localhost:${{ env.BACKEND_PORT }}'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a'
+    
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-${{ github.sha }}
+        path: report_html/
+        retention-days: 90

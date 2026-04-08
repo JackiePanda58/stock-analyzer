@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/root/stock-analyzer/tests/test_redis_cache.py", line 9, in <module>
+    import pytest_asyncio
+ModuleNotFoundError: No module named 'pytest_asyncio'

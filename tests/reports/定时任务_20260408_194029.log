@@ -1,0 +1,45 @@
+
+================================================================================
+定时任务/自动巡航测试报告
+================================================================================
+生成时间：2026-04-08T19:41:08.327801
+================================================================================
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /root/stock-analyzer
+plugins: anyio-4.12.1, langsmith-0.7.22
+collecting ... collected 21 items
+
+tests/test_scheduler.py::TestAfterMarketCruiser::test_cruiser_trigger_after_market_close PASSED [  4%]
+tests/test_scheduler.py::TestAfterMarketCruiser::test_cruiser_should_not_trigger_during_market PASSED [  9%]
+tests/test_scheduler.py::TestAfterMarketCruiser::test_cruiser_with_empty_watchlist PASSED [ 14%]
+tests/test_scheduler.py::TestAfterMarketCruiser::test_cruiser_redis_connection_failure PASSED [ 19%]
+tests/test_scheduler.py::TestWatchlistBatchPreheat::test_batch_preheat_multiple_stocks PASSED [ 23%]
+tests/test_scheduler.py::TestWatchlistBatchPreheat::test_batch_preheat_with_partial_failures PASSED [ 28%]
+tests/test_scheduler.py::TestWatchlistBatchPreheat::test_batch_preheat_performance_logging PASSED [ 33%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_daily_docs_scheduled_time PASSED [ 38%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_changelog_update PASSED [ 42%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_readme_update PASSED  [ 47%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_git_commit_auto PASSED [ 52%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_feishu_notification PASSED [ 57%]
+tests/test_scheduler.py::TestDailyDocsUpdate::test_full_daily_docs_workflow PASSED [ 61%]
+tests/test_scheduler.py::TestAPSchedulerIntegration::test_scheduler_job_definition PASSED [ 66%]
+tests/test_scheduler.py::TestAPSchedulerIntegration::test_scheduler_job_auto_cruiser PASSED [ 71%]
+tests/test_scheduler.py::TestAPSchedulerIntegration::test_scheduler_time_validation PASSED [ 76%]
+tests/test_scheduler.py::TestAPSchedulerIntegration::test_scheduler_mock_with_freezegun PASSED [ 80%]
+tests/test_scheduler.py::TestAPSchedulerIntegration::test_scheduler_job_error_handling PASSED [ 85%]
+tests/test_scheduler.py::TestIntegrationScenarios::test_cruiser_with_jwt_token_refresh PASSED [ 90%]
+tests/test_scheduler.py::TestIntegrationScenarios::test_daily_docs_with_git_failure PASSED [ 95%]
+tests/test_scheduler.py::TestIntegrationScenarios::test_cruiser_concurrent_execution_simulation PASSED [100%]
+
+======================== 21 passed in 120.32s (0:02:00) ========================
+
+
+================================================================================
+测试总结
+================================================================================
+✅ 所有测试通过!
+================================================================================
+

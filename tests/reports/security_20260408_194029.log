@@ -1,0 +1,56 @@
+/root/stock-analyzer/tests/test_security.py:96: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = datetime.utcnow()
+[1m======================================================================[0m
+[1mTradingAgents-CN 安全权限测试套件[0m
+[1m======================================================================[0m
+后端地址：http://localhost:8080
+测试时间：2026-04-08 19:43:09
+
+[1m[1] RBAC 角色权限测试[0m
+----------------------------------------------------------------------
+  [92m✓[0m RBAC-01 Admin 角色成功访问 /api/auth/me
+  [92m✓[0m RBAC-02 User 角色被正确拒绝访问管理接口
+  [91m✗[0m RBAC-03-admin [91madmin Token 验证失败：{'detail': '无效或被篡改的 Token'}[0m
+  [91m✗[0m RBAC-03-user [91muser Token 验证失败：{'detail': '无效或被篡改的 Token'}[0m
+  [91m✗[0m RBAC-03-analyst [91manalyst Token 验证失败：{'detail': '无效或被篡改的 Token'}[0m
+  [92m✓[0m RBAC-04 过期 Token 被正确拒绝 (401)
+  [92m✓[0m RBAC-05 无效签名 Token 被正确拒绝 (401)
+  [93m⊘[0m RBAC-06 [93mToken 刷新接口返回：200[0m
+  [91m✗[0m RBAC-07 [91m登出后 Token 未失效[0m
+
+[1m[2] API 速率限制测试[0m
+----------------------------------------------------------------------
+  [93m⊘[0m RATE-01 [93m未触发速率限制（可能未配置或阈值较高）[0m
+  [93m⊘[0m RATE-02 [93m并发请求未触发速率限制[0m
+  [93m⊘[0m RATE-03 [93m未观察到速率限制差异[0m
+
+[1m[3] SQL 注入防护测试[0m
+----------------------------------------------------------------------
+  [92m✓[0m SQL-01 登录接口 SQL 注入防护有效
+  [92m✓[0m SQL-02 搜索接口 SQL 注入防护有效
+  [92m✓[0m SQL-03 收藏接口 SQL 注入防护有效
+  [91m✗[0m SQL-04 [91m错误信息可能暴露数据库结构[0m
+
+[1m[4] XSS 防护测试[0m
+----------------------------------------------------------------------
+  [91m✗[0m XSS-01 [91m搜索接口可能反射 XSS payload[0m
+  [92m✓[0m XSS-02 收藏接口 XSS 防护有效（未存储 payload）
+  [93m⊘[0m XSS-03 [93m响应头配置不完整：application/json[0m
+  [92m✓[0m XSS-04 CSP 头已配置
+
+[1m[5] CORS 配置测试[0m
+----------------------------------------------------------------------
+  [93m⊘[0m CORS-01 [93mOPTIONS 请求返回：400[0m
+  [92m✓[0m CORS-02 CORS 头配置正确 (Origin: http://localhost:3000, Vary: Origin)
+  [93m⊘[0m CORS-03 [93m凭证支持检查异常：HTTP Error 405: Method Not Allowed[0m
+  [92m✓[0m CORS-04 恶意域名请求被拒绝
+
+======================================================================
+[1m测试结果汇总:[0m
+  [92m✓ 通过：11[0m
+  [91m✗ 失败：6[0m
+  [93m⊘ 跳过：7[0m
+  总计：24 项
+======================================================================
+
+[1m报告已保存:[0m SECURITY_TEST_REPORT.md

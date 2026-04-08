@@ -1,0 +1,114 @@
+{
+  "summary": {
+    "total": 17,
+    "passed": 14,
+    "failed": 0,
+    "skipped": 3,
+    "elapsed_seconds": 0.55149245262146,
+    "success_rate": "100.0%"
+  },
+  "test_cases": [
+    {
+      "status": "passed",
+      "test_id": "INIT_001",
+      "message": "TradingAgentsGraph 初始化成功",
+      "details": "LLM: qwen-turbo"
+    },
+    {
+      "status": "passed",
+      "test_id": "GRAPH_001",
+      "message": "LangGraph 图结构创建成功",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "NODES_001",
+      "message": "预期智能体节点数量：14",
+      "details": ""
+    },
+    {
+      "status": "skipped",
+      "test_id": "API_CALL_001",
+      "message": "实际 API 调用跳过（需配置正确的模型和端点）",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_INIT_001",
+      "message": "状态机测试图初始化成功",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_STATE_001",
+      "message": "初始状态创建成功",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_TRANS_001",
+      "message": "条件边转换正确（有 tool_calls）",
+      "details": "下一节点：tools_market"
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_TRANS_002",
+      "message": "条件边转换正确（无 tool_calls）",
+      "details": "下一节点：Msg Clear Market"
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_TRANS_003",
+      "message": "辩论状态转换正确",
+      "details": "下一节点：Research Manager"
+    },
+    {
+      "status": "passed",
+      "test_id": "SM_TRANS_004",
+      "message": "风险分析状态转换正确",
+      "details": "下一节点：Risk Judge"
+    },
+    {
+      "status": "passed",
+      "test_id": "FAST_INIT_001",
+      "message": "快速模式图初始化成功",
+      "details": "辩论轮次：1"
+    },
+    {
+      "status": "skipped",
+      "test_id": "FAST_API_001",
+      "message": "快速模式 API 调用跳过（需配置正确的模型和端点）",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "MSG_INIT_001",
+      "message": "消息传递测试图初始化成功",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "MSG_INIT_002",
+      "message": "初始消息数量：1",
+      "details": ""
+    },
+    {
+      "status": "skipped",
+      "test_id": "MSG_API_001",
+      "message": "消息传递 API 调用跳过（需配置正确的模型和端点）",
+      "details": ""
+    },
+    {
+      "status": "passed",
+      "test_id": "ERR_001",
+      "message": "空智能体列表正确抛出异常",
+      "details": "Trading Agents Graph Setup Error: no analysts selected!"
+    },
+    {
+      "status": "passed",
+      "test_id": "ERR_002",
+      "message": "无效股票代码处理（抛出异常）",
+      "details": "Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'message': 'model `qwen-turbo` is no"
+    }
+  ]
+}

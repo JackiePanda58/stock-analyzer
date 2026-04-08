@@ -1,0 +1,2 @@
+[91mError: API key not provided.[0m
+Set OPENAI_API_KEY environment variable or use --api-key

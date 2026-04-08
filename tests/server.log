@@ -1,0 +1,47 @@
+/root/stock-analyzer/tests/mock_ws_server.py:19: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+  from websockets.server import WebSocketServerProtocol
+2026-04-08 18:34:47,951 - INFO - 启动 WebSocket 服务器...
+2026-04-08 18:34:47,951 - INFO - 监听端口：8030
+2026-04-08 18:34:47,982 - INFO - server listening on 127.0.0.1:8030
+2026-04-08 18:34:47,982 - INFO - WebSocket 服务器已启动
+2026-04-08 18:34:47,982 - INFO - 按 Ctrl+C 停止服务器
+2026-04-08 18:34:54,755 - INFO - connection open
+2026-04-08 18:34:54,755 - INFO - 新客户端连接：('127.0.0.1', 48354)
+2026-04-08 18:34:54,759 - INFO - connection open
+2026-04-08 18:34:54,759 - INFO - 新客户端连接：('127.0.0.1', 48360)
+2026-04-08 18:34:54,761 - INFO - 收到消息：{'type': 'subscribe', 'channel': 'stock_notification', 'symbols': ['600519', '000001', '300750']}
+2026-04-08 18:34:54,761 - INFO - 客户端订阅：channel=stock_notification, symbols=['600519', '000001', '300750']
+2026-04-08 18:34:54,764 - INFO - connection open
+2026-04-08 18:34:54,764 - INFO - 新客户端连接：('127.0.0.1', 48362)
+2026-04-08 18:34:55,762 - ERROR - 推送通知失败：received 1000 (OK); then sent 1000 (OK)
+2026-04-08 18:34:56,770 - INFO - connection open
+2026-04-08 18:34:56,771 - INFO - 新客户端连接：('127.0.0.1', 48374)
+2026-04-08 18:34:56,775 - INFO - connection open
+2026-04-08 18:34:56,776 - INFO - 新客户端连接：('127.0.0.1', 48376)
+2026-04-08 18:34:56,776 - INFO - 收到消息：{'type': 'subscribe', 'channel': 'stock_notification', 'symbols': ['600519']}
+2026-04-08 18:34:56,776 - INFO - 客户端订阅：channel=stock_notification, symbols=['600519']
+2026-04-08 18:34:57,781 - INFO - 推送通知：{'type': 'notification', 'channel': 'stock_notification', 'timestamp': '2026-04-08T18:34:57.781760', 'data': {'symbol': '600519', 'price': 1700.0, 'change': 2.5, 'change_percent': 1.47, 'volume': 10000, 'alert_type': 'price_change'}, 'content': '股票 600519 价格变动提醒'}
+2026-04-08 18:34:57,782 - INFO - 收到消息：{'type': 'unsubscribe', 'channel': 'stock_notification'}
+2026-04-08 18:34:57,782 - INFO - 客户端取消订阅：channel=stock_notification
+2026-04-08 18:34:57,783 - INFO - 收到消息：{'type': 'heartbeat', 'timestamp': '2026-04-08T18:34:56.776505'}
+2026-04-08 18:34:57,783 - INFO - 收到消息：{'type': 'query', 'symbol': '600519', 'fields': ['price', 'volume', 'change']}
+2026-04-08 18:35:12,722 - INFO - connection open
+2026-04-08 18:35:12,723 - INFO - 新客户端连接：('127.0.0.1', 60390)
+2026-04-08 18:35:12,936 - INFO - connection open
+2026-04-08 18:35:12,936 - INFO - 新客户端连接：('127.0.0.1', 60406)
+2026-04-08 18:35:12,942 - INFO - 收到消息：{'type': 'subscribe', 'channel': 'stock_notification', 'symbols': ['600519', '000001', '300750']}
+2026-04-08 18:35:12,942 - INFO - 客户端订阅：channel=stock_notification, symbols=['600519', '000001', '300750']
+2026-04-08 18:35:13,947 - INFO - 推送通知：{'type': 'notification', 'channel': 'stock_notification', 'timestamp': '2026-04-08T18:35:13.946771', 'data': {'symbol': '600519', 'price': 1700.0, 'change': 2.5, 'change_percent': 1.47, 'volume': 10000, 'alert_type': 'price_change'}, 'content': '股票 600519 价格变动提醒'}
+2026-04-08 18:35:13,956 - INFO - connection open
+2026-04-08 18:35:13,957 - INFO - 新客户端连接：('127.0.0.1', 60410)
+2026-04-08 18:35:15,966 - INFO - connection open
+2026-04-08 18:35:15,966 - INFO - 新客户端连接：('127.0.0.1', 60422)
+2026-04-08 18:35:15,972 - INFO - connection open
+2026-04-08 18:35:15,973 - INFO - 新客户端连接：('127.0.0.1', 60438)
+2026-04-08 18:35:15,974 - INFO - 收到消息：{'type': 'subscribe', 'channel': 'stock_notification', 'symbols': ['600519']}
+2026-04-08 18:35:15,974 - INFO - 客户端订阅：channel=stock_notification, symbols=['600519']
+2026-04-08 18:35:16,977 - INFO - 推送通知：{'type': 'notification', 'channel': 'stock_notification', 'timestamp': '2026-04-08T18:35:16.976756', 'data': {'symbol': '600519', 'price': 1700.0, 'change': 2.5, 'change_percent': 1.47, 'volume': 10000, 'alert_type': 'price_change'}, 'content': '股票 600519 价格变动提醒'}
+2026-04-08 18:35:16,977 - INFO - 收到消息：{'type': 'unsubscribe', 'channel': 'stock_notification'}
+2026-04-08 18:35:16,977 - INFO - 客户端取消订阅：channel=stock_notification
+2026-04-08 18:35:16,979 - INFO - 收到消息：{'type': 'heartbeat', 'timestamp': '2026-04-08T18:35:15.973513'}
+2026-04-08 18:35:16,979 - INFO - 收到消息：{'type': 'query', 'symbol': '600519', 'fields': ['price', 'volume', 'change']}
