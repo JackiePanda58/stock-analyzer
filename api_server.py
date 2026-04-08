@@ -1388,10 +1388,48 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             first_line = lines[0].strip("# ").strip() if lines else ""
 
             # 提取 recommendation（买入/卖出/持有）
-            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)\*\*", content)
-            recommendation = rec_match.group(1) if rec_match else "—"
+            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)[^(]*\)*", content)
+            action = rec_match.group(1) if rec_match else "—"
 
-            # 提取各分析模块（简化：取第一个 ### 标题到下一个 ## 之间的内容）
+            # 提取一句话逻辑作为 reasoning
+            logic_match = re.search(r"\*\*一句话逻辑[：:]*\*\*([^\n]+)", content)
+            reasoning = logic_match.group(1).strip() if logic_match else ""
+
+            # 提取目标价
+            price_match = re.search(r"目标[位价]?[：:]?\s*[¥￥$]?\s*([0-9.]+)", content)
+            target_price = price_match.group(1) if price_match else "—"
+
+            # 提取置信度（默认0.75）
+            confidence = 0.75
+            conf_match = re.search(r"置信[度]?[：:]?\s*([0-9.]+)%", content)
+            if not conf_match:
+                conf_match = re.search(r"confidence[：:]?\s*([0-9.]+)%", content, re.IGNORECASE)
+            if conf_match:
+                try:
+                    confidence = float(conf_match.group(1)) / 100
+                except:
+                    pass
+
+            # 提取风险评分（默认0.5）
+            risk_score = 0.5
+            risk_match = re.search(r"风险[评分]?[：:]?\s*([0-9.]+)%", content)
+            if not risk_match:
+                risk_match = re.search(r"风险[评分]?[：:]?\s*(低|中|高)", content)
+            if risk_match:
+                risk_text = risk_match.group(1)
+                if risk_text == "低":
+                    risk_score = 0.3
+                elif risk_text == "中":
+                    risk_score = 0.5
+                elif risk_text == "高":
+                    risk_score = 0.7
+                else:
+                    try:
+                        risk_score = float(risk_text) / 100
+                    except:
+                        pass
+
+            # 提取各分析模块
             sections = re.split(r"(?=##\s)", content)
             tech_section = ""
             fund_section = ""
@@ -1405,19 +1443,31 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
                 elif any(k in sec_title for k in ["舆情", "情绪", "社媒", "新闻"]):
                     sent_section = sec[:500]
 
-            # 提取股票名称
-            name_match = re.search(r"#\s*📊\s*([^\(]+)", content)
+            # 提取股票名称和代码
+            name_match = re.search(r"#\s*📊\s*([^\(\"]+)", content)
             stock_name = name_match.group(1).strip() if name_match else task_id.split("_")[0]
+
+            symbol_match = re.search(r"\(([0-9A-Z]+)\)", content)
+            symbol = symbol_match.group(1) if symbol_match else task_id.split("_")[0]
 
             return {
                 "success": True,
                 "data": {
                     "reports": {"trading_decision": {"content": content}},
-                    "decision": content[:500],
+                    # 决策对象（供前端直接使用）
+                    "decision": {
+                        "action": action,
+                        "target_price": target_price,
+                        "confidence": confidence,
+                        "risk_score": risk_score,
+                        "reasoning": reasoning or first_line[:200]
+                    },
+                    # 兼容字段（供旧版前端使用）
                     "summary": first_line or content[:200],
+                    "recommendation": action,
                     # 额外结构化字段
                     "stock_name": stock_name,
-                    "recommendation": recommendation,
+                    "symbol": symbol,
                     "technical_analysis": tech_section,
                     "fundamental_analysis": fund_section,
                     "sentiment_analysis": sent_section,
@@ -1429,7 +1479,7 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             }
         except Exception as e:
             sys_logger.error(f"[Tasks] read report error: {e}")
-    return {"success": True, "data": {"reports": {}, "decision": "", "summary": ""}}
+    return {"success": True, "data": {"reports": {}, "decision": {"action": "—", "target_price": "—", "confidence": 0, "risk_score": 0.5, "reasoning": ""}, "summary": ""}}
 
 @app.post("/api/analysis/tasks/{task_id}/mark-failed")
 async def analysis_mark_failed(task_id: str, username: str = Depends(verify_token)):
