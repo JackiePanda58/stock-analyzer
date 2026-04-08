@@ -1288,6 +1288,16 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
     if not symbol or len(symbol) != 6:
         raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
 
+    # research_depth 参数校验
+    research_depth = (req.parameters or {}).get("research_depth")
+    if research_depth is not None:
+        try:
+            rd = int(research_depth)
+            if not (1 <= rd <= 5):
+                raise HTTPException(status_code=400, detail=f"research_depth 必须为 1-5，当前值: {rd}")
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"research_depth 必须为整数 1-5")
+
     cache_key = f"report:{symbol}:{target_date}"
     if redis_client:
         try:
@@ -1506,7 +1516,12 @@ async def analysis_share(analysis_id: str, password: str = None, username: str =
     return {"success": True, "data": {"share_url": f"/reports/{analysis_id}", "share_code": analysis_id[:8]}}
 
 @app.get("/api/analysis/user/history")
-async def analysis_user_history(username: str = Depends(verify_token)):
+async def analysis_user_history(
+    symbol: str = None,
+    page: int = 1,
+    page_size: int = 10,
+    username: str = Depends(verify_token)
+):
     """从报告目录读取当前用户的分析历史（按用户名区分）"""
     reports_dir = "/root/stock-analyzer/reports"
     items = []
@@ -1517,6 +1532,9 @@ async def analysis_user_history(username: str = Depends(verify_token)):
             fpath = os.path.join(reports_dir, fname)
             parts = fname.replace(".md", "").split("_")
             if len(parts) >= 2:
+                # 可选：按股票代码筛选
+                if symbol and parts[0] != symbol:
+                    continue
                 try:
                     stat = os.stat(fpath)
                     items.append({
@@ -1530,7 +1548,12 @@ async def analysis_user_history(username: str = Depends(verify_token)):
                 except Exception:
                     pass
     items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    return {"success": True, "data": {"items": items, "total": len(items)}}
+    total = len(items)
+    # 分页
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = items[start:end]
+    return {"success": True, "data": {"items": paginated, "total": total, "page": page, "page_size": page_size}}
 
 @app.get("/api/stock-data/basic-info/{code}")
 async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
