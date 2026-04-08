@@ -913,8 +913,8 @@ async function fetchLatestAnalysis() {
     console.log('🔍 [fetchLatestAnalysis] resp.data:', resp?.data)
     console.log('🔍 [fetchLatestAnalysis] resp.data.data:', resp?.data?.data)
 
-    // 修复：API返回格式是 { success: true, data: { tasks: [...] } }
-    // 所以需要先取 resp.data，再取 data.tasks
+    // API返回格式是 { success: true, data: { items: [...] } }
+    // 响应拦截器已返回 response.data，所以 resp 已经是 { success: true, data: { items: [...] } }
     const responseData = resp?.data || resp
     console.log('🔍 [fetchLatestAnalysis] responseData:', responseData)
 
@@ -922,45 +922,31 @@ async function fetchLatestAnalysis() {
     const actualData = responseData?.success ? responseData.data : responseData
     console.log('🔍 [fetchLatestAnalysis] actualData:', actualData)
 
-    const tasks = actualData?.tasks || actualData?.analyses || []
-    console.log('🔍 [fetchLatestAnalysis] tasks:', tasks)
-    console.log('🔍 [fetchLatestAnalysis] tasks.length:', tasks?.length)
-    console.log('🔍 [fetchLatestAnalysis] tasks && tasks.length > 0:', tasks && tasks.length > 0)
+    // API返回的是 items，不是 tasks
+    const items = actualData?.items || []
+    console.log('🔍 [fetchLatestAnalysis] items:', items)
+    console.log('🔍 [fetchLatestAnalysis] items.length:', items?.length)
 
-    if (tasks && tasks.length > 0) {
-      const latestTask = tasks[0]
-      console.log('✅ [fetchLatestAnalysis] 找到任务:', latestTask)
-      console.log('🔍 [fetchLatestAnalysis] latestTask.result_data:', latestTask.result_data)
-      console.log('🔍 [fetchLatestAnalysis] latestTask.result:', latestTask.result)
-      console.log('🔍 [fetchLatestAnalysis] latestTask.task_id:', latestTask.task_id)
-      console.log('🔍 [fetchLatestAnalysis] latestTask.end_time:', latestTask.end_time)
+    if (items && items.length > 0) {
+      const latestItem = items[0]
+      console.log('✅ [fetchLatestAnalysis] 找到任务项:', latestItem)
+      console.log('🔍 [fetchLatestAnalysis] latestItem.id:', latestItem.id)
+      console.log('🔍 [fetchLatestAnalysis] latestItem.symbol:', latestItem.symbol)
+      console.log('🔍 [fetchLatestAnalysis] latestItem.status:', latestItem.status)
 
-      // 保存任务信息（包含 end_time 等）
-      lastTaskInfo.value = latestTask
+      // 保存任务信息
+      lastTaskInfo.value = latestItem
 
-      // 优先使用 result_data 字段（后端实际返回的字段名）
-      if (latestTask.result_data) {
-        lastAnalysis.value = latestTask.result_data
-        analysisStatus.value = 'completed'
-        console.log('✅ 加载历史分析报告成功 (result_data):', latestTask.result_data)
-        console.log('🔍 [fetchLatestAnalysis] lastAnalysis.value.reports:', lastAnalysis.value?.reports)
-      }
-      // 兼容旧的 result 字段
-      else if (latestTask.result) {
-        lastAnalysis.value = latestTask.result
-        analysisStatus.value = 'completed'
-        console.log('✅ 加载历史分析报告成功 (result):', latestTask.result)
-        console.log('🔍 [fetchLatestAnalysis] lastAnalysis.value.reports:', lastAnalysis.value?.reports)
-      }
-      // 否则尝试通过 task_id 获取结果
-      else if (latestTask.task_id) {
-        console.log('🔍 [fetchLatestAnalysis] 通过task_id获取结果:', latestTask.task_id)
+      // 通过 id 获取完整的分析结果（id 格式如 600519_20260408）
+      if (latestItem.id) {
+        console.log('🔍 [fetchLatestAnalysis] 通过id获取结果:', latestItem.id)
         try {
-          const resultResp: any = await analysisApi.getTaskResult(latestTask.task_id)
+          const resultResp: any = await analysisApi.getTaskResult(latestItem.id)
           console.log('🔍 [fetchLatestAnalysis] getTaskResult响应:', resultResp)
+          // getTaskResult 返回的是 { success: true, data: {...} }，拦截器返回 response.data
           lastAnalysis.value = resultResp?.data || resultResp
           analysisStatus.value = 'completed'
-          console.log('✅ 通过 task_id 加载分析报告成功:', lastAnalysis.value)
+          console.log('✅ 通过 id 加载分析报告成功:', lastAnalysis.value)
           console.log('🔍 [fetchLatestAnalysis] lastAnalysis.value.reports:', lastAnalysis.value?.reports)
         } catch (e) {
           console.warn('⚠️ 获取任务结果失败:', e)
@@ -968,7 +954,7 @@ async function fetchLatestAnalysis() {
       }
     } else {
       console.log('ℹ️ 该股票暂无历史分析报告')
-      console.log('🔍 [fetchLatestAnalysis] 判断条件: tasks=', tasks, ', tasks.length=', tasks?.length)
+      console.log('🔍 [fetchLatestAnalysis] 判断条件: items=', items, ', items.length=', items?.length)
     }
   } catch (e) {
     console.warn('⚠️ 获取历史分析报告失败:', e)

@@ -1003,10 +1003,17 @@ const submitAnalysis = async () => {
         const status = response.data // 响应拦截器已返回 response.data
         console.log('🔄 立即查询状态:', status)
         console.log('🔄 当前 analysisStatus:', analysisStatus.value)
-        if (status.status === 'running') {
+        if (status.status === 'running' || status.status === 'pending') {
           analysisStatus.value = 'running'
-          console.log('✅ 设置 analysisStatus 为 running')
-          updateProgressInfo(status)
+          console.log('✅ 设置 analysisStatus 为 running (status:', status.status, ')')
+          if (status.status === 'pending') {
+            if (status.progress !== undefined) {
+              progressInfo.value.progress = status.progress
+            }
+            progressInfo.value.message = '分析任务正在处理...'
+          } else {
+            updateProgressInfo(status)
+          }
         }
       } catch (error) {
         console.error('立即查询状态失败:', error)
@@ -1135,11 +1142,19 @@ const startPollingTaskStatus = () => {
           showClose: true
         })
 
-      } else if (status.status === 'running') {
-        // 分析进行中，更新进度
-        console.log('🔄 轮询中设置 analysisStatus 为 running')
+      } else if (status.status === 'running' || status.status === 'pending') {
+        // 分析进行中（后端返回 pending 表示正在处理）
+        console.log('🔄 轮询中设置 analysisStatus 为 running (status:', status.status, ')')
         analysisStatus.value = 'running'
-        updateProgressInfo(status)
+        if (status.status === 'pending') {
+          // 后端返回 pending 时，使用后端进度数据（如果有）
+          if (status.progress !== undefined) {
+            progressInfo.value.progress = status.progress
+          }
+          progressInfo.value.message = '分析任务正在处理，请稍候...'
+        } else {
+          updateProgressInfo(status)
+        }
       }
 
     } catch (error) {
@@ -1996,12 +2011,19 @@ const restoreTaskFromCache = async () => {
       console.log('✅ 任务已完成，显示结果')
       return true
 
-    } else if (status.status === 'running') {
-      // 任务仍在运行，恢复进度显示
+    } else if (status.status === 'running' || status.status === 'pending') {
+      // 任务仍在运行（后端返回 pending 表示正在处理），恢复进度显示
       currentTaskId.value = cached.taskId
       analysisStatus.value = 'running'
       showResults.value = false
-      updateProgressInfo(status)
+      if (status.status === 'pending') {
+        // 后端返回 pending 时，显示通用进度信息
+        progressInfo.value.progress = status.progress || 0
+        progressInfo.value.currentStep = '分析进行中...'
+        progressInfo.value.message = '分析任务正在处理，请稍候'
+      } else {
+        updateProgressInfo(status)
+      }
 
       // 恢复分析参数
       if (cached.taskData.parameters) {
@@ -2011,7 +2033,7 @@ const restoreTaskFromCache = async () => {
       // 启动轮询
       startPollingTaskStatus()
 
-      console.log('🔄 任务仍在运行，恢复进度显示')
+      console.log('🔄 任务仍在运行，恢复进度显示 (status:', status.status, ')')
       return true
 
     } else if (status.status === 'failed') {
