@@ -153,7 +153,7 @@ export const databaseApi = {
     collections?: string[]
     format?: string
     sanitize?: boolean  // 是否脱敏（清空敏感字段，用于演示系统）
-  }): Promise<Blob> {
+  }): Promise<any> {
     return ApiClient.post('/api/system/database/export', options, {
       responseType: 'blob'
     })

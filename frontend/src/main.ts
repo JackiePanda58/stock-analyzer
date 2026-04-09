@@ -124,7 +124,7 @@ const initApp = async () => {
     } else {
       console.log('⚠️ API连接失败，跳过认证检查')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn('⚠️ 应用初始化失败，但应用将继续启动:', error)
     // 如果是网络错误，不影响应用启动
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {

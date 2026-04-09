@@ -126,31 +126,34 @@ class GraphSetup:
         workflow.add_node("Conservative Analyst", conservative_analyst)
         workflow.add_node("Risk Judge", risk_manager_node)
 
-        # Define edges
-        # Start with the first analyst
-        first_analyst = selected_analysts[0]
-        workflow.add_edge(START, f"{first_analyst.capitalize()} Analyst")
-
-        # Connect analysts in sequence
-        for i, analyst_type in enumerate(selected_analysts):
+        # Define edges - Sequential execution (stable)
+        if selected_analysts:
+            # First analyst starts from START
+            first_analyst = selected_analysts[0]
+            workflow.add_edge(START, f"{first_analyst.capitalize()} Analyst")
+            
+            # Chain remaining analysts sequentially
+            for i in range(1, len(selected_analysts)):
+                prev_clear = f"Msg Clear {selected_analysts[i-1].capitalize()}"
+                curr_analyst = f"{selected_analysts[i].capitalize()} Analyst"
+                workflow.add_edge(prev_clear, curr_analyst)
+            
+            # Last analyst connects to Bull Researcher
+            last_clear = f"Msg Clear {selected_analysts[-1].capitalize()}"
+            workflow.add_edge(last_clear, "Bull Researcher")
+        
+        # Each analyst has its own tool loop
+        for analyst_type in selected_analysts:
             current_analyst = f"{analyst_type.capitalize()} Analyst"
             current_tools = f"tools_{analyst_type}"
             current_clear = f"Msg Clear {analyst_type.capitalize()}"
 
-            # Add conditional edges for current analyst
             workflow.add_conditional_edges(
                 current_analyst,
                 getattr(self.conditional_logic, f"should_continue_{analyst_type}"),
                 [current_tools, current_clear],
             )
             workflow.add_edge(current_tools, current_analyst)
-
-            # Connect to next analyst or to Bull Researcher if this is the last analyst
-            if i < len(selected_analysts) - 1:
-                next_analyst = f"{selected_analysts[i+1].capitalize()} Analyst"
-                workflow.add_edge(current_clear, next_analyst)
-            else:
-                workflow.add_edge(current_clear, "Bull Researcher")
 
         # Add remaining edges
         workflow.add_conditional_edges(

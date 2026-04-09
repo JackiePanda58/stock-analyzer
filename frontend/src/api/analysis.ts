@@ -26,7 +26,7 @@ export interface SingleAnalysisRequest {
   parameters?: {
     market_type?: string
     analysis_date?: string
-    research_depth?: string
+    research_depth?: number  // 整数 1-5
     selected_analysts?: string[]
     custom_prompt?: string
     include_sentiment?: boolean

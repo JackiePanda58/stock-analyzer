@@ -1,0 +1,184 @@
+{
+  "metadata": {
+    "timestamp": "2026-04-09T18:00:23.099868",
+    "base_url": "http://localhost:8080",
+    "test_config": {
+      "warmup_requests": 3,
+      "normal_requests": 10,
+      "concurrent_users": [
+        1,
+        5,
+        10,
+        20
+      ],
+      "timeout_seconds": 120
+    }
+  },
+  "single_endpoint_tests": [
+    {
+      "name": "健康检查",
+      "endpoint": "/api/health",
+      "method": "GET",
+      "total_requests": 10,
+      "successful_requests": 10,
+      "success_rate": 100.0,
+      "latency": {
+        "min": 3.5462379455566406,
+        "max": 6.984710693359375,
+        "avg": 4.8644304275512695,
+        "median": 4.7217607498168945,
+        "p95": 6.984710693359375,
+        "p99": 6.984710693359375
+      },
+      "response_size": {
+        "avg": 73,
+        "max": 73
+      }
+    },
+    {
+      "name": "系统信息",
+      "endpoint": "/api/system/info",
+      "method": "GET",
+      "total_requests": 10,
+      "successful_requests": 10,
+      "success_rate": 100.0,
+      "latency": {
+        "min": 3.3648014068603516,
+        "max": 6.801366806030273,
+        "avg": 4.61268424987793,
+        "median": 4.359006881713867,
+        "p95": 6.801366806030273,
+        "p99": 6.801366806030273
+      },
+      "response_size": {
+        "avg": 268,
+        "max": 268
+      }
+    },
+    {
+      "name": "获取收藏列表",
+      "endpoint": "/api/favorites/",
+      "method": "GET",
+      "total_requests": 10,
+      "successful_requests": 10,
+      "success_rate": 100.0,
+      "latency": {
+        "min": 3.1096935272216797,
+        "max": 5.266427993774414,
+        "avg": 3.570675849914551,
+        "median": 3.31878662109375,
+        "p95": 5.266427993774414,
+        "p99": 5.266427993774414
+      },
+      "response_size": {
+        "avg": 26,
+        "max": 26
+      }
+    }
+  ],
+  "concurrent_load_tests": [
+    {
+      "name": "健康检查",
+      "endpoint": "/api/health",
+      "concurrent_tests": [
+        {
+          "concurrent_users": 1,
+          "total_requests": 5,
+          "successful_requests": 5,
+          "total_time_seconds": 0.0827789306640625,
+          "requests_per_second": 60.40184331797235,
+          "avg_latency_ms": 16.08119010925293,
+          "min_latency_ms": 1.9614696502685547,
+          "max_latency_ms": 62.075138092041016
+        },
+        {
+          "concurrent_users": 5,
+          "total_requests": 25,
+          "successful_requests": 25,
+          "total_time_seconds": 0.048934221267700195,
+          "requests_per_second": 510.88991205632294,
+          "avg_latency_ms": 8.621902465820312,
+          "min_latency_ms": 5.553007125854492,
+          "max_latency_ms": 12.032270431518555
+        },
+        {
+          "concurrent_users": 10,
+          "total_requests": 50,
+          "successful_requests": 50,
+          "total_time_seconds": 0.08788275718688965,
+          "requests_per_second": 568.9398193740217,
+          "avg_latency_ms": 14.278721809387207,
+          "min_latency_ms": 2.203702926635742,
+          "max_latency_ms": 22.347688674926758
+        },
+        {
+          "concurrent_users": 20,
+          "total_requests": 100,
+          "successful_requests": 100,
+          "total_time_seconds": 0.1852576732635498,
+          "requests_per_second": 539.7887074709116,
+          "avg_latency_ms": 24.96772527694702,
+          "min_latency_ms": 3.450155258178711,
+          "max_latency_ms": 44.397592544555664
+        }
+      ]
+    },
+    {
+      "name": "系统信息",
+      "endpoint": "/api/system/info",
+      "concurrent_tests": [
+        {
+          "concurrent_users": 1,
+          "total_requests": 5,
+          "successful_requests": 5,
+          "total_time_seconds": 0.014136791229248047,
+          "requests_per_second": 353.687050966371,
+          "avg_latency_ms": 2.647542953491211,
+          "min_latency_ms": 2.302885055541992,
+          "max_latency_ms": 3.662586212158203
+        },
+        {
+          "concurrent_users": 5,
+          "total_requests": 25,
+          "successful_requests": 25,
+          "total_time_seconds": 0.11449575424194336,
+          "requests_per_second": 218.34870791079274,
+          "avg_latency_ms": 21.649351119995117,
+          "min_latency_ms": 8.29172134399414,
+          "max_latency_ms": 97.77665138244629
+        },
+        {
+          "concurrent_users": 10,
+          "total_requests": 50,
+          "successful_requests": 50,
+          "total_time_seconds": 0.11511397361755371,
+          "requests_per_second": 434.3521331833819,
+          "avg_latency_ms": 20.866031646728516,
+          "min_latency_ms": 11.182785034179688,
+          "max_latency_ms": 27.564525604248047
+        },
+        {
+          "concurrent_users": 20,
+          "total_requests": 100,
+          "successful_requests": 100,
+          "total_time_seconds": 0.23725652694702148,
+          "requests_per_second": 421.4847165082613,
+          "avg_latency_ms": 41.683077812194824,
+          "min_latency_ms": 5.724430084228516,
+          "max_latency_ms": 50.690412521362305
+        }
+      ]
+    }
+  ],
+  "resource_usage": {
+    "cpu_usage": "0.0",
+    "memory_usage": "57.7%",
+    "disk_usage": "66%",
+    "process_count": 148
+  },
+  "summary": {
+    "total_endpoints_tested": 3,
+    "average_latency_ms": 4.349263509114583,
+    "overall_success_rate": 100.0
+  }
+}

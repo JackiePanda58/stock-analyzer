@@ -1,0 +1,102 @@
+{
+    "alert_config": {
+        "enabled": true,
+        "environment": "production",
+        "service_name": "stock-analyzer"
+    },
+    "thresholds": {
+        "cpu": {
+            "warning": 80,
+            "critical": 95,
+            "unit": "percent"
+        },
+        "memory": {
+            "warning": 85,
+            "critical": 95,
+            "unit": "percent"
+        },
+        "disk": {
+            "warning": 85,
+            "critical": 95,
+            "unit": "percent"
+        },
+        "response_time": {
+            "warning": 1000,
+            "critical": 5000,
+            "unit": "milliseconds"
+        },
+        "error_rate": {
+            "warning": 1,
+            "critical": 5,
+            "unit": "percent"
+        }
+    },
+    "notifications": {
+        "email": {
+            "enabled": false,
+            "smtp_server": "smtp.example.com",
+            "smtp_port": 587,
+            "username": "alerts@example.com",
+            "password_env": "SMTP_PASSWORD",
+            "recipients": [
+                "admin@example.com",
+                "devops@example.com"
+            ],
+            "from_address": "stock-analyzer-alerts@example.com"
+        },
+        "webhook": {
+            "enabled": true,
+            "url": "http://localhost:8080/alerts",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer YOUR_TOKEN_HERE"
+            },
+            "timeout": 10
+        },
+        "slack": {
+            "enabled": false,
+            "webhook_url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+            "channel": "#alerts",
+            "username": "StockAnalyzer Bot"
+        },
+        "dingtalk": {
+            "enabled": false,
+            "webhook_url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN",
+            "secret_env": "DINGTALK_SECRET"
+        }
+    },
+    "escalation": {
+        "enabled": true,
+        "levels": [
+            {
+                "level": 1,
+                "delay_minutes": 0,
+                "notify": ["webhook"]
+            },
+            {
+                "level": 2,
+                "delay_minutes": 15,
+                "notify": ["webhook", "email"]
+            },
+            {
+                "level": 3,
+                "delay_minutes": 30,
+                "notify": ["webhook", "email", "slack"]
+            }
+        ]
+    },
+    "maintenance_windows": [
+        {
+            "name": "每周维护窗口",
+            "schedule": "0 2 * * 0",
+            "duration_minutes": 120,
+            "suppress_alerts": true
+        }
+    ],
+    "alert_aggregation": {
+        "enabled": true,
+        "window_minutes": 5,
+        "max_alerts_per_window": 10
+    }
+}

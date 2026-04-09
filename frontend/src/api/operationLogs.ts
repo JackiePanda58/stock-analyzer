@@ -156,7 +156,7 @@ export class OperationLogsApi {
     start_date?: string
     end_date?: string
     action_type?: string
-  } = {}): Promise<Blob> {
+  } = {}): Promise<any> {
     const queryParams = new URLSearchParams()
     
     if (params.start_date) queryParams.append('start_date', params.start_date)

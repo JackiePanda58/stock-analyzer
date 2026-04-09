@@ -1,0 +1,164 @@
+{
+  "start_time": "2026-04-09T09:09:31.422776",
+  "total": 22,
+  "passed": 20,
+  "failed": 0,
+  "skipped": 2,
+  "pass_rate": 90.9090909090909,
+  "results": [
+    {
+      "test_id": "UAT-AUTH-02",
+      "name": "正常登录",
+      "status": "PASS",
+      "duration_ms": 0.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AUTH-03",
+      "name": "错误密码登录",
+      "status": "PASS",
+      "duration_ms": 0.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AUTH-04",
+      "name": "不存在用户登录",
+      "status": "PASS",
+      "duration_ms": 0.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AUTH-11",
+      "name": "SQL 注入防护",
+      "status": "PASS",
+      "duration_ms": 0.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AUTH-12",
+      "name": "XSS 防护",
+      "status": "PASS",
+      "duration_ms": 0.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-DS-01",
+      "name": "A 股数据获取 (600519)",
+      "status": "PASS",
+      "duration_ms": 4955.08,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-DS-02",
+      "name": "ETF 数据获取 (512170)",
+      "status": "SKIP",
+      "duration_ms": 304.81,
+      "error": "未找到股票 512170 的行情数据"
+    },
+    {
+      "test_id": "UAT-DS-05",
+      "name": "历史数据查询",
+      "status": "PASS",
+      "duration_ms": 1515.57,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-DS-07",
+      "name": "无效代码处理",
+      "status": "PASS",
+      "duration_ms": 4845.55,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-DS-09",
+      "name": "数据完整性",
+      "status": "PASS",
+      "duration_ms": 2151.09,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-01",
+      "name": "提交分析请求",
+      "status": "PASS",
+      "duration_ms": 4.0,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-02",
+      "name": "分析进度查询",
+      "status": "PASS",
+      "duration_ms": 2.44,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-19",
+      "name": "报告列表",
+      "status": "PASS",
+      "duration_ms": 4.84,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-12",
+      "name": "空代码处理",
+      "status": "PASS",
+      "duration_ms": 1.56,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-13",
+      "name": "非法代码处理",
+      "status": "PASS",
+      "duration_ms": 1.51,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-AN-14",
+      "name": "分析历史查询",
+      "status": "SKIP",
+      "duration_ms": 1.29,
+      "error": "API 未实现 (404)"
+    },
+    {
+      "test_id": "UAT-PS-01",
+      "name": "查看持仓列表",
+      "status": "PASS",
+      "duration_ms": 2.5,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-SR-01",
+      "name": "股票代码搜索",
+      "status": "PASS",
+      "duration_ms": 3202.24,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-DB-01",
+      "name": "Dashboard 加载",
+      "status": "PASS",
+      "duration_ms": 2.49,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-CH-01",
+      "name": "缓存命中",
+      "status": "PASS",
+      "duration_ms": 8507.04,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-SEC-04",
+      "name": "XSS-搜索",
+      "status": "PASS",
+      "duration_ms": 650.92,
+      "error": ""
+    },
+    {
+      "test_id": "UAT-SEC-01",
+      "name": "SQL 注入 - 搜索",
+      "status": "PASS",
+      "duration_ms": 780.94,
+      "error": ""
+    }
+  ]
+}

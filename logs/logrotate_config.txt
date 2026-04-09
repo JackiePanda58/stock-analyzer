@@ -1,0 +1,12 @@
+# Logrotate 配置示例
+# 使用方法：sudo logrotate /root/stock-analyzer/logs/logrotate_config.txt
+
+/root/stock-analyzer/logs/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 root root
+}

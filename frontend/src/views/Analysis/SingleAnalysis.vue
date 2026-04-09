@@ -710,6 +710,7 @@ import { paperApi } from '@/api/paper'
 import { stocksApi } from '@/api/stocks'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import Decimal from 'decimal.js'
 import { configApi } from '@/api/config'
 import DeepModelSelector from '@/components/DeepModelSelector.vue'
 import { ANALYSTS, convertAnalystNamesToIds } from '@/constants/analysts'
@@ -1161,7 +1162,7 @@ const startPollingTaskStatus = () => {
       console.error('获取任务状态失败:', error)
       // 继续轮询，不中断
     }
-  }, 5000) // 每5秒轮询一次
+  }, actualInterval) // 动态退避间隔
 }
 
 // 更新进度信息
@@ -1621,7 +1622,7 @@ const goSimOrder = async () => {
     if (recommendation.action === 'buy') {
       // 买入：根据可用资金和当前价格计算
       const availableCash = account.cash
-      maxQuantity = Math.floor(Number(availableCash) / Number(currentPrice) / 100) * 100 // 100股为单位
+      maxQuantity = Math.floor(new Decimal(availableCash).div(new Decimal(currentPrice)).div(100).toNumber()) * 100 // 100股为单位
       const suggested = Math.floor(maxQuantity * 0.2) // 建议使用20%资金
       suggestedQuantity = Math.floor(suggested / 100) * 100 // 向下取整到100的倍数
       suggestedQuantity = Math.max(100, suggestedQuantity) // 至少100股
@@ -1651,7 +1652,7 @@ const goSimOrder = async () => {
       setup() {
         // 计算预计金额
         const estimatedAmount = computed(() => {
-          return (tradeForm.price * tradeForm.quantity).toFixed(2)
+          return (new Decimal(tradeForm.price).mul(tradeForm.quantity).toNumber()).toFixed(2)
         })
 
         return () => h('div', { style: 'line-height: 2;' }, [
@@ -1744,8 +1745,8 @@ const goSimOrder = async () => {
 
           // 检查资金是否充足
           if (recommendation.action === 'buy') {
-            const totalAmount = tradeForm.price * tradeForm.quantity
-            if (totalAmount > Number(account.cash)) {
+            const totalAmount = new Decimal(tradeForm.price).mul(tradeForm.quantity).toNumber()
+            if (new Decimal(totalAmount).gt(new Decimal(account.cash))) {
               ElMessage.error('可用资金不足')
               return
             }

@@ -5,7 +5,7 @@ import type {
   LoginResponse, 
   RefreshTokenResponse,
   User,
-  UserPermissions,
+  
   ChangePasswordForm
 } from '@/types/auth'
 
@@ -37,8 +37,8 @@ export const authApi = {
     ApiClient.get<User>('/api/auth/me'),
 
   // 获取用户权限（开源版不需要，admin拥有所有权限）
-  // getUserPermissions: () =>
-  //   ApiClient.get<UserPermissions>('/api/auth/permissions'),
+  // get: () =>
+  //   ApiClient.get<>('/api/auth/permissions'),
 
   // 更新用户信息
   updateUserInfo: (data: Partial<User>) =>

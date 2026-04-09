@@ -1,0 +1,466 @@
+openapi: 3.0.3
+info:
+  title: TradingAgents Enterprise API
+  description: |
+    股票智能分析 API，基于多智能体系统提供深度股票分析服务。
+    
+    ## 功能特性
+    - JWT 认证
+    - 智能股票分析
+    - 收藏夹管理
+    - 系统监控
+    
+    ## 认证方式
+    所有受保护的接口需要在请求头中携带 JWT Token:
+    ```
+    Authorization: Bearer <your_token>
+    ```
+  version: 1.0.0-preview
+  contact:
+    name: API Support
+    email: support@stockanalyzer.com
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发环境
+  - url: https://api.stockanalyzer.com
+    description: 生产环境
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 分析
+    description: 股票智能分析接口
+  - name: 收藏夹
+    description: 股票收藏管理
+  - name: 系统
+    description: 系统信息和健康检查
+  - name: 通知
+    description: 通知管理
+
+paths:
+  /api/v1/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 使用用户名和密码登录，获取 JWT Token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 请求过于频繁
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/analyze:
+    post:
+      tags:
+        - 分析
+      summary: 股票智能分析
+      description: 执行股票深度分析，返回详细分析报告
+      operationId: analyzeStock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+      responses:
+        '200':
+          description: 分析成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 股票数据未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health:
+    get:
+      tags:
+        - 系统
+      summary: 健康检查
+      description: 检查 API 服务健康状态（无需认证）
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/favorites/:
+    get:
+      tags:
+        - 收藏夹
+      summary: 获取收藏列表
+      description: 获取当前用户的收藏股票列表
+      operationId: getFavorites
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritesResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - 收藏夹
+      summary: 添加收藏
+      description: 添加股票到收藏夹
+      operationId: addFavorite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFavoriteRequest'
+      responses:
+        '200':
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未授权
+
+  /api/favorites/{stock_code}:
+    delete:
+      tags:
+        - 收藏夹
+      summary: 删除收藏
+      description: 从收藏夹删除股票
+      operationId: deleteFavorite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: stock_code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 股票代码
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: 未授权
+        '404':
+          description: 收藏未找到
+
+  /api/system/info:
+    get:
+      tags:
+        - 系统
+      summary: 系统信息
+      description: 获取系统版本和配置信息
+      operationId: getSystemInfo
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfoResponse'
+
+  /api/system/status:
+    get:
+      tags:
+        - 系统
+      summary: 服务状态
+      description: 获取各组件运行状态
+      operationId: getSystemStatus
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatusResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Token 认证
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: admin123
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 86400
+
+    AnalyzeRequest:
+      type: object
+      required:
+        - symbol
+      properties:
+        symbol:
+          type: string
+          pattern: '^\d{6}$'
+          example: "600519"
+          description: 6 位股票代码
+        analysis_date:
+          type: string
+          format: date
+          example: "2026-04-09"
+          description: 分析日期
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          description: 风险等级
+        selected_analysts:
+          type: array
+          items:
+            type: string
+          example: ["technical", "fundamental"]
+          description: 指定分析师列表
+        user_context:
+          type: object
+          description: 用户上下文信息
+          properties:
+            investment_style:
+              type: string
+              enum: [value, growth, balance]
+            holding_period:
+              type: string
+              enum: [short_term, medium_term, long_term]
+
+    AnalyzeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            symbol:
+              type: string
+              example: "600519"
+            elapsed_seconds:
+              type: number
+              format: float
+              example: 15.3
+            report:
+              type: string
+              description: Markdown 格式的分析报告
+            cached:
+              type: boolean
+              example: false
+              description: 是否来自缓存
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        message:
+          type: string
+        jwt_enabled:
+          type: boolean
+
+    FavoritesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FavoriteItem'
+        timestamp:
+          type: string
+          format: date-time
+
+    FavoriteItem:
+      type: object
+      properties:
+        stock_code:
+          type: string
+          example: "600519"
+        stock_name:
+          type: string
+          example: "贵州茅台"
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    AddFavoriteRequest:
+      type: object
+      required:
+        - stock_code
+        - stock_name
+      properties:
+        stock_code:
+          type: string
+          example: "600519"
+        stock_name:
+          type: string
+          example: "贵州茅台"
+        tags:
+          type: array
+          items:
+            type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 1001
+            message:
+              type: string
+              example: 内部错误
+            detail:
+              type: string
+            data:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    SystemInfoResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        uptime:
+          type: integer
+        environment:
+          type: string
+
+    SystemStatusResponse:
+      type: object
+      properties:
+        api:
+          type: string
+          enum: [running, stopped, degraded]
+        redis:
+          type: string
+          enum: [connected, disconnected]
+        database:
+          type: string
+          enum: [healthy, unhealthy]

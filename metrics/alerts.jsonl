@@ -1,0 +1,9 @@
+{
+    "timestamp": "2026-04-09T01:30:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}

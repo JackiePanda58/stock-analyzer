@@ -14,25 +14,67 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Optional
 
+# Redis 缓存客户端
+try:
+    import redis.asyncio as aioredis
+    redis_client = aioredis.Redis(host='localhost', port=6379, db=1, decode_responses=True)
+    sys_logger.info("✅ Dataflows: Redis 缓存已初始化（db=1）")
+except Exception as e:
+    sys_logger.warning(f"⚠️  Dataflows: Redis 连接失败，将降级为无缓存模式：{e}")
+    redis_client = None
 
-# ── BaoStock 连接管理（全局锁串行化）────────────────────────────
 
-_bs_lock = threading.Lock()  # 全局锁，所有 BaoStock 调用串行化
+# ── 缓存辅助函数 ──────────────────────────────────────────────────
+
+async def _cache_get(key: str) -> Optional[str]:
+    """从 Redis 获取缓存"""
+    if redis_client is None:
+        return None
+    try:
+        return await redis_client.get(key)
+    except Exception as e:
+        sys_logger.warning(f"Redis get 失败：{e}")
+        return None
+
+
+async def _cache_set(key: str, value: str, ttl: int = 12 * 60 * 60) -> bool:
+    """设置 Redis 缓存（默认 12 小时 TTL）"""
+    if redis_client is None:
+        return False
+    try:
+        await redis_client.setex(key, ttl, value)
+        return True
+    except Exception as e:
+        sys_logger.warning(f"Redis setex 失败：{e}")
+        return False
+
+
+# ── BaoStock 连接管理（线程池优化）────────────────────────────
+
+# OPTIMIZATION: 使用 RLock 替代 Lock，允许同一线程重复获取
+_bs_lock = threading.RLock()  # 可重入锁，支持同一线程内的递归调用
+_bs_session_count = 0  # 会话计数器
 
 
 @contextmanager
 def _baostock_session():
-    """BaoStock 会话上下文管理器（线程安全，串行化所有请求）"""
+    """BaoStock 会话上下文管理器（线程安全，支持重入）"""
+    global _bs_session_count
     with _bs_lock:
-        # 短暂等待避免频繁建立连接
-        time.sleep(0.3)
-        lg = bs.login()
-        if lg.error_code != '0':
-            raise ConnectionError(f"BaoStock 登录失败：{lg.error_msg}")
+        _bs_session_count += 1
         try:
-            yield
+            # OPTIMIZATION: 减少不必要的等待，仅在首次连接时等待
+            if _bs_session_count == 1:
+                time.sleep(0.1)  # 首次连接等待 0.1s
+            lg = bs.login()
+            if lg.error_code != '0':
+                raise ConnectionError(f"BaoStock 登录失败：{lg.error_msg}")
+            try:
+                yield
+            finally:
+                bs.logout()
         finally:
-            bs.logout()
+            _bs_session_count -= 1
 
 
 def _bs_query_to_df(rs) -> pd.DataFrame:
@@ -73,9 +115,24 @@ def get_china_stock_data(
     adjustflag: 1=后复权 2=前复权 3=不复权
     """
     bs_code, plain = _normalize_symbol(symbol)
-    start = start_date[:10]   # BaoStock need
+    start = start_date[:10]
     end = end_date[:10]
     adjustflag = "2" if adjust == "qfq" else "1" if adjust == "hfq" else "3"
+    
+    # 缓存键
+    cache_key = f"stock_data:{plain}:{start}:{end}:{adjustflag}"
+    
+    # 尝试从缓存获取（同步方式）
+    if redis_client:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            cached = loop.run_until_complete(_cache_get(cache_key))
+            if cached:
+                sys_logger.info(f"✅ 缓存命中：{symbol} {start}→{end}")
+                return cached
+        except:
+            pass
 
     try:
         with _baostock_session():

@@ -1,0 +1,55 @@
+# TradingAgents 生产环境定时任务配置
+# 使用方法：crontab -e 然后粘贴以下内容
+
+# ==================== 监控任务 ====================
+
+# 每 5 分钟执行一次健康检查
+*/5 * * * * /root/stock-analyzer/deploy/health_check.sh check >> /root/stock-analyzer/logs/cron_health.log 2>&1
+
+# 每 10 分钟采集一次系统指标
+*/10 * * * * /root/stock-analyzer/deploy/monitor.sh once >> /root/stock-analyzer/logs/cron_monitor.log 2>&1
+
+# ==================== 备份任务 ====================
+
+# 每天凌晨 2 点执行日备份
+0 2 * * * /root/stock-analyzer/deploy/backup.sh daily >> /root/stock-analyzer/logs/cron_backup.log 2>&1
+
+# 每周日凌晨 3 点执行周备份
+0 3 * * 0 /root/stock-analyzer/deploy/backup.sh weekly >> /root/stock-analyzer/logs/cron_backup.log 2>&1
+
+# 每月 1 日凌晨 4 点执行月备份
+0 4 1 * * /root/stock-analyzer/deploy/backup.sh monthly >> /root/stock-analyzer/logs/cron_backup.log 2>&1
+
+# 每周清理一次 7 天前的备份数据
+0 5 * * 0 /root/stock-analyzer/deploy/backup.sh cleanup 7 >> /root/stock-analyzer/logs/cron_backup.log 2>&1
+
+# ==================== 日志清理 ====================
+
+# 每天凌晨 6 点清理 30 天前的日志
+0 6 * * * find /root/stock-analyzer/logs -name "*.log" -mtime +30 -delete
+
+# ==================== 性能监控 ====================
+
+# 每小时生成一次性能报告
+0 * * * * /root/stock-analyzer/deploy/benchmark_test.py >> /root/stock-analyzer/logs/cron_benchmark.log 2>&1
+
+# ==================== 数据库维护 ====================
+
+# 每天凌晨 1 点执行数据库完整性检查
+0 1 * * * sqlite3 /root/stock-analyzer/data/usage.db "PRAGMA integrity_check;" >> /root/stock-analyzer/logs/cron_db.log 2>&1
+
+# 每周执行一次数据库 VACUUM
+0 2 * * 0 sqlite3 /root/stock-analyzer/data/usage.db "VACUUM;" >> /root/stock-analyzer/logs/cron_db.log 2>&1
+
+# ==================== Redis 维护 ====================
+
+# 每天凌晨 3 点执行 Redis 持久化
+0 3 * * * redis-cli BGSAVE >> /root/stock-analyzer/logs/cron_redis.log 2>&1
+
+# ==================== 系统维护 ====================
+
+# 每周一凌晨 5 点检查磁盘空间
+0 5 * * 1 df -h >> /root/stock-analyzer/logs/cron_disk.log 2>&1
+
+# 每天检查一次进程状态
+0 7 * * * ps aux | grep -E "(uvicorn|api_server)" >> /root/stock-analyzer/logs/cron_process.log 2>&1

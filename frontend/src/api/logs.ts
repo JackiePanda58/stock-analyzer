@@ -55,14 +55,14 @@ export const LogsApi = {
   /**
    * 获取日志文件列表
    */
-  listLogFiles(): Promise<LogFileInfo[]> {
+  listLogFiles(): Promise<any> {
     return ApiClient.get('/api/system/system-logs/files')
   },
 
   /**
    * 读取日志文件内容
    */
-  readLogFile(request: LogReadRequest): Promise<LogContentResponse> {
+  readLogFile(request: LogReadRequest): Promise<any> {
     return ApiClient.post('/api/system/system-logs/read', request)
   },
 
@@ -79,7 +79,7 @@ export const LogsApi = {
   /**
    * 获取日志统计信息
    */
-  getStatistics(days: number = 7): Promise<LogStatistics> {
+  getStatistics(days: number = 7): Promise<any> {
     return ApiClient.get('/api/system/system-logs/statistics', { params: { days } })
   },
 

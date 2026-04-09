@@ -16,7 +16,7 @@ from config.settings import TRADING_CONFIG
 set_config(TRADING_CONFIG)
 
 app = FastAPI(title="TradingAgents WS Server")
-SECRET_KEY = "trading_agents_super_secret_key"
+SECRET_KEY = "trading_agents_super_secret_key!"  # 32 bytes for HS256
 ALGORITHM = "HS256"
 
 @app.get("/health")

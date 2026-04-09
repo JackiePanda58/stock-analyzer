@@ -1,0 +1,50 @@
+{
+  "start_time": "2026-04-09 09:27:24.962391",
+  "total": 4,
+  "passed": 1,
+  "failed": 3,
+  "skipped": 0,
+  "pass_rate": 25.0,
+  "results": [
+    {
+      "test_id": "UAT-SR-01",
+      "name": "\u80a1\u7968\u4ee3\u7801\u641c\u7d22",
+      "module": "SR",
+      "priority": "P0",
+      "success": false,
+      "error": "\u65e0\u7ed3\u679c",
+      "duration_ms": 1840.79,
+      "skipped": false
+    },
+    {
+      "test_id": "UAT-SR-02",
+      "name": "\u80a1\u7968\u540d\u79f0\u641c\u7d22",
+      "module": "SR",
+      "priority": "P0",
+      "success": false,
+      "error": "'ascii' codec can't encode characters in position 25-26: ordinal not in range(128)",
+      "duration_ms": 0.12,
+      "skipped": false
+    },
+    {
+      "test_id": "UAT-SR-03",
+      "name": "ETF \u641c\u7d22",
+      "module": "SR",
+      "priority": "P1",
+      "success": true,
+      "error": null,
+      "duration_ms": 1014.22,
+      "skipped": false
+    },
+    {
+      "test_id": "UAT-SR-04",
+      "name": "\u6a21\u7cca\u641c\u7d22",
+      "module": "SR",
+      "priority": "P1",
+      "success": false,
+      "error": "'ascii' codec can't encode character '\\u8305' in position 25: ordinal not in range(128)",
+      "duration_ms": 0.11,
+      "skipped": false
+    }
+  ]
+}

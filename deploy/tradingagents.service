@@ -1,0 +1,39 @@
+[Unit]
+Description=TradingAgents Stock Analyzer API
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/stock-analyzer
+Environment="PATH=/root/stock-analyzer/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONDONTWRITEBYTECODE=1"
+
+# 启动命令
+ExecStart=/root/stock-analyzer/venv/bin/python -m uvicorn api_server:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 2 \
+    --timeout-keep-alive 300
+
+# 重启策略
+Restart=always
+RestartSec=10
+
+# 资源限制
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tradingagents
+
+[Install]
+WantedBy=multi-user.target

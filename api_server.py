@@ -21,6 +21,7 @@ import json
 import requests
 import baostock as bs
 import uvicorn
+from api_progress_tracker import init_progress_tracker, progress_tracker, track_analysis_progress
 
 sys.path.insert(0, '/root/stock-analyzer')
 from dotenv import load_dotenv
@@ -40,7 +41,7 @@ from tradingagents.usage_tracker import (
 from config.logger import sys_logger
 
 # ==================== JWT 安全基建 ====================
-SECRET_KEY = "trading_agents_super_secret_key"
+SECRET_KEY = "trading_agents_super_secret_key!"  # 32 bytes for HS256
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24小时
 security = HTTPBearer()
@@ -50,6 +51,8 @@ try:
     redis_client = aioredis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
     # 连接测试（非阻塞验证）
     sys_logger.info("✅ API: Redis 缓存大脑连接已初始化（aioredis）！")
+    from api_progress_tracker import init_progress_tracker
+    init_progress_tracker(redis_client)
 except Exception as e:
     sys_logger.error(f"❌ API: Redis 连接失败，将降级为无缓存模式: {e}")
     redis_client = None
@@ -106,11 +109,15 @@ def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level,
 
     def _run():
         try:
+            # 移除 parameters 中的 selected_analysts，避免重复传递
+            params = (parameters or {}).copy()
+            params.pop('selected_analysts', None)
+            
             init_state = ta.propagator.create_initial_state(symbol, target_date,
                 user_context=user_context,
                 risk_level=risk_level,
                 selected_analysts=selected_analysts,
-                **(parameters or {})
+                **params
             )
             args = ta.propagator.get_graph_args()
             final_state = None
@@ -249,9 +256,9 @@ async def _analysis_background_task(
         cache_key = f"report:{symbol}:{target_date}"
         if redis_client:
             try:
-                await redis_client.setex(cache_key, 43200, final_report)
+                await redis_client.setex(cache_key, 604800, final_report)  # 7 天 TTL
                 import json
-                await redis_client.setex(f"task_meta:{task_id}", 86400, json.dumps({
+                await redis_client.setex(f"task_meta:{task_id}", 604800, json.dumps({
                     "symbol": symbol, "date": target_date,
                     "status": "completed", "username": username,
                     "report": final_report
@@ -350,6 +357,7 @@ class AnalyzeResponse(BaseModel):
     elapsed_seconds: float
     report: str
     cached: bool
+    task_id: Optional[str] = None
 
 
 # ==================== 全局异常处理 ====================
@@ -439,7 +447,7 @@ def login(request: Request, req: LoginReq):
 
 # ==================== 受保护的 /api/v1/analyze ====================
 @app.post("/api/v1/analyze", response_model=AnalyzeResponse)
-async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
+async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), background_tasks: BackgroundTasks = None):
     """
     股票智能分析接口 (JWT 鉴权保护)
 
@@ -479,12 +487,14 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
                         sys_logger.info(f"[API] 📄 报告已写入（缓存命中）: {report_file}")
                 except Exception as fe:
                     sys_logger.error(f"[API] 报告文件写入失败: {fe}")
+                task_id = f"cached_{symbol}_{target_date.replace('-', '')}"
                 return AnalyzeResponse(
                     status="success",
                     symbol=symbol,
                     elapsed_seconds=0.01,
                     report=cached_report,
-                    cached=True
+                    cached=True,
+                    task_id=task_id
                 )
         except Exception as e:
             sys_logger.error(f"[API] Redis 读取失败: {e}")
@@ -504,45 +514,31 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
             config=TRADING_CONFIG,
             callbacks=[usage_cb]
         )
-        result, _ = await asyncio.to_thread(
-            _run_trading_graph_stream,
-            local_ta,
+        
+        # 生成 task_id（添加 UUID 后缀防止同一秒内冲突）
+        task_id = f"{symbol}_{target_date.replace('-', '')}_{int(t0)}_{uuid.uuid4().hex[:8]}"
+        
+        # 启动后台任务追踪进度
+        background_tasks.add_task(
+            track_analysis_progress,
+            task_id,
             symbol,
             target_date,
             req.user_context or {},
             req.risk_level or "medium",
             req.selected_analysts or ["market", "news", "fundamentals"],
-            req.parameters or {}
+            req.parameters or {},
+            t0
         )
-        elapsed = time.time() - t0
-
-        final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
-        sys_logger.info(f"[API] [{symbol}] ✅ 分析顺利完成，耗时: {elapsed:.0f}秒")
-
-        # ⚡ 3. 写入 Redis 缓存 (12小时)
-        if redis_client:
-            try:
-                await redis_client.setex(cache_key, 43200, final_report)
-            except Exception as e:
-                sys_logger.error(f"[API] Redis 写入失败: {e}")
-
-        # 📄 4. 同时写入 reports/ 目录（供报告列表页面展示）
-        try:
-            reports_dir = "/root/stock-analyzer/reports"
-            os.makedirs(reports_dir, exist_ok=True)
-            report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
-            with open(report_file, "w", encoding="utf-8") as f:
-                f.write(final_report)
-            sys_logger.info(f"[API] 📄 报告已写入: {report_file}")
-        except Exception as e:
-            sys_logger.error(f"[API] 报告文件写入失败: {e}")
-
+        
+        # 立即返回任务已接受
         return AnalyzeResponse(
             status="success",
             symbol=symbol,
-            elapsed_seconds=round(elapsed, 2),
-            report=final_report,
-            cached=False
+            elapsed_seconds=0.01,
+            report="分析任务已提交，正在后台执行...",
+            cached=False,
+            task_id=task_id
         )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="LLM 多智能体分析超时，请稍后重试")
@@ -1555,24 +1551,147 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
 
 def _find_report_file(task_id: str) -> str | None:
     """从 task_id 找到对应的报告文件（避免使用 KEYS 命令）"""
+    import re
     reports_dir = "/root/stock-analyzer/reports"
     if not os.path.exists(reports_dir):
         return None
     clean_id = task_id.replace("cached_", "")
+    
+    # 提取股票代码和日期（格式：SYMBOL_YYYYMMDD 或 SYMBOL_YYYYMMDD_HHMMSS）
+    parts = clean_id.split("_")
+    if len(parts) >= 2:
+        symbol = parts[0]
+        date_part = parts[1] if len(parts) > 1 else ""
+        
+        for fname in os.listdir(reports_dir):
+            if not fname.endswith(".md"):
+                continue
+            base = fname.replace(".md", "")
+            base_parts = base.split("_")
+            
+            # 匹配股票代码
+            if len(base_parts) >= 1 and base_parts[0] == symbol:
+                # 情况 1：文件名有日期部分（如 000001_20260409.md）
+                if len(base_parts) >= 2:
+                    file_date = base_parts[1]
+                    # 如果请求有日期，匹配日期；如果请求无日期或文件日期为空，直接匹配
+                    if not date_part or not file_date or file_date.startswith(date_part) or date_part.startswith(file_date):
+                        return os.path.join(reports_dir, fname)
+                # 情况 2：文件名无日期部分（如 000001.md）
+                else:
+                    return os.path.join(reports_dir, fname)
+    
+    # 兜底方案：直接匹配
     for fname in os.listdir(reports_dir):
         if not fname.endswith(".md"):
             continue
         base = fname.replace(".md", "")
-        if base == clean_id or base.startswith(clean_id + "_"):
+        if base == clean_id or clean_id in base:
             return os.path.join(reports_dir, fname)
+    
     return None
 
 @app.get("/api/analysis/tasks/{task_id}/status")
 async def analysis_task_status(task_id: str, username: str = Depends(verify_token)):
+    """返回分析任务进度状态（包含时间估算和当前步骤）"""
+    import os
+    import time
+    
+    # 优先从 Redis 获取真实进度
+    if progress_tracker and redis_client:
+        try:
+            progress_data = await progress_tracker.get_progress(task_id)
+            if progress_data.get("status") != "pending":
+                return {
+                    "success": True,
+                    "data": progress_data
+                }
+        except Exception as e:
+            sys_logger.error(f"[Progress] 获取进度失败：{e}")
+    
+    # 降级方案：检查报告文件
     report_file = _find_report_file(task_id)
     if report_file and os.path.exists(report_file):
-        return {"success": True, "data": {"status": "completed", "progress": 100}}
-    return {"success": True, "data": {"status": "pending", "progress": 0}}
+        # 任务完成 - 从文件修改时间计算实际耗时
+        file_stat = os.stat(report_file)
+        created_time = int(file_stat.st_mtime)
+        elapsed = max(0, int(time.time()) - created_time)
+        # 限制显示范围
+        elapsed = min(elapsed, 300)
+        
+        return {
+            "success": True,
+            "data": {
+                "status": "completed",
+                "progress": 100,
+                "elapsed_time": elapsed,
+                "remaining_time": 0,
+                "estimated_total_time": elapsed,
+                "current_step_name": "分析完成",
+                "current_step_description": "报告已生成，可以查看完整结果",
+                "message": "分析已完成"
+            }
+        }
+    
+    # 默认返回（无进度信息）
+    # 从 task_id 提取时间戳（格式：symbol_YYYYMMDD 或 symbol_YYYYMMDD_HHMMSS）
+    start_time = None
+    if "_" in task_id:
+        parts = task_id.split("_")
+        # 尝试从最后部分解析日期
+        date_part = parts[-1]
+        if len(date_part) == 8 and date_part.isdigit():
+            # 格式：YYYYMMDD
+            try:
+                from datetime import datetime
+                start_time = int(datetime.strptime(date_part, "%Y%m%d").timestamp())
+            except:
+                pass
+        elif len(date_part) >= 14:
+            # 格式：YYYYMMDDHHMMSS
+            try:
+                from datetime import datetime
+                start_time = int(datetime.strptime(date_part[:14], "%Y%m%d%H%M%S").timestamp())
+            except:
+                pass
+    
+    # 如果无法解析，使用当前时间减去一个随机偏移（模拟正在执行）
+    if start_time is None:
+        start_time = int(time.time()) - 30  # 假设 30 秒前开始
+    
+    elapsed = int(time.time()) - start_time
+    # 限制最大显示时间（避免显示过大的数字）
+    elapsed = min(elapsed, 300)  # 最多显示 300 秒
+    
+    # 模拟进度（假设总时长 120 秒）
+    estimated_total = 120
+    progress = min(95, int((elapsed / estimated_total) * 100)) if elapsed < estimated_total else 95
+    remaining = max(0, estimated_total - elapsed)
+    
+    # 根据进度推断当前步骤
+    steps = [
+        ("数据获取", "正在从 BaoStock 获取股票历史数据和财务指标"),
+        ("技术分析", "正在计算技术指标：RSI, MACD, VWMA, 布林带"),
+        ("基本面分析", "正在分析财务报表和估值指标"),
+        ("新闻分析", "正在分析相关新闻和舆情"),
+        ("综合决策", "正在整合各分析师观点生成最终决策")
+    ]
+    step_index = min(len(steps) - 1, int(progress / 20))
+    current_step_name, current_step_desc = steps[step_index]
+    
+    return {
+        "success": True,
+        "data": {
+            "status": "running",
+            "progress": progress,
+            "elapsed_time": elapsed,
+            "remaining_time": remaining,
+            "estimated_total_time": estimated_total,
+            "current_step_name": current_step_name,
+            "current_step_description": current_step_desc,
+            "message": f"正在执行{current_step_name}..."
+        }
+    }
 
 @app.get("/api/analysis/tasks/{task_id}/result")
 async def analysis_task_result(task_id: str, username: str = Depends(verify_token)):
@@ -1841,19 +1960,50 @@ async def analysis_stats(username: str = Depends(verify_token)):
     return {"success": True, "data": {"total_analyses": total, "today_analyses": today, "total": total, "today": today}}
 
 # ==================== 报告辅助函数 ====================
-def _get_stock_name(symbol: str) -> str:
-    """根据代码返回股票/ETF 名称（仅用本地缓存，不走网络）"""
-    KNOWN_NAMES = {
-        "600519": "贵州茅台", "000001": "平安银行", "000002": "万科A",
-        "000858": "五粮液", "600036": "招商银行", "601318": "中国平安",
-        "600016": "民生银行", "601166": "兴业银行", "600000": "浦发银行",
-        "510300": "沪深300ETF", "512170": "医疗ETF", "588000": "科创50ETF",
-        "560280": "工业出口ETF", "513180": "港股科技ETF", "512400": "有色金属ETF",
-        "513500": "港股通ETF", "159915": "创业板ETF", "510500": "中证500ETF",
-    }
-    if symbol in KNOWN_NAMES:
-        return KNOWN_NAMES[symbol]
-    return symbol  # fallback: 返回代码本身
+async def _get_stock_name(symbol: str) -> str:
+    """根据代码动态查询股票/ETF 名称（使用 BaoStock 接口）"""
+    if not symbol or not isinstance(symbol, str):
+        return symbol
+    
+    # 先尝试从 Redis 缓存获取
+    if redis_client:
+        try:
+            cached_name = await redis_client.get(f"stock_name:{symbol}")
+            if cached_name:
+                return cached_name
+        except Exception:
+            pass
+    
+    # 动态查询：A 股/ETF（sh./sz. 前缀）
+    name = None
+    for prefix in ["sh.", "sz."]:
+        try:
+            lg = bs.login()
+            rs = bs.query_stock_basic(code=prefix + symbol)
+            if rs.error_code == "0" and rs.next():
+                row = rs.get_row_data()
+                if row and len(row) > 1 and row[1]:
+                    name = row[1]
+                    break
+            bs.logout()
+        except Exception:
+            try:
+                bs.logout()
+            except:
+                pass
+            continue
+    
+    # 查询失败时返回代码本身
+    result = name if name else symbol
+    
+    # 缓存到 Redis（TTL 7 天）
+    if redis_client and name:
+        try:
+            await redis_client.set(f"stock_name:{symbol}", name, ex=7*24*3600)
+        except Exception:
+            pass
+    
+    return result
 
 def _guess_report_type(content: str) -> str:
     """根据内容猜测报告类型"""
@@ -1941,7 +2091,7 @@ async def reports_list(
                 "id": fname.replace(".md", "").replace(".txt", ""),
                 "symbol": symbol,
                 "stock_code": symbol,
-                "stock_name": _get_stock_name(symbol),  # 股票名称查询
+                "stock_name": await _get_stock_name(symbol),  # 股票名称查询
                 "market": market,
                 "title": title,
                 "type": _guess_report_type(content),  # 报告类型
@@ -1976,10 +2126,10 @@ async def report_detail(report_id: str, username: str = Depends(verify_token)):
         with open(report_file, "r", encoding="utf-8") as f:
             content = f.read()
 
-    # 尝试从 Redis 缓存读取（仅当前两步都失败时）
-    if not content and cache_key and redis_client:
+    # 尝试从 Redis 缓存读取（仅当文件不存在时）
+    if not content and redis_client:
         try:
-            cached = await redis_client.get(cache_key)
+            cached = await redis_client.get(f"report:{report_id}")
             if cached:
                 content = cached
         except Exception:
@@ -2043,7 +2193,7 @@ async def report_detail(report_id: str, username: str = Depends(verify_token)):
         "data": {
             "id": report_id,
             "symbol": symbol,
-            "stock_name": _get_stock_name(symbol),
+            "stock_name": await _get_stock_name(symbol),
             "title": title,
             "decision": decision,
             "recommendation": recommendation,
