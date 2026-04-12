@@ -4,7 +4,7 @@
 
 > 本文档定义 TradingAgents-CN 产品的功能需求、接口规范与技术架构，为开发团队和产品负责人之间的共识基础。
 
-> **文档状态**：2026-04-06 更新 — Vue3 前端已上线，Chainlit 已归档
+> **文档状态**：2026-04-12 更新 — Agentic Loop 自主修复闭环 + Decimal.js 金融精度保护
 
 ---
 
@@ -271,7 +271,14 @@ const ws = new WebSocket('ws://139.155.146.217:8030/api/ws/notifications')
 - [x] Watchdog 守护进程
 - [x] WebSocket 实时通知
 
-### Phase 2 📋 下一步
+### Phase 2 ✅ 已完成（部分）
+- [x] Agentic Loop 自主修复闭环（10 个极端测试通过）
+- [x] Decimal.js 金融精度保护
+- [x] 动态退避算法（前端轮询优化）
+- [x] Redis TTL 统一为 7 天
+- [x] task_id UUID 后缀防止冲突
+
+### Phase 3 📋 下一步
 - [ ] 用户数据库（替代硬编码用户表）
 - [ ] 多用户 SaaS 租户隔离
 - [ ] Token 刷新机制持久化
@@ -314,4 +321,4 @@ const ws = new WebSocket('ws://139.155.146.217:8030/api/ws/notifications')
 
 ---
 
-*本文档最后更新：2026-04-06*
+*本文档最后更新：2026-04-12*

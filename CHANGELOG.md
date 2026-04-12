@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-04-12
+
+### 🆕 新增功能
+
+- **Agentic Loop 自主修复闭环** (`a2ec817b`)
+  - Phase 1 后端自愈：极端用例测试（10 个测试全部通过）
+  - 任务 ID 添加 UUID 后缀防止冲突
+  - Redis TTL 统一为 7 天
+  - Phase 2 前端重构：动态退避算法替换固定 30 秒轮询
+  - Decimal.js 集成修复浮点数精度
+  - TypeScript 配置优化
+  - Phase 3 金融基建：Decimal.js 资金精度保护、代理池设计文档
+
+### 🐛 Bug 修复
+
+- **history 接口无分页/筛选** (`addc4693`)
+  - 根因：`analysis_user_history` 缺少 `symbol/page/page_size` 参数
+  - 修复：添加真正分页和股票筛选功能
+  - 新增：`research_depth` 整数范围校验 (1-5)，超范围返回 400
+  - 测试：完整 P0/P1 测试脚本 (35 项)
+
+- **cached_ 前缀导致 404** (`e2ed2f78`)
+  - 根因：`report_detail` 和 `download` 无法识别 `cached_` 前缀
+  - 修复：改用 `_find_report_file()` 查找报告（支持 cached_560280 -> 560280_20260408.md）
+
+- **BaoStock 网络查询导致 hang** (`c7d8501a`)
+  - 根因：`_get_stock_name()` 调用 BaoStock 查询，网络超时导致 `/api/reports/list` hang
+  - 修复：去掉 BaoStock 查询，扩展本地 `KNOWN_NAMES` 缓存表覆盖常见 ETF
+  - 正则修复：支持 `**买入 (Buy)**` / `买入（Buy）` / `买入 (BUY)** 格式
+
+- **analysis_task_result 返回值结构** (`77846c5e`)
+  - 根因：返回值结构与前端期望不一致
+  - 修复：同步修复 decision 正则以支持括号后缀
+
+- **前端 task_id 轮询模式** (`64a2ebe7`)
+  - 根因：前端轮询逻辑与后端异步模式不匹配
+  - 修复：修复前端 task_id 轮询模式和历史分析结果获取
+
+- **Analysis HTTP 超时** (`58bbfea3`)
+  - 根因：`/api/analysis/single` 调用 LangGraph 耗时过长
+  - 修复：改用异步模式避免 HTTP 超时
+
+### 🔄 重构
+
+- **Decimal.js 金融精度保护**
+  - 集成 Decimal.js 替换 JavaScript 原生浮点数
+  - 防止价格/金额计算精度丢失
+
+- **动态退避算法**
+  - 前端轮询从固定 30 秒改为动态退避
+  - 减少不必要的 API 调用
+
+### 📊 测试验证
+
+- **测试通过率：100% (10/10)**
+  - 极端用例测试全部通过
+  - P0/P1 测试脚本覆盖 35 项功能
+
+---
+
 ## [1.2.0] - 2026-04-06
 
 ### 🆕 新增功能
@@ -203,4 +263,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-*本文档最后更新：2026-04-06*
+*本文档最后更新：2026-04-12*
