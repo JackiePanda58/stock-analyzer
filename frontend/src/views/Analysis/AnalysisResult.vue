@@ -337,7 +337,7 @@ import {
 } from 'echarts/components'
 import KLineChart from '@/components/Chart/KLineChart.vue'
 import type { AnalysisResult } from '@/api/analysis'
-import { getAnalysisResult } from '@/api/analysis'
+import { analysisApi } from '@/api/analysis'
 
 // 注册 ECharts 组件
 use([
@@ -404,8 +404,8 @@ const loadAnalysis = async () => {
   error.value = ''
   
   try {
-    const analysisId = route.params.id as string
-    const data = await getAnalysisResult(analysisId)
+    const analysisId = route.params.taskId as string
+    const data = await analysisApi.getResult(analysisId)
     result.value = data
     
     // 加载 K 线数据

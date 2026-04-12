@@ -304,40 +304,71 @@
                       </div>
                     </div>
 
-                    <!-- 分析步骤显示 - 已隐藏 -->
-                    <!--
+                    <!-- 分析步骤显示 -->
                     <div v-if="analysisSteps.length > 0" class="analysis-steps">
                       <h5 class="steps-title">📋 分析步骤</h5>
                       <div class="steps-container">
                         <div
                           v-for="(step, index) in analysisSteps"
-                          :key="index"
+                          :key="step.key"
                           class="step-item"
                           :class="{
                             'step-completed': step.status === 'completed',
-                            'step-current': step.status === 'current',
+                            'step-running': step.status === 'running',
                             'step-pending': step.status === 'pending'
                           }"
                         >
-                          <div class="step-icon">
-                            <el-icon v-if="step.status === 'completed'" class="completed-icon">
-                              <Check />
-                            </el-icon>
-                            <el-icon v-else-if="step.status === 'current'" class="current-icon rotating-icon">
-                              <Loading />
-                            </el-icon>
-                            <el-icon v-else class="pending-icon">
-                              <Clock />
+                          <div class="step-header" @click="toggleStepExpand(step.key)">
+                            <div class="step-icon">
+                              <el-icon v-if="step.status === 'completed'" class="completed-icon" color="#67c23a">
+                                <Check />
+                              </el-icon>
+                              <el-icon v-else-if="step.status === 'running'" class="current-icon rotating-icon" color="#409eff">
+                                <Loading />
+                              </el-icon>
+                              <el-icon v-else class="pending-icon" color="#909399">
+                                <Clock />
+                              </el-icon>
+                            </div>
+                            <div class="step-content">
+                              <div class="step-title">{{ step.title }}</div>
+                              <div class="step-description">{{ step.description }}</div>
+                            </div>
+                            <div class="step-progress" v-if="step.status === 'running'">
+                              <el-progress :percentage="step.progress || 50" :show-text="false" :stroke-width="3" />
+                            </div>
+                            <el-icon class="expand-icon" :class="{ expanded: step.isExpanded }">
+                              <ArrowRight />
                             </el-icon>
                           </div>
-                          <div class="step-content">
-                            <div class="step-title">{{ step.title }}</div>
-                            <div class="step-description">{{ step.description }}</div>
+                          <!-- 操作详情 -->
+                          <div v-if="step.isExpanded && step.operations && step.operations.length > 0" class="step-operations">
+                            <div
+                              v-for="op in step.operations"
+                              :key="op.id"
+                              class="operation-item"
+                              :class="{ 'op-completed': op.status === 'completed', 'op-running': op.status === 'running', 'op-pending': op.status === 'pending' }"
+                            >
+                              <span class="op-status-icon">
+                                <el-icon v-if="op.status === 'completed'" color="#67c23a"><Check /></el-icon>
+                                <el-icon v-else-if="op.status === 'running'" class="rotating-icon" color="#409eff"><Loading /></el-icon>
+                                <span v-else class="op-pending-dot">○</span>
+                              </span>
+                              <span class="op-name">{{ op.name }}</span>
+                              <span v-if="op.result" class="op-result">{{ op.result }}</span>
+                            </div>
+                            <!-- 当前正在执行的操作 -->
+                            <div v-if="step.currentOperation && step.status === 'running'" class="operation-item op-current">
+                              <span class="op-status-icon">
+                                <el-icon class="rotating-icon" color="#409eff"><Loading /></el-icon>
+                              </span>
+                              <span class="op-name">{{ step.currentOperation }}</span>
+                              <span class="op-status-text">执行中...</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    -->
                   </div>
                 </el-card>
               </div>
@@ -704,6 +735,7 @@ import {
   Cpu,
   QuestionFilled,
   ArrowDown,
+  ArrowRight,
 } from '@element-plus/icons-vue'
 import { analysisApi, type SingleAnalysisRequest } from '@/api/analysis'
 import { paperApi } from '@/api/paper'
@@ -765,9 +797,91 @@ const progressInfo = ref({
   totalTime: 0         // 预计总时长（秒）
 })
 const pollingTimer = ref<any>(null)
+const wsProgressTimer = ref<any>(null)
+
+// WebSocket 进度连接
+let wsProgress: WebSocket | null = null
+
+// 连接 WebSocket 进度推送
+const connectProgressWS = (taskId: string) => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/api/ws/progress`
+  
+  try {
+    wsProgress = new WebSocket(wsUrl)
+    
+    wsProgress.onopen = () => {
+      console.log('📡 WebSocket progress 已连接')
+      // 订阅任务进度
+      wsProgress?.send(JSON.stringify({
+        type: 'subscribe',
+        task_id: taskId
+      }))
+    }
+    
+    wsProgress.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'progress_update' && msg.data) {
+          // 更新步骤详情
+          updateStepsFromProgress(msg.data)
+        } else if (msg.type === 'completed' && msg.data) {
+          // 任务完成
+          updateStepsFromProgress(msg.data)
+        }
+      } catch (e) {
+        console.error('📡 WebSocket 消息解析失败:', e)
+      }
+    }
+    
+    wsProgress.onclose = () => {
+      console.log('📡 WebSocket progress 已断开')
+      wsProgress = null
+    }
+    
+    wsProgress.onerror = (error) => {
+      console.error('📡 WebSocket progress 错误:', error)
+    }
+  } catch (error) {
+    console.error('📡 WebSocket 连接失败:', error)
+  }
+}
+
+// 断开 WebSocket 连接
+const disconnectProgressWS = () => {
+  if (wsProgress) {
+    wsProgress.close()
+    wsProgress = null
+  }
+}
+
+// 从进度数据更新步骤
+const updateStepsFromProgress = (data: any) => {
+  if (data.steps && data.steps.length > 0) {
+    const newSteps = generateStepsFromBackend(data.steps)
+    // 合并现有步骤状态
+    newSteps.forEach((newStep: any, index: number) => {
+      const existingStep = analysisSteps.value.find(s => s.key === newStep.key)
+      if (existingStep) {
+        // 更新进度和状态
+        newStep.isExpanded = existingStep.isExpanded
+      }
+    })
+    analysisSteps.value = newSteps
+    console.log('📋 步骤已更新:', newSteps.length, '个步骤')
+  }
+}
 
 // 分析步骤定义（动态生成）
 const analysisSteps = ref<any[]>([])
+
+// 切换步骤展开/折叠
+const toggleStepExpand = (stepKey: string) => {
+  const step = analysisSteps.value.find(s => s.key === stepKey)
+  if (step) {
+    step.isExpanded = !step.isExpanded
+  }
+}
 
 // 从后端步骤数据生成前端步骤
 const generateStepsFromBackend = (backendSteps: any[]) => {
@@ -775,12 +889,35 @@ const generateStepsFromBackend = (backendSteps: any[]) => {
     return []
   }
 
-  return backendSteps.map((step: any, index: number) => ({
-    key: `step_${index}`,
-    title: step.name || `步骤 ${index + 1}`,
-    description: step.description || '处理中...',
-    status: 'pending'
-  }))
+  return backendSteps.map((step: any, index: number) => {
+    // 处理操作列表
+    const operations = (step.operations || []).map((op: any) => ({
+      id: op.id || `op_${index}`,
+      name: op.name || op.operation_name || '未知操作',
+      status: op.status || 'pending',
+      result: op.result || null
+    }))
+
+    // 确定步骤状态
+    let status = 'pending'
+    if (step.status === 'completed') {
+      status = 'completed'
+    } else if (step.status === 'running' || step.current_operation) {
+      status = 'running'
+    }
+
+    return {
+      key: step.id || `step_${index}`,
+      id: step.id,
+      title: step.name || `步骤 ${index + 1}`,
+      description: step.description || '',
+      status,
+      progress: step.progress || 0,
+      operations,
+      currentOperation: step.current_operation || step.currentOperation || null,
+      isExpanded: index === 0 // 默认展开第一个步骤
+    }
+  })
 }
 
 // 模型设置
@@ -944,7 +1081,7 @@ const submitAnalysis = async () => {
       parameters: {
         market_type: analysisForm.market,
         analysis_date: analysisDate.toISOString().split('T')[0],
-        research_depth: getDepthDescription(analysisForm.researchDepth),
+        research_depth: Number(analysisForm.researchDepth) || 3,
         selected_analysts: convertAnalystNamesToIds(analysisForm.selectedAnalysts),
         include_sentiment: analysisForm.includeSentiment,
         include_risk: analysisForm.includeRisk,
@@ -1041,6 +1178,9 @@ const startPollingTaskStatus = () => {
   }
 
   console.log('🔄 开始轮询任务状态:', currentTaskId.value)
+  
+  // 连接 WebSocket 实时进度
+  connectProgressWS(currentTaskId.value)
 
   pollingTimer.value = setInterval(async () => {
     try {
@@ -1111,6 +1251,9 @@ const startPollingTaskStatus = () => {
           clearInterval(pollingTimer.value)
           pollingTimer.value = null
         }
+        
+        // 断开 WebSocket 连接
+        disconnectProgressWS()
 
         // 任务完成后保持缓存，以便刷新后能看到结果
         // clearTaskCache() // 不清除，让用户能在30分钟内刷新查看结果
@@ -1130,6 +1273,9 @@ const startPollingTaskStatus = () => {
           clearInterval(pollingTimer.value)
           pollingTimer.value = null
         }
+        
+        // 断开 WebSocket 连接
+        disconnectProgressWS()
 
         // 任务失败时清除缓存
         clearTaskCache()
@@ -1162,7 +1308,7 @@ const startPollingTaskStatus = () => {
       console.error('获取任务状态失败:', error)
       // 继续轮询，不中断
     }
-  }, actualInterval) // 动态退避间隔
+  }, 2000) // 轮询间隔 2 秒
 }
 
 // 更新进度信息
@@ -1783,12 +1929,13 @@ const goSimOrder = async () => {
   }
 }
 
-// 组件销毁时清理定时器
+// 组件销毁时清理定时器和 WebSocket
 onUnmounted(() => {
   if (pollingTimer.value) {
     clearInterval(pollingTimer.value)
     pollingTimer.value = null
   }
+  disconnectProgressWS()
 })
 
 // 页面可见性变化时的处理
@@ -1999,7 +2146,34 @@ const restoreTaskFromCache = async () => {
       currentTaskId.value = cached.taskId
       analysisStatus.value = 'completed'
       showResults.value = true
-      analysisResults.value = status.result_data
+
+      // 从 /result API 获取完整数据，而不是用空的 result_data
+      try {
+        const token = localStorage.getItem('auth-token') || localStorage.getItem('token') || authStore.token || ''
+        const resultResponse = await fetch(`/api/analysis/tasks/${cached.taskId}/result`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (resultResponse.ok) {
+          const resultData = await resultResponse.json()
+          if (resultData.success) {
+            analysisResults.value = resultData.data
+            console.log('✅ 恢复时从 /result API 获取完整数据成功:', resultData.data)
+          } else {
+            console.error('❌ 获取分析结果失败:', resultData.message)
+            analysisResults.value = status.result_data
+          }
+        } else {
+          console.error('❌ 结果API调用失败:', resultResponse.status)
+          analysisResults.value = status.result_data
+        }
+      } catch (error) {
+        console.error('❌ 获取分析结果异常:', error)
+        analysisResults.value = status.result_data
+      }
+
       progressInfo.value.progress = 100
       progressInfo.value.currentStep = '分析完成'
       progressInfo.value.message = '分析已完成'

@@ -7,7 +7,7 @@ import jwt
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +21,8 @@ import json
 import requests
 import baostock as bs
 import uvicorn
-from api_progress_tracker import init_progress_tracker, progress_tracker, track_analysis_progress
+from api_progress_tracker import init_progress_tracker, track_analysis_progress
+import api_progress_tracker
 
 sys.path.insert(0, '/root/stock-analyzer')
 from dotenv import load_dotenv
@@ -222,6 +223,11 @@ async def _analysis_background_task(
     loop = asyncio.get_running_loop()
     try:
         sys_logger.info(f"[Background] Task {task_id} 开始执行 {symbol}...")
+        
+        # 初始化进度追踪
+        if api_progress_tracker.progress_tracker:
+            await api_progress_tracker.progress_tracker.start_task(task_id, symbol)
+            sys_logger.info(f"[Progress] Task {task_id} 进度追踪已启动")
 
         def _do_analysis():
             try:
@@ -239,8 +245,17 @@ async def _analysis_background_task(
                 )
                 args = ta.propagator.get_graph_args()
                 final_state = None
+                step_count = 0
+                total_steps = 5  # 5 个分析步骤
                 for chunk in ta.graph.stream(init_state, **args):
                     final_state = chunk
+                    step_count += 1
+                    # 每完成一个步骤更新进度
+                    if step_count <= total_steps and api_progress_tracker.progress_tracker:
+                        asyncio.run_coroutine_threadsafe(
+                            api_progress_tracker.progress_tracker.update_step(task_id, min(step_count - 1, total_steps - 1)),
+                            loop
+                        )
                 if final_state is None:
                     raise RuntimeError("TradingAgentsGraph produced no output")
                 # 返回完整报告，不提取信号（process_signal 只返回决策）
@@ -278,6 +293,10 @@ async def _analysis_background_task(
         except Exception as e:
             sys_logger.error(f"[Background] 报告文件写入失败: {e}")
 
+        # 标记任务完成
+        if api_progress_tracker.progress_tracker:
+            await api_progress_tracker.progress_tracker.complete_task(task_id)
+        
         sys_logger.info(f"[Background] Task {task_id} 完成！")
 
     except Exception as e:
@@ -589,6 +608,103 @@ async def ws_notifications(websocket):
             sys_logger.error(f"WebSocket recv error: {e}")
     except Exception as e:
         sys_logger.error(f"WebSocket error: {type(e).__name__}: {e}")
+
+# ==================== WebSocket 进度推送 ====================
+# 存储所有连接的 WebSocket 客户端及其订阅的任务
+progress_ws_clients: dict = {}  # websocket -> task_id
+
+@app.websocket("/api/ws/progress")
+async def ws_progress(websocket: WebSocket):
+    """WebSocket 进度推送端点 - 实时推送分析步骤详情"""
+    await websocket.accept()
+    task_id = None
+    progress_ws_clients[websocket] = task_id
+    sys_logger.info(f"[WS] Progress 客户端连接，当前连接数: {len(progress_ws_clients)}")
+    
+    try:
+        # 发送欢迎消息
+        await websocket.send_json({
+            "type": "connected",
+            "message": "WebSocket progress 连接已建立"
+        })
+        
+        # 保持连接并处理消息
+        last_progress = ""
+        while True:
+            try:
+                # 每秒检查一次进度更新
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                # 解析订阅请求
+                msg = json.loads(data)
+                if msg.get("type") == "subscribe":
+                    task_id = msg.get("task_id")
+                    progress_ws_clients[websocket] = task_id
+                    last_progress = ""
+                    sys_logger.info(f"[WS] 客户端订阅任务: {task_id}")
+                    # 立即发送当前进度
+                    if redis_client and task_id:
+                        progress_data = await redis_client.get(f"task:{task_id}:progress")
+                        if progress_data:
+                            last_progress = progress_data
+                            await websocket.send_json({
+                                "type": "progress_update",
+                                "task_id": task_id,
+                                "data": json.loads(progress_data)
+                            })
+            except asyncio.TimeoutError:
+                # 每秒检查进度更新
+                if redis_client and task_id:
+                    try:
+                        progress_data = await redis_client.get(f"task:{task_id}:progress")
+                        if progress_data and progress_data != last_progress:
+                            last_progress = progress_data
+                            await websocket.send_json({
+                                "type": "progress_update",
+                                "task_id": task_id,
+                                "data": json.loads(progress_data)
+                            })
+                            # 如果任务完成，发送完成消息
+                            data = json.loads(progress_data)
+                            if data.get("status") == "completed":
+                                await websocket.send_json({
+                                    "type": "completed",
+                                    "task_id": task_id,
+                                    "data": data
+                                })
+                    except Exception:
+                        pass
+            except json.JSONDecodeError:
+                pass
+    except Exception as e:
+        sys_logger.error(f"[WS] Progress error: {e}")
+    finally:
+        progress_ws_clients.pop(websocket, None)
+        sys_logger.info(f"[WS] Progress 客户端断开，当前连接数: {len(progress_ws_clients)}")
+
+async def broadcast_progress(task_id: str):
+    """广播进度更新到所有连接的客户端"""
+    if not redis_client or not progress_ws_clients:
+        return
+    
+    try:
+        progress_data = await redis_client.get(f"task:{task_id}:progress")
+        if progress_data:
+            message = {
+                "type": "progress_update",
+                "task_id": task_id,
+                "data": json.loads(progress_data)
+            }
+            # 发送到所有连接的客户端
+            disconnected = set()
+            for client in progress_ws_clients:
+                try:
+                    await client.send_json(message)
+                except Exception:
+                    disconnected.add(client)
+            # 清理断开的客户端
+            progress_ws_clients.difference_update(disconnected)
+    except Exception as e:
+        sys_logger.error(f"[WS] Broadcast error: {e}")
 
 # ==================== 收藏夹 (Favorites) ====================
 def _fav_key(username: str) -> str:
@@ -1598,9 +1714,9 @@ async def analysis_task_status(task_id: str, username: str = Depends(verify_toke
     import time
     
     # 优先从 Redis 获取真实进度
-    if progress_tracker and redis_client:
+    if api_progress_tracker.progress_tracker and redis_client:
         try:
-            progress_data = await progress_tracker.get_progress(task_id)
+            progress_data = await api_progress_tracker.progress_tracker.get_progress(task_id)
             if progress_data.get("status") != "pending":
                 return {
                     "success": True,
@@ -1714,9 +1830,39 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             logic_match = re.search(r"\*\*一句话逻辑[：:]*\*\*([^\n]+)", content)
             reasoning = logic_match.group(1).strip() if logic_match else ""
 
-            # 提取目标价
-            price_match = re.search(r"目标[位价]?[：:]?\s*[¥￥$]?\s*([0-9.]+)", content)
-            target_price = price_match.group(1) if price_match else "—"
+            # 提取目标价（参考价格）- 优先级：入场价格 > 目标价 > 当前价格
+            target_price = "—"
+            
+            # 1. 尝试从"入场"提取（最优先，因为这是实际入场价格）
+            # 匹配 "入场 当前1.01附近" 或 "入场: 1.01"
+            entry_match = re.search(r"入场[^0-9]*([0-9]+\.[0-9]+)", content)
+            if entry_match:
+                target_price = entry_match.group(1)
+            else:
+                # 2. 尝试"目标价"或"目标位"
+                price_match = re.search(r"目标[位价]?[：:]?\s*[¥￥$]?\s*([0-9]+\.[0-9]+)", content)
+                if price_match:
+                    target_price = price_match.group(1)
+                else:
+                    # 3. 尝试"当前"后面跟着的价格（更精确的匹配）
+                    current_match = re.search(r"当前[^0-9]*([0-9]+\.[0-9]+)", content)
+                    if current_match:
+                        target_price = current_match.group(1)
+                    else:
+                        # 4. 尝试"第一止盈"或"扩展目标"
+                        tp_match = re.search(r"(?:第一止盈|扩展目标)[^0-9]*([0-9]+\.[0-9]+)", content)
+                        if tp_match:
+                            target_price = tp_match.group(1)
+                        else:
+                            # 5. 尝试"参考"后面的价格
+                            ref_match = re.search(r"参考[^0-9]*([0-9]+\.[0-9]+)", content)
+                            if ref_match:
+                                target_price = ref_match.group(1)
+                            else:
+                                # 6. 尝试"止损.*([0-9]+\.[0-9]+)" 止损位
+                                stop_match = re.search(r"止损[^0-9]*([0-9]+\.[0-9]+)", content)
+                                if stop_match:
+                                    target_price = stop_match.group(1)
 
             # 提取置信度（默认0.75）
             confidence = 0.75
@@ -1772,7 +1918,21 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             return {
                 "success": True,
                 "data": {
-                    "reports": {"trading_decision": {"content": content}},
+                    "reports": {
+                        "market_report": content if "##" in content else "",
+                        "sentiment_report": "",
+                        "news_report": "",
+                        "fundamentals_report": "",
+                        "bull_researcher": "",
+                        "bear_researcher": "",
+                        "research_team_decision": "",
+                        "trader_investment_plan": "",
+                        "risky_analyst": "",
+                        "safe_analyst": "",
+                        "neutral_analyst": "",
+                        "risk_management_decision": "",
+                        "final_trade_decision": content
+                    },
                     # 决策对象（供前端直接使用）
                     "decision": {
                         "action": action,
@@ -1829,9 +1989,11 @@ async def analysis_user_history(
     symbol: str = None,
     page: int = 1,
     page_size: int = 10,
+    sort: str = "created_at",  # 排序字段
+    order: str = "desc",         # 排序方向：asc 或 desc
     username: str = Depends(verify_token)
 ):
-    """从报告目录读取当前用户的分析历史（按用户名区分）"""
+    """从报告目录读取当前用户的分析历史（支持排序和分页）"""
     reports_dir = "/root/stock-analyzer/reports"
     items = []
     if os.path.exists(reports_dir):
@@ -1856,13 +2018,24 @@ async def analysis_user_history(
                     })
                 except Exception:
                     pass
-    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    # 排序（支持多字段）
+    def get_sort_key(item):
+        val = item.get(sort, "")
+        # 日期字段特殊处理
+        if sort == "created_at":
+            return datetime.fromisoformat(val) if val else datetime.min
+        return val
+    
+    reverse = (order == "desc")
+    items.sort(key=get_sort_key, reverse=reverse)
+    
     total = len(items)
     # 分页
     start = (page - 1) * page_size
     end = start + page_size
     paginated = items[start:end]
-    return {"success": True, "data": {"items": paginated, "total": total, "page": page, "page_size": page_size}}
+    return {"success": True, "data": {"items": paginated, "total": total, "page": page, "page_size": page_size, "sort": sort, "order": order}}
 
 @app.get("/api/stock-data/basic-info/{code}")
 async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
@@ -2024,9 +2197,11 @@ async def reports_list(
     market_filter: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    sort: str = "created_at",  # 排序字段: created_at, date, symbol, market
+    order: str = "desc",       # 排序方向: asc, desc
     username: str = Depends(verify_token)
 ):
-    """返回历史分析报告列表"""
+    """返回历史分析报告列表（支持排序和分页）"""
     import os, glob
     reports_dir = "/root/stock-analyzer/reports"
     if not os.path.exists(reports_dir):
@@ -2075,7 +2250,7 @@ async def reports_list(
 
             # 判断市场
             if symbol.isdigit() and len(symbol) == 6:
-                market = "A股"
+                market = "A 股"
             elif symbol.upper().startswith("HK"):
                 market = "港股"
             elif symbol.isalpha() and symbol.isupper():
@@ -2104,8 +2279,26 @@ async def reports_list(
                 "created_at": created_at,
             })
 
-    # 按日期倒序
-    reports.sort(key=lambda x: x["date"], reverse=True)
+    # 排序（支持多字段排序）
+    def get_sort_key(item):
+        if sort == "date":
+            return item.get("date", "")
+        elif sort == "symbol":
+            return item.get("symbol", "")
+        elif sort == "market":
+            return item.get("market", "")
+        elif sort == "created_at":
+            # 日期时间格式支持排序
+            try:
+                return dt.datetime.fromisoformat(item.get("created_at", ""))
+            except:
+                return dt.datetime.min
+        else:
+            return item.get(sort, "")
+    
+    reverse = (order == "desc")
+    reports.sort(key=get_sort_key, reverse=reverse)
+    
     total = len(reports)
 
     # 分页
@@ -2113,7 +2306,7 @@ async def reports_list(
     end = start + page_size
     paginated = reports[start:end]
 
-    return {"success": True, "data": {"reports": paginated, "total": total}}
+    return {"success": True, "data": {"reports": paginated, "total": total, "sort": sort, "order": order}}
 
 # ==================== 报告详情与下载 ====================
 @app.get("/api/reports/{report_id}/detail")

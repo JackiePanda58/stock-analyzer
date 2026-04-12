@@ -323,7 +323,7 @@ const availableModels = ref<any[]>([])
 const batchForm = reactive({
   title: '',
   description: '',
-  depth: '3',  // 默认3级标准分析，将在 onMounted 中从用户偏好加载
+  depth: 3,  // 默认3级标准分析，将在 onMounted 中从用户偏好加载
   analysts: [...DEFAULT_ANALYSTS],  // 将在 onMounted 中从用户偏好加载
   includeSentiment: true,
   includeRisk: true,
@@ -564,7 +564,7 @@ const resetForm = () => {
   Object.assign(batchForm, {
     title: '',
     description: '',
-    depth: userPrefs?.default_depth || '3',
+    depth: Number(userPrefs?.default_depth) || 3,
     analysts: userPrefs?.default_analysts ? [...userPrefs.default_analysts] : [...DEFAULT_ANALYSTS]
   })
   clearStocks()

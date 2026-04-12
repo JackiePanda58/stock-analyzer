@@ -68,25 +68,39 @@
       <el-table
         :data="filteredReports"
         @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
         v-loading="loading"
         style="width: 100%"
+        :default-sort="{ prop: 'created_at', order: 'descending' }"
       >
         <el-table-column type="selection" width="55" />
+        
+        <el-table-column prop="symbol" label="股票代码" width="120" sortable="custom">
+          <template #default="{ row }">
+            <el-link type="primary" @click="viewReport(row)">
+              {{ row.stock_code }}
+            </el-link>
+          </template>
+        </el-table-column>
         
         <el-table-column prop="title" label="报告标题" min-width="200">
           <template #default="{ row }">
             <div class="report-title">
+              <span class="stock-name">{{ row.stock_name || row.stock_code }}</span>
               <el-link type="primary" @click="viewReport(row)">
                 {{ row.title }}
               </el-link>
-              <div class="report-subtitle">
-                {{ row.stock_code }} - {{ row.stock_name }}
-              </div>
             </div>
           </template>
         </el-table-column>
         
-        <el-table-column prop="type" label="报告类型" width="120">
+        <el-table-column prop="market" label="市场" width="100" sortable="custom">
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.market }}</el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="type" label="报告类型" width="120" sortable="custom">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">
               {{ getTypeText(row.type) }}
@@ -94,38 +108,27 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="format" label="格式" width="100">
+        <el-table-column prop="decision" label="交易决策" width="100" sortable="custom">
           <template #default="{ row }">
-            <el-tag size="small" effect="plain">
-              {{ row.format.toUpperCase() }}
+            <el-tag v-if="row.decision === '买入'" type="success" size="small">
+              {{ row.decision }}
+            </el-tag>
+            <el-tag v-else-if="row.decision === '卖出'" type="danger" size="small">
+              {{ row.decision }}
+            </el-tag>
+            <el-tag v-else type="info" size="small">
+              {{ row.decision }}
             </el-tag>
           </template>
         </el-table-column>
         
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="model_info" label="分析模型" width="180">
-          <template #default="{ row }">
-            <el-tag v-if="row.model_info && row.model_info !== 'Unknown'" type="info" size="small">
-              {{ row.model_info }}
-            </el-tag>
-            <span v-else class="text-gray">-</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="created_at" label="创建时间" width="180">
+        <el-table-column prop="created_at" label="创建时间" width="180" sortable="custom">
           <template #default="{ row }">
             {{ formatTime(row.created_at) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button type="text" size="small" @click="viewReport(row)">
               查看
@@ -218,13 +221,21 @@ const filteredReports = computed(() => {
   return reports.value
 })
 
+// 排序状态
+const sortState = ref({
+  prop: 'created_at',
+  order: 'descending'
+})
+
 // API调用函数
 const fetchReports = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams({
       page: currentPage.value.toString(),
-      page_size: pageSize.value.toString()
+      page_size: pageSize.value.toString(),
+      sort: sortState.value.prop || 'created_at',
+      order: sortState.value.order === 'ascending' ? 'asc' : 'desc'
     })
 
     if (searchKeyword.value) {
@@ -264,6 +275,13 @@ const fetchReports = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 排序变更处理
+const handleSortChange = ({ prop, order }) => {
+  sortState.value = { prop: prop || 'created_at', order: order || 'descending' }
+  currentPage.value = 1
+  fetchReports()
 }
 
 // 方法
