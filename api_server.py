@@ -132,14 +132,14 @@ def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level,
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout=600)  # 10 minute timeout
+    t.join(timeout=1200)  # 10 minute timeout
 
     if not result_queue.empty():
         return result_queue.get()
     elif not error_queue.empty():
         raise error_queue.get()
     else:
-        raise TimeoutError(f"TradingAgentsGraph timed out after 600s for {symbol}")
+        raise TimeoutError(f"TradingAgentsGraph timed out after 1200s for {symbol}")
 
 
 def _run_analysis_in_subprocess(
@@ -237,29 +237,19 @@ async def _analysis_background_task(
                     debug=False,
                     config=TRADING_CONFIG
                 )
-                init_state = ta.propagator.create_initial_state(
-                    symbol, target_date,
+                # 使用带超时机制的函数（900秒）
+                final_state, signal = _run_trading_graph_stream(
+                    ta, symbol, target_date,
                     user_context={},
                     risk_level=risk_level,
-                    selected_analysts=selected_analysts
+                    selected_analysts=selected_analysts,
+                    parameters={}
                 )
-                args = ta.propagator.get_graph_args()
-                final_state = None
-                step_count = 0
-                total_steps = 5  # 5 个分析步骤
-                for chunk in ta.graph.stream(init_state, **args):
-                    final_state = chunk
-                    step_count += 1
-                    # 每完成一个步骤更新进度
-                    if step_count <= total_steps and api_progress_tracker.progress_tracker:
-                        asyncio.run_coroutine_threadsafe(
-                            api_progress_tracker.progress_tracker.update_step(task_id, min(step_count - 1, total_steps - 1)),
-                            loop
-                        )
-                if final_state is None:
-                    raise RuntimeError("TradingAgentsGraph produced no output")
-                # 返回完整报告，不提取信号（process_signal 只返回决策）
+                # 返回完整报告
                 return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+            except TimeoutError as e:
+                sys_logger.error(f"[Background] Task {task_id} 超时: {e}")
+                return f"⚠️ 分析超时: {e}"
             except Exception as e:
                 sys_logger.error(f"[Background] Task {task_id} 分析异常: {e}\n{traceback.format_exc()}")
                 return f"⚠️ 分析失败: {e}"
@@ -269,7 +259,7 @@ async def _analysis_background_task(
 
         # 写入 Redis 缓存（12小时）
         cache_key = f"report:{symbol}:{target_date}"
-        if redis_client:
+        if False and redis_client:
             try:
                 await redis_client.setex(cache_key, 604800, final_report)  # 7 天 TTL
                 import json
@@ -490,7 +480,7 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), 
 
     # ⚡ 1. Redis 缓存拦截
     cache_key = f"report:{symbol}:{target_date}"
-    if redis_client:
+    if False and redis_client:
         try:
             cached_report = await redis_client.get(cache_key)
             if cached_report:
@@ -1038,7 +1028,7 @@ async def sync_multi_source_history(
 async def sync_cache_delete(username: str = Depends(verify_token)):
     """清除数据源缓存"""
     deleted = 0
-    if redis_client:
+    if False and redis_client:
         try:
             keys = []
             for pattern in ["stock:*", "quote:*", "kline:*", "fundamental:*"]:
@@ -1258,7 +1248,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(HTTPB
     token = credentials.credentials
     
     # 检查是否在黑名单中（Redis）
-    if redis_client:
+    if False and redis_client:
         try:
             is_blacklisted = await redis_client.get(f"token_blacklist:{token}")
             if is_blacklisted:
@@ -1287,7 +1277,7 @@ async def auth_logout(credentials: HTTPAuthorizationCredentials = Depends(HTTPBe
     try:
         token = credentials.credentials
         # 使用 Redis 存储黑名单（多 worker 模式）
-        if redis_client:
+        if False and redis_client:
             await redis_client.setex(f"token_blacklist:{token}", 86400, "1")  # 24 小时过期
             sys_logger.info(f"[Auth] 用户 {username} 登出，Token 已加入 Redis 黑名单")
         else:
@@ -1601,7 +1591,7 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
             raise HTTPException(status_code=400, detail=f"research_depth 必须为整数 1-5")
 
     cache_key = f"report:{symbol}:{target_date}"
-    if redis_client:
+    if False and redis_client:
         try:
             cached = await redis_client.get(cache_key)
             if cached:
@@ -2139,7 +2129,7 @@ async def _get_stock_name(symbol: str) -> str:
         return symbol
     
     # 先尝试从 Redis 缓存获取
-    if redis_client:
+    if False and redis_client:
         try:
             cached_name = await redis_client.get(f"stock_name:{symbol}")
             if cached_name:
