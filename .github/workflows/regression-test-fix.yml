@@ -1,0 +1,25 @@
+name: Regression Test Fix
+
+on:
+  push:
+    branches: [ feat/performance-optimization-20260428 ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Check Python syntax
+      run: |
+        python -m py_compile tradingagents/llm_clients/pool.py
+        python -m py_compile tradingagents/llm_clients/openai_client.py
+        python -m py_compile tradingagents/graph/trading_graph.py
+        python -m py_compile tradingagents/dataflows/parallel_fetcher.py
+        python -m py_compile api_server.py
+        echo "✅ All Python files syntax check passed"

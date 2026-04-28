@@ -67,8 +67,11 @@ class OpenAIClient(BaseLLMClient):
         if "max_retries" not in llm_kwargs:
             llm_kwargs["max_retries"] = 5
 
-        llm_kwargs["max_tokens"] = 2000
-        llm_kwargs["temperature"] = 1.0
+        llm_kwargs["max_tokens"] = 1000  # 优化：减少token数加快速度
+        llm_kwargs["temperature"] = 0.7  # 优化：降低随机性提高稳定性
+        llm_kwargs["timeout"] = 60  # 添加：单次调用60秒超时
+        if "max_retries" not in llm_kwargs:
+            llm_kwargs["max_retries"] = 3  # 优化：减少重试次数
 
         base_llm = UnifiedChatOpenAI(**llm_kwargs)
         return base_llm
