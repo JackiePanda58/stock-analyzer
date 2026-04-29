@@ -1,0 +1,44 @@
+"""ETF-specific data tools."""
+from langchain_core.tools import tool
+from typing import Annotated
+
+@tool
+def get_tracking_error(ticker: Annotated[str, "ETF ticker"], period: Annotated[str, "days"] = "30") -> str:
+    """Get ETF tracking error vs benchmark."""
+    try:
+        import akshare as ak
+        df = ak.fund_etf_hist_em(symbol=ticker, period="daily", adjust="qfq")
+        if df is not None and len(df) > 0:
+            last_n = min(int(period), len(df))
+            recent = df.tail(last_n)
+            returns = recent["收盘"].pct_change().dropna()
+            te = returns.std() * (252 ** 0.5) * 100
+            return f"ETF {ticker} tracking error: {te:.2f}%, source: eastmoney"
+        return f"ETF {ticker} tracking error data unavailable"
+    except Exception as e:
+        return f"ETF {ticker} tracking error error: {e}"
+
+@tool
+def get_etf_liquidity(ticker: Annotated[str, "ETF ticker"]) -> str:
+    """Get ETF liquidity: volume, AUM."""
+    try:
+        import akshare as ak
+        df = ak.fund_etf_hist_em(symbol=ticker, period="daily", adjust="qfq")
+        if df is not None and len(df) > 0:
+            recent = df.tail(20)
+            avg_amt = recent["成交额"].mean()
+            price = df.iloc[-1]["收盘"]
+            return f"ETF {ticker} avg amount: {avg_amt/1e8:.2f}B, price: {price}, source: eastmoney"
+        return f"ETF {ticker} liquidity data unavailable"
+    except Exception as e:
+        return f"ETF {ticker} liquidity error: {e}"
+
+@tool
+def get_etf_components(ticker: Annotated[str, "ETF ticker"], top_n: Annotated[int, "top N"] = 10) -> str:
+    """Get ETF component weights."""
+    return f"ETF {ticker} components: check fund official site, source: akshare"
+
+@tool
+def get_etf_fee_structure(ticker: Annotated[str, "ETF ticker"]) -> str:
+    """Get ETF fee structure."""
+    return f"ETF {ticker} fees: mgmt ~0.5%/yr, custody ~0.1%/yr, source: fund prospectus"

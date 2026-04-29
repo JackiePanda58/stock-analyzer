@@ -7,3 +7,102 @@
     "message": "API 服务器已停止运行",
     "host": "VM-0-3-ubuntu"
 }
+{
+    "timestamp": "2026-04-29T07:20:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T07:30:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T07:40:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T07:50:02Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:00:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:10:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:20:02Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:30:01Z",
+    "level": "WARNING",
+    "metric": "MEMORY",
+    "value": 86.1,
+    "threshold": 85,
+    "message": "MEMORY 使用率过高：86.1% (阈值：85%)",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:40:01Z",
+    "level": "WARNING",
+    "metric": "MEMORY",
+    "value": 88.3,
+    "threshold": 85,
+    "message": "MEMORY 使用率过高：88.3% (阈值：85%)",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T08:50:01Z",
+    "level": "CRITICAL",
+    "metric": "API_SERVER",
+    "value": 0,
+    "threshold": 1,
+    "message": "API 服务器已停止运行",
+    "host": "VM-0-3-ubuntu"
+}
+{
+    "timestamp": "2026-04-29T09:00:01Z",
+    "level": "WARNING",
+    "metric": "MEMORY",
+    "value": 85.3,
+    "threshold": 85,
+    "message": "MEMORY 使用率过高：85.3% (阈值：85%)",
+    "host": "VM-0-3-ubuntu"
+}

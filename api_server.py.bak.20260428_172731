@@ -7,22 +7,15 @@ import jwt
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, WebSocket
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, Response
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-import re
 from pydantic import BaseModel, Field, ConfigDict
 import redis.asyncio as aioredis
 import json
 import requests
 import baostock as bs
 import uvicorn
-from api_progress_tracker import init_progress_tracker, track_analysis_progress
-import api_progress_tracker
 
 sys.path.insert(0, '/root/stock-analyzer')
 from dotenv import load_dotenv
@@ -42,7 +35,7 @@ from tradingagents.usage_tracker import (
 from config.logger import sys_logger
 
 # ==================== JWT 安全基建 ====================
-SECRET_KEY = "trading_agents_super_secret_key!"  # 32 bytes for HS256
+SECRET_KEY = "trading_agents_super_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24小时
 security = HTTPBearer()
@@ -52,8 +45,6 @@ try:
     redis_client = aioredis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
     # 连接测试（非阻塞验证）
     sys_logger.info("✅ API: Redis 缓存大脑连接已初始化（aioredis）！")
-    from api_progress_tracker import init_progress_tracker
-    init_progress_tracker(redis_client)
 except Exception as e:
     sys_logger.error(f"❌ API: Redis 连接失败，将降级为无缓存模式: {e}")
     redis_client = None
@@ -65,35 +56,6 @@ sys_logger.info("[API] ✅ 用量追踪数据库已初始化")
 
 app = FastAPI(title="TradingAgents Enterprise API", version="1.0.0-preview")
 sys_logger.info("=== FastAPI 后端服务启动 (JWT 鉴权已启用) ===")
-
-# ==================== 安全中间件 ====================
-# 速率限制
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# CORS 配置
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:62879", "http://localhost:3000", "http://localhost:5173"],  # 前端端口
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# XSS 防护 - 添加安全响应头
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    # 调试输出
-    sys_logger.info(f"[Security] Added headers to {request.url.path}")
-    return response
-
 set_config(TRADING_CONFIG)
 
 # ==================== 分析辅助函数 ====================
@@ -110,15 +72,26 @@ def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level,
 
     def _run():
         try:
-            # 移除 parameters 中的 selected_analysts，避免重复传递
-            params = (parameters or {}).copy()
-            params.pop('selected_analysts', None)
-            
-            init_state = ta.propagator.create_initial_state(symbol, target_date,
+            # 使用 _run_trading_graph_stream 替代直接调用
+                final_state, signal = _run_trading_graph_stream(
+                    ta, symbol, target_date,
+                    user_context={},
+                    risk_level=risk_level,
+                    selected_analysts=selected_analysts,
+                    parameters=parameters
+                )
+                if isinstance(final_state, dict):
+                    return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+                return str(final_state) if final_state else "⚠️ 分析结果为空"
+            except TimeoutError as e:
+                sys_logger.error(f"[Background] Task {task_id} 超时: {e}")
+                return f"⚠️ 分析超时: {e}"
+            # 旧代码已替换
+                init_state = ta.propagator.create_initial_state(symbol, target_date,
                 user_context=user_context,
                 risk_level=risk_level,
                 selected_analysts=selected_analysts,
-                **params
+                **(parameters or {})
             )
             args = ta.propagator.get_graph_args()
             final_state = None
@@ -132,14 +105,14 @@ def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level,
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout=1200)  # 10 minute timeout
+    t.join(timeout=600)  # 10 minute timeout
 
     if not result_queue.empty():
         return result_queue.get()
     elif not error_queue.empty():
         raise error_queue.get()
     else:
-        raise TimeoutError(f"TradingAgentsGraph timed out after 1200s for {symbol}")
+        raise TimeoutError(f"TradingAgentsGraph timed out after 600s for {symbol}")
 
 
 def _run_analysis_in_subprocess(
@@ -178,7 +151,22 @@ def _run_analysis_in_subprocess(
             debug=False,
             config=TRADING_CONFIG
         )
-        init_state = ta.propagator.create_initial_state(
+        # 使用 _run_trading_graph_stream 替代直接调用
+                final_state, signal = _run_trading_graph_stream(
+                    ta, symbol, target_date,
+                    user_context={},
+                    risk_level=risk_level,
+                    selected_analysts=selected_analysts,
+                    parameters=parameters
+                )
+                if isinstance(final_state, dict):
+                    return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+                return str(final_state) if final_state else "⚠️ 分析结果为空"
+            except TimeoutError as e:
+                sys_logger.error(f"[Background] Task {task_id} 超时: {e}")
+                return f"⚠️ 分析超时: {e}"
+            # 旧代码已替换
+                init_state = ta.propagator.create_initial_state(
             symbol, target_date,
             user_context={},
             risk_level=risk_level,
@@ -223,11 +211,6 @@ async def _analysis_background_task(
     loop = asyncio.get_running_loop()
     try:
         sys_logger.info(f"[Background] Task {task_id} 开始执行 {symbol}...")
-        
-        # 初始化进度追踪
-        if api_progress_tracker.progress_tracker:
-            await api_progress_tracker.progress_tracker.start_task(task_id, symbol)
-            sys_logger.info(f"[Progress] Task {task_id} 进度追踪已启动")
 
         def _do_analysis():
             try:
@@ -237,19 +220,35 @@ async def _analysis_background_task(
                     debug=False,
                     config=TRADING_CONFIG
                 )
-                # 使用带超时机制的函数（900秒）
+                # 使用 _run_trading_graph_stream 替代直接调用
                 final_state, signal = _run_trading_graph_stream(
                     ta, symbol, target_date,
                     user_context={},
                     risk_level=risk_level,
                     selected_analysts=selected_analysts,
-                    parameters={}
+                    parameters=parameters
                 )
-                # 返回完整报告
-                return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+                if isinstance(final_state, dict):
+                    return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
+                return str(final_state) if final_state else "⚠️ 分析结果为空"
             except TimeoutError as e:
                 sys_logger.error(f"[Background] Task {task_id} 超时: {e}")
                 return f"⚠️ 分析超时: {e}"
+            # 旧代码已替换
+                init_state = ta.propagator.create_initial_state(
+                    symbol, target_date,
+                    user_context={},
+                    risk_level=risk_level,
+                    selected_analysts=selected_analysts
+                )
+                args = ta.propagator.get_graph_args()
+                final_state = None
+                for chunk in ta.graph.stream(init_state, **args):
+                    final_state = chunk
+                if final_state is None:
+                    raise RuntimeError("TradingAgentsGraph produced no output")
+                # 返回完整报告，不提取信号（process_signal 只返回决策）
+                return final_state.get("final_trade_decision", "⚠️ 未找到最终报告")
             except Exception as e:
                 sys_logger.error(f"[Background] Task {task_id} 分析异常: {e}\n{traceback.format_exc()}")
                 return f"⚠️ 分析失败: {e}"
@@ -259,11 +258,11 @@ async def _analysis_background_task(
 
         # 写入 Redis 缓存（12小时）
         cache_key = f"report:{symbol}:{target_date}"
-        if False and redis_client:
+        if redis_client:
             try:
-                await redis_client.setex(cache_key, 604800, final_report)  # 7 天 TTL
+                await redis_client.setex(cache_key, 43200, final_report)
                 import json
-                await redis_client.setex(f"task_meta:{task_id}", 604800, json.dumps({
+                await redis_client.setex(f"task_meta:{task_id}", 86400, json.dumps({
                     "symbol": symbol, "date": target_date,
                     "status": "completed", "username": username,
                     "report": final_report
@@ -283,10 +282,6 @@ async def _analysis_background_task(
         except Exception as e:
             sys_logger.error(f"[Background] 报告文件写入失败: {e}")
 
-        # 标记任务完成
-        if api_progress_tracker.progress_tracker:
-            await api_progress_tracker.progress_tracker.complete_task(task_id)
-        
         sys_logger.info(f"[Background] Task {task_id} 完成！")
 
     except Exception as e:
@@ -366,7 +361,6 @@ class AnalyzeResponse(BaseModel):
     elapsed_seconds: float
     report: str
     cached: bool
-    task_id: Optional[str] = None
 
 
 # ==================== 全局异常处理 ====================
@@ -442,8 +436,7 @@ async def validate_config():
 
 # ==================== 登录接口 ====================
 @app.post("/api/v1/login")
-@limiter.limit("5/minute")  # 登录接口速率限制：5 次/分钟
-def login(request: Request, req: LoginReq):
+def login(req: LoginReq):
     """颁发 JWT Token (MVP 硬编码校验)"""
     if req.username == "admin" and req.password == "admin123":
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -456,7 +449,7 @@ def login(request: Request, req: LoginReq):
 
 # ==================== 受保护的 /api/v1/analyze ====================
 @app.post("/api/v1/analyze", response_model=AnalyzeResponse)
-async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), background_tasks: BackgroundTasks = None):
+async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token)):
     """
     股票智能分析接口 (JWT 鉴权保护)
 
@@ -473,26 +466,14 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), 
     target_date = req.resolve_date()
 
     # 参数校验
-    # 根据市场类型验证股票代码格式
-    market_type = req.market_type or (req.parameters or {}).get("market_type") or (req.parameters or {}).get("market", "A股")
-    if not symbol:
+    if not symbol or len(symbol) != 6:
         raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
-    
-    # A股：6位数字
-    if market_type == "A股" and not (len(symbol) == 6 and symbol.isdigit()):
-        raise HTTPException(status_code=400, detail=f"A股代码格式错误，应为6位数字: {symbol}")
-    # 港股：5-6位数字 或 5-6位数字.HK
-    elif market_type == "港股" and not (symbol.isdigit() and 5 <= len(symbol) <= 6 or (".HK" in symbol.upper() and len(symbol.replace(".HK", "").replace(".hk", "")) >= 4)):
-        pass  # 港股格式较灵活，暂不严格校验
-    # 美股：1-5个字母
-    elif market_type == "美股" and not (symbol.isalpha() and 1 <= len(symbol) <= 5):
-        raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母: {symbol}")
 
     sys_logger.info(f"[API] 👉 收到分析请求，目标代码: {symbol} | 日期: {target_date} | 用户: {username}")
 
     # ⚡ 1. Redis 缓存拦截
     cache_key = f"report:{symbol}:{target_date}"
-    if False and redis_client:
+    if redis_client:
         try:
             cached_report = await redis_client.get(cache_key)
             if cached_report:
@@ -508,14 +489,12 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), 
                         sys_logger.info(f"[API] 📄 报告已写入（缓存命中）: {report_file}")
                 except Exception as fe:
                     sys_logger.error(f"[API] 报告文件写入失败: {fe}")
-                task_id = f"cached_{symbol}_{target_date.replace('-', '')}"
                 return AnalyzeResponse(
                     status="success",
                     symbol=symbol,
                     elapsed_seconds=0.01,
                     report=cached_report,
-                    cached=True,
-                    task_id=task_id
+                    cached=True
                 )
         except Exception as e:
             sys_logger.error(f"[API] Redis 读取失败: {e}")
@@ -535,31 +514,45 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), 
             config=TRADING_CONFIG,
             callbacks=[usage_cb]
         )
-        
-        # 生成 task_id（添加 UUID 后缀防止同一秒内冲突）
-        task_id = f"{symbol}_{target_date.replace('-', '')}_{int(t0)}_{uuid.uuid4().hex[:8]}"
-        
-        # 启动后台任务追踪进度
-        background_tasks.add_task(
-            track_analysis_progress,
-            task_id,
+        result, _ = await asyncio.to_thread(
+            _run_trading_graph_stream,
+            local_ta,
             symbol,
             target_date,
             req.user_context or {},
             req.risk_level or "medium",
-            selected,
-            req.parameters or {},
-            t0
+            req.selected_analysts or ["market", "news", "fundamentals"],
+            req.parameters or {}
         )
-        
-        # 立即返回任务已接受
+        elapsed = time.time() - t0
+
+        final_report = result.get("final_trade_decision", "⚠️ 未找到最终报告:\n" + str(result))
+        sys_logger.info(f"[API] [{symbol}] ✅ 分析顺利完成，耗时: {elapsed:.0f}秒")
+
+        # ⚡ 3. 写入 Redis 缓存 (12小时)
+        if redis_client:
+            try:
+                await redis_client.setex(cache_key, 43200, final_report)
+            except Exception as e:
+                sys_logger.error(f"[API] Redis 写入失败: {e}")
+
+        # 📄 4. 同时写入 reports/ 目录（供报告列表页面展示）
+        try:
+            reports_dir = "/root/stock-analyzer/reports"
+            os.makedirs(reports_dir, exist_ok=True)
+            report_file = os.path.join(reports_dir, f"{symbol}_{target_date.replace('-', '')}.md")
+            with open(report_file, "w", encoding="utf-8") as f:
+                f.write(final_report)
+            sys_logger.info(f"[API] 📄 报告已写入: {report_file}")
+        except Exception as e:
+            sys_logger.error(f"[API] 报告文件写入失败: {e}")
+
         return AnalyzeResponse(
             status="success",
             symbol=symbol,
-            elapsed_seconds=0.01,
-            report="分析任务已提交，正在后台执行...",
-            cached=False,
-            task_id=task_id
+            elapsed_seconds=round(elapsed, 2),
+            report=final_report,
+            cached=False
         )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="LLM 多智能体分析超时，请稍后重试")
@@ -611,103 +604,6 @@ async def ws_notifications(websocket):
     except Exception as e:
         sys_logger.error(f"WebSocket error: {type(e).__name__}: {e}")
 
-# ==================== WebSocket 进度推送 ====================
-# 存储所有连接的 WebSocket 客户端及其订阅的任务
-progress_ws_clients: dict = {}  # websocket -> task_id
-
-@app.websocket("/api/ws/progress")
-async def ws_progress(websocket: WebSocket):
-    """WebSocket 进度推送端点 - 实时推送分析步骤详情"""
-    await websocket.accept()
-    task_id = None
-    progress_ws_clients[websocket] = task_id
-    sys_logger.info(f"[WS] Progress 客户端连接，当前连接数: {len(progress_ws_clients)}")
-    
-    try:
-        # 发送欢迎消息
-        await websocket.send_json({
-            "type": "connected",
-            "message": "WebSocket progress 连接已建立"
-        })
-        
-        # 保持连接并处理消息
-        last_progress = ""
-        while True:
-            try:
-                # 每秒检查一次进度更新
-                data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
-                # 解析订阅请求
-                msg = json.loads(data)
-                if msg.get("type") == "subscribe":
-                    task_id = msg.get("task_id")
-                    progress_ws_clients[websocket] = task_id
-                    last_progress = ""
-                    sys_logger.info(f"[WS] 客户端订阅任务: {task_id}")
-                    # 立即发送当前进度
-                    if redis_client and task_id:
-                        progress_data = await redis_client.get(f"task:{task_id}:progress")
-                        if progress_data:
-                            last_progress = progress_data
-                            await websocket.send_json({
-                                "type": "progress_update",
-                                "task_id": task_id,
-                                "data": json.loads(progress_data)
-                            })
-            except asyncio.TimeoutError:
-                # 每秒检查进度更新
-                if redis_client and task_id:
-                    try:
-                        progress_data = await redis_client.get(f"task:{task_id}:progress")
-                        if progress_data and progress_data != last_progress:
-                            last_progress = progress_data
-                            await websocket.send_json({
-                                "type": "progress_update",
-                                "task_id": task_id,
-                                "data": json.loads(progress_data)
-                            })
-                            # 如果任务完成，发送完成消息
-                            data = json.loads(progress_data)
-                            if data.get("status") == "completed":
-                                await websocket.send_json({
-                                    "type": "completed",
-                                    "task_id": task_id,
-                                    "data": data
-                                })
-                    except Exception:
-                        pass
-            except json.JSONDecodeError:
-                pass
-    except Exception as e:
-        sys_logger.error(f"[WS] Progress error: {e}")
-    finally:
-        progress_ws_clients.pop(websocket, None)
-        sys_logger.info(f"[WS] Progress 客户端断开，当前连接数: {len(progress_ws_clients)}")
-
-async def broadcast_progress(task_id: str):
-    """广播进度更新到所有连接的客户端"""
-    if not redis_client or not progress_ws_clients:
-        return
-    
-    try:
-        progress_data = await redis_client.get(f"task:{task_id}:progress")
-        if progress_data:
-            message = {
-                "type": "progress_update",
-                "task_id": task_id,
-                "data": json.loads(progress_data)
-            }
-            # 发送到所有连接的客户端
-            disconnected = set()
-            for client in progress_ws_clients:
-                try:
-                    await client.send_json(message)
-                except Exception:
-                    disconnected.add(client)
-            # 清理断开的客户端
-            progress_ws_clients.difference_update(disconnected)
-    except Exception as e:
-        sys_logger.error(f"[WS] Broadcast error: {e}")
-
 # ==================== 收藏夹 (Favorites) ====================
 def _fav_key(username: str) -> str:
     return f"favorites:{username}"
@@ -723,7 +619,7 @@ def _validate_stock(code: str, market: str) -> dict:
             while rs.error_code == "0" and rs.next():
                 rows.append(rs.get_row_data())
             bs.logout()
-            if rows and len(rows[0]) > 1:
+            if rows:
                 name = rows[0][1]
                 return {"stock_code": code, "stock_name": name, "market": market, "valid": True}
         raise ValueError(f"A股代码 {code} 不存在或已退市")
@@ -783,17 +679,11 @@ async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token))
         raise HTTPException(status_code=503, detail="缓存服务不可用")
     try:
         # 校验股票代码有效性，获取系统股票名称
-        # Run blocking _validate_stock in thread pool to avoid blocking event loop
-        try:
-            validated = await asyncio.wait_for(
-                asyncio.to_thread(_validate_stock, req.stock_code, req.market),
-                timeout=8.0
-            )
-            stock_name = validated["stock_name"] or req.stock_name
-        except asyncio.TimeoutError:
-            stock_name = req.stock_name or req.stock_code
+        validated = _validate_stock(req.stock_code, req.market)
+        stock_name = validated["stock_name"] or req.stock_name
 
         key = _fav_key(username)
+        # 检查是否已存在
         existing = await redis_client.hget(key, req.stock_code)
         if existing:
             return {"success": False, "message": "该股票已在自选列表中"}
@@ -811,8 +701,6 @@ async def favorites_add(req: FavoriteReq, username: str = Depends(verify_token))
         return {"success": True, "data": {"id": req.stock_code, **fav_data}}
     except ValueError as ve:
         return {"success": False, "message": str(ve)}
-    except asyncio.TimeoutError:
-        return {"success": False, "message": "股票验证超时（>8s），请重试"}
     except Exception as e:
         sys_logger.error(f"[Favorites] add error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -872,65 +760,6 @@ async def favorites_tags(username: str = Depends(verify_token)):
 @app.get("/api/favorites/sync-realtime")
 async def favorites_sync_realtime(username: str = Depends(verify_token)):
     return {"success": True, "data": {"synced": True, "count": 0}}
-
-@app.get("/api/favorites/search")
-@limiter.limit("30/minute")  # 搜索接口速率限制：30 次/分钟
-async def favorites_search(request: Request, keyword: str = "", username: str = Depends(verify_token)):
-    """搜索自选股（按代码或名称）"""
-    try:
-        # XSS 防护：转义输入
-        keyword = re.sub(r'[<>"\'/]', '', keyword)
-        
-        all_favs = redis_client.hgetall("favorites")
-        results = []
-        for code, data in all_favs.items():
-            if isinstance(data, bytes):
-                data = json.loads(data)
-            name = data.get("name", "") if isinstance(data, dict) else ""
-            if keyword.lower() in code.lower() or keyword.lower() in name.lower():
-                results.append({"stock_code": code, "stock_name": name, "market": data.get("market", "A 股") if isinstance(data, dict) else "A 股"})
-        return {"success": True, "data": results}
-    except Exception as e:
-        sys_logger.error(f"[Favorites Search] error: {e}")
-        return {"success": True, "data": []}
-
-@app.get("/api/stocks/search")
-@limiter.limit("30/minute")  # 搜索接口速率限制：30 次/分钟
-async def stocks_search(request: Request, q: str = "", username: str = Depends(verify_token)):
-    """搜索股票（按代码或名称）"""
-    try:
-        # XSS 防护：转义输入
-        q = re.sub(r'[<>"\'/]', '', q)
-        
-        import baostock as bs
-        lg = bs.login()
-        if lg.error_code != "0":
-            bs.logout()
-            return {"success": True, "data": []}
-        
-        # 搜索股票
-        if q.isdigit() and len(q) == 6:
-            # 按代码搜索
-            rs = bs.query_stock_basic(code=q)
-        else:
-            # 按名称搜索（模糊匹配）
-            rs = bs.query_stock_basic(code="*" + q + "*")
-        
-        results = []
-        while rs.error_code == "0" and rs.next():
-            row = rs.get_row_data()
-            # 列：code, code_name, ipoDate, outDate, status
-            if row[0]:  # code
-                results.append({
-                    "symbol": row[0],
-                    "name": row[1] if len(row) > 1 else "",
-                    "market": "A 股"
-                })
-        bs.logout()
-        return {"success": True, "data": results[:20]}  # 限制返回 20 条
-    except Exception as e:
-        sys_logger.error(f"[Stocks Search] error: {e}")
-        return {"success": True, "data": []}
 
 # ==================== 多源数据同步 (Multi-Source Sync) ====================
 @app.get("/api/sync/multi-source/status")
@@ -1040,7 +869,7 @@ async def sync_multi_source_history(
 async def sync_cache_delete(username: str = Depends(verify_token)):
     """清除数据源缓存"""
     deleted = 0
-    if False and redis_client:
+    if redis_client:
         try:
             keys = []
             for pattern in ["stock:*", "quote:*", "kline:*", "fundamental:*"]:
@@ -1153,7 +982,7 @@ async def scheduler_jobs_create(req: dict = None, username: str = Depends(verify
             return {"success": True, "message": f"Job '{name}' created"}
         return {"success": False, "message": "Failed to create job"}
     except Exception as e:
-        return {"success": False, "message": "操作失败，请稍后重试"}
+        return {"success": False, "message": str(e)}
 
 @app.post("/api/scheduler/jobs/{job_id}/pause")
 async def scheduler_job_pause(job_id: str, username: str = Depends(verify_token)):
@@ -1179,7 +1008,7 @@ async def scheduler_job_trigger(job_id: str, force: bool = False, username: str 
                     subprocess.Popen(command, shell=True)
                     return {"success": True, "data": {"triggered": True, "job_id": job_id}}
                 except Exception as e:
-                    return {"success": False, "message": "操作失败，请稍后重试"}
+                    return {"success": False, "message": str(e)}
     return {"success": False, "message": "Job not found"}
 
 @app.delete("/api/scheduler/jobs/{job_id}")
@@ -1201,7 +1030,7 @@ async def scheduler_job_delete(job_id: str, username: str = Depends(verify_token
             subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=10)
         return {"success": True, "message": "Job deleted"}
     except Exception as e:
-        return {"success": False, "message": "操作失败，请稍后重试"}
+        return {"success": False, "message": str(e)}
 
 @app.get("/api/scheduler/jobs/{job_id}/history")
 async def scheduler_job_history(job_id: str, username: str = Depends(verify_token)):
@@ -1237,80 +1066,13 @@ async def scheduler_job_execution_stats(job_id: str, username: str = Depends(ver
     return {"success": True, "data": {"stats": {"total": 0, "success": 0, "failed": 0}}}
 
 # ==================== 认证相关 (Auth) ====================
-
-# Token 黑名单（登出后失效）
-TOKEN_BLACKLIST = set()
-
-def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
-    """生成访问 Token"""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def create_refresh_token(data: dict, expires_delta: timedelta = None) -> str:
-    """生成刷新 Token"""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(days=7))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
-    """验证 JWT Token（包含黑名单检查）"""
-    token = credentials.credentials
-    
-    # 检查是否在黑名单中（Redis）
-    if False and redis_client:
-        try:
-            is_blacklisted = await redis_client.get(f"token_blacklist:{token}")
-            if is_blacklisted:
-                sys_logger.info(f"[Auth] Token 在黑名单中，拒绝访问")
-                raise HTTPException(status_code=401, detail="Token 已登出")
-        except Exception as e:
-            sys_logger.error(f"[Auth] 黑名单检查失败：{e}")
-    # 后备：内存黑名单（单 worker 模式）
-    elif token in TOKEN_BLACKLIST:
-        raise HTTPException(status_code=401, detail="Token 已登出")
-    
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="无效或被篡改的 Token")
-        return username
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token 已过期")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="无效或被篡改的 Token")
-
 @app.post("/api/auth/logout")
-async def auth_logout(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()), username: str = Depends(verify_token)):
-    """登出（将 Token 加入黑名单）"""
-    try:
-        token = credentials.credentials
-        # 使用 Redis 存储黑名单（多 worker 模式）
-        if False and redis_client:
-            await redis_client.setex(f"token_blacklist:{token}", 86400, "1")  # 24 小时过期
-            sys_logger.info(f"[Auth] 用户 {username} 登出，Token 已加入 Redis 黑名单")
-        else:
-            TOKEN_BLACKLIST.add(token)
-            sys_logger.info(f"[Auth] 用户 {username} 登出，Token 已加入内存黑名单")
-        return {"success": True, "message": "登出成功"}
-    except Exception as e:
-        sys_logger.error(f"[Auth] 登出失败：{e}")
-        return {"success": False, "message": "操作失败，请稍后重试"}
+async def auth_logout(username: str = Depends(verify_token)):
+    return {"success": True}
 
 @app.post("/api/auth/refresh")
-async def auth_refresh(username: str = Depends(verify_token)):
-    """刷新 Token"""
-    try:
-        # 生成新 token
-        access_token = create_access_token(data={"sub": username})
-        refresh_token = create_refresh_token(data={"sub": username})
-        return {"success": True, "data": {"access_token": access_token, "refresh_token": refresh_token}}
-    except Exception as e:
-        sys_logger.error(f"[Auth Refresh] error: {e}")
-        return {"success": False, "message": "操作失败，请稍后重试"}
+async def auth_refresh(req: LoginReq, username: str = Depends(verify_token)):
+    return {"success": True, "data": {"access_token": "stub", "refresh_token": "stub"}}
 
 @app.post("/api/auth/change-password")
 async def auth_change_password(username: str = Depends(verify_token)):
@@ -1345,8 +1107,6 @@ async def dashboard_summary(username: str = Depends(verify_token)):
     total_reports = 0
     today_reports = 0
     today_str = datetime.now().strftime("%Y%m%d")
-    
-    # 统计报告
     if os.path.exists(reports_dir):
         for fname in os.listdir(reports_dir):
             if fname.endswith(".md"):
@@ -1354,68 +1114,49 @@ async def dashboard_summary(username: str = Depends(verify_token)):
                 parts = fname.replace(".md", "").split("_")
                 if len(parts) > 1 and parts[1] == today_str:
                     today_reports += 1
-    
-    # 统计自选股
-    total_favorites = 0
-    try:
-        total_favorites = len(redis_client.hgetall("favorites"))
-    except:
-        pass
-    
-    # 统计用户数（单用户模式固定为 1）
-    total_users = 1
-    
     return {"success": True, "data": {
         "total_reports": total_reports,
         "today_reports": today_reports,
-        "total_favorites": total_favorites,
-        "total_stocks_analyzed": total_reports,
-        "total_users": total_users
+        "total_favorites": 0,
+        "total_stocks_analyzed": total_reports
     }}
-
-def _fetch_index(symbol: str, name: str) -> dict:
-    """Fetch a single index (runs in thread to avoid blocking event loop)"""
-    try:
-        lg = bs.login()
-        rs = bs.query_history_k_data_plus(
-            symbol,
-            "date,code,open,high,low,close,volume,amount,turn",
-            start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
-            end_date=datetime.now().strftime("%Y-%m-%d"),
-            frequency="d", adjustflag="3"
-        )
-        rows = []
-        while rs.error_code == "0" and rs.next():
-            rows.append(rs.get_row_data())
-        bs.logout()
-        if rows and len(rows[0]) > 5:
-            latest = rows[-1]
-            prev = rows[-2] if len(rows) > 1 else latest
-            close = float(latest[5]) if latest[5] else 0
-            prev_close = float(prev[5]) if prev[5] else close
-            change = close - prev_close
-            change_pct = round(change / prev_close * 100, 2) if prev_close else 0
-            return {"symbol": symbol.split(".")[1], "code": symbol.split(".")[1], "name": name, "price": close, "change": round(change, 2), "change_percent": change_pct}
-    except Exception:
-        pass
-    return None
 
 @app.get("/api/dashboard/market")
 async def dashboard_market(username: str = Depends(verify_token)):
     """市场概览（主要指数）"""
     indices = []
+    # 尝试获取几个主要指数
     for symbol, name in [("sh.000001", "上证指数"), ("sz.399001", "深证成指"), ("sh.000300", "沪深300")]:
         try:
-            result = await asyncio.wait_for(
-                asyncio.to_thread(_fetch_index, symbol, name),
-                timeout=5.0
+            lg = bs.login()
+            rs = bs.query_history_k_data_plus(
+                symbol,
+                "date,code,open,high,low,close,volume,amount,turn",
+                start_date=(datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"),
+                end_date=datetime.now().strftime("%Y-%m-%d"),
+                frequency="d", adjustflag="3"
             )
-            if result:
-                indices.append(result)
-        except (asyncio.TimeoutError, TimeoutError):
-            # BaoStock 超时，降级跳过该指数
+            rows = []
+            while rs.error_code == "0" and rs.next():
+                rows.append(rs.get_row_data())
+            bs.logout()
+            if rows:
+                latest = rows[-1]
+                prev = rows[-2] if len(rows) > 1 else latest
+                close = float(latest[5]) if latest[5] else 0
+                prev_close = float(prev[5]) if prev[5] else close
+                change = close - prev_close
+                change_pct = round(change / prev_close * 100, 2) if prev_close else 0
+                indices.append({
+                    "code": symbol.split(".")[1],
+                    "name": name,
+                    "price": close,
+                    "change": round(change, 2),
+                    "change_percent": change_pct
+                })
+        except Exception:
             pass
-    return {"success": True, "data": {"indices": indices, "data": indices}}
+    return {"success": True, "data": {"indices": indices}}
 
 @app.get("/api/dashboard/recent")
 async def dashboard_recent(username: str = Depends(verify_token)):
@@ -1439,7 +1180,7 @@ async def dashboard_recent(username: str = Depends(verify_token)):
                 "date": formatted_date,
                 "time": datetime.fromtimestamp(mtime).strftime("%H:%M:%S")
             })
-    return {"success": True, "data": {"items": items, "recent_reports": items}}
+    return {"success": True, "data": {"items": items}}
 
 # ==================== 配置系统 (Config) ====================
 
@@ -1589,33 +1330,11 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
     symbol = req.resolve_symbol()
     target_date = req.resolve_date()
 
-    # 根据市场类型验证股票代码格式
-    market_type = req.market_type or (req.parameters or {}).get("market_type") or (req.parameters or {}).get("market", "A股")
-    if not symbol:
+    if not symbol or len(symbol) != 6:
         raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
-    
-    # A股：6位数字
-    if market_type == "A股" and not (len(symbol) == 6 and symbol.isdigit()):
-        raise HTTPException(status_code=400, detail=f"A股代码格式错误，应为6位数字: {symbol}")
-    # 港股：5-6位数字 或 5-6位数字.HK
-    elif market_type == "港股" and not (symbol.isdigit() and 5 <= len(symbol) <= 6 or (".HK" in symbol.upper() and len(symbol.replace(".HK", "").replace(".hk", "")) >= 4)):
-        pass  # 港股格式较灵活，暂不严格校验
-    # 美股：1-5个字母
-    elif market_type == "美股" and not (symbol.isalpha() and 1 <= len(symbol) <= 5):
-        raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母: {symbol}")
-
-    # research_depth 参数校验
-    research_depth = (req.parameters or {}).get("research_depth")
-    if research_depth is not None:
-        try:
-            rd = int(research_depth)
-            if not (1 <= rd <= 5):
-                raise HTTPException(status_code=400, detail=f"research_depth 必须为 1-5，当前值: {rd}")
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail=f"research_depth 必须为整数 1-5")
 
     cache_key = f"report:{symbol}:{target_date}"
-    if False and redis_client:
+    if False and redis_client:  # 缓存已禁用，确保每次实时分析
         try:
             cached = await redis_client.get(cache_key)
             if cached:
@@ -1644,17 +1363,7 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
 
     # 生成 task_id 并立即返回，后台执行分析
     task_id = f"{symbol}_{int(time.time())}"
-    # 中文到英文的分析师名称映射
-    analyst_name_map = {
-        '市场分析师': 'market',
-        '基本面分析师': 'fundamentals',
-        '新闻分析师': 'news',
-        '社媒分析师': 'social'
-    }
-    
-    # 转换中文名称为英文
-    raw_selected = req.selected_analysts or []
-    selected = [analyst_name_map.get(name, name) for name in raw_selected] if raw_selected else ["market", "news", "fundamentals"]
+    selected = req.selected_analysts or ["market", "news", "fundamentals"]
 
     # 立即记录操作日志（分析正在后台进行）
     _add_operation_log(
@@ -1691,147 +1400,24 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
 
 def _find_report_file(task_id: str) -> str | None:
     """从 task_id 找到对应的报告文件（避免使用 KEYS 命令）"""
-    import re
     reports_dir = "/root/stock-analyzer/reports"
     if not os.path.exists(reports_dir):
         return None
     clean_id = task_id.replace("cached_", "")
-    
-    # 提取股票代码和日期（格式：SYMBOL_YYYYMMDD 或 SYMBOL_YYYYMMDD_HHMMSS）
-    parts = clean_id.split("_")
-    if len(parts) >= 2:
-        symbol = parts[0]
-        date_part = parts[1] if len(parts) > 1 else ""
-        
-        for fname in os.listdir(reports_dir):
-            if not fname.endswith(".md"):
-                continue
-            base = fname.replace(".md", "")
-            base_parts = base.split("_")
-            
-            # 匹配股票代码
-            if len(base_parts) >= 1 and base_parts[0] == symbol:
-                # 情况 1：文件名有日期部分（如 000001_20260409.md）
-                if len(base_parts) >= 2:
-                    file_date = base_parts[1]
-                    # 如果请求有日期，匹配日期；如果请求无日期或文件日期为空，直接匹配
-                    if not date_part or not file_date or file_date.startswith(date_part) or date_part.startswith(file_date):
-                        return os.path.join(reports_dir, fname)
-                # 情况 2：文件名无日期部分（如 000001.md）
-                else:
-                    return os.path.join(reports_dir, fname)
-    
-    # 兜底方案：直接匹配
     for fname in os.listdir(reports_dir):
         if not fname.endswith(".md"):
             continue
         base = fname.replace(".md", "")
-        if base == clean_id or clean_id in base:
+        if base == clean_id or base.startswith(clean_id + "_"):
             return os.path.join(reports_dir, fname)
-    
     return None
 
 @app.get("/api/analysis/tasks/{task_id}/status")
 async def analysis_task_status(task_id: str, username: str = Depends(verify_token)):
-    """返回分析任务进度状态（包含时间估算和当前步骤）"""
-    import os
-    import time
-    
-    # 优先从 Redis 获取真实进度
-    if api_progress_tracker.progress_tracker and redis_client:
-        try:
-            progress_data = await api_progress_tracker.progress_tracker.get_progress(task_id)
-            if progress_data.get("status") != "pending":
-                return {
-                    "success": True,
-                    "data": progress_data
-                }
-        except Exception as e:
-            sys_logger.error(f"[Progress] 获取进度失败：{e}")
-    
-    # 降级方案：检查报告文件
     report_file = _find_report_file(task_id)
     if report_file and os.path.exists(report_file):
-        # 任务完成 - 从文件修改时间计算实际耗时
-        file_stat = os.stat(report_file)
-        created_time = int(file_stat.st_mtime)
-        elapsed = max(0, int(time.time()) - created_time)
-        # 限制显示范围
-        elapsed = min(elapsed, 300)
-        
-        return {
-            "success": True,
-            "data": {
-                "status": "completed",
-                "progress": 100,
-                "elapsed_time": elapsed,
-                "remaining_time": 0,
-                "estimated_total_time": elapsed,
-                "current_step_name": "分析完成",
-                "current_step_description": "报告已生成，可以查看完整结果",
-                "message": "分析已完成"
-            }
-        }
-    
-    # 默认返回（无进度信息）
-    # 从 task_id 提取时间戳（格式：symbol_YYYYMMDD 或 symbol_YYYYMMDD_HHMMSS）
-    start_time = None
-    if "_" in task_id:
-        parts = task_id.split("_")
-        # 尝试从最后部分解析日期
-        date_part = parts[-1]
-        if len(date_part) == 8 and date_part.isdigit():
-            # 格式：YYYYMMDD
-            try:
-                from datetime import datetime
-                start_time = int(datetime.strptime(date_part, "%Y%m%d").timestamp())
-            except:
-                pass
-        elif len(date_part) >= 14:
-            # 格式：YYYYMMDDHHMMSS
-            try:
-                from datetime import datetime
-                start_time = int(datetime.strptime(date_part[:14], "%Y%m%d%H%M%S").timestamp())
-            except:
-                pass
-    
-    # 如果无法解析，使用当前时间减去一个随机偏移（模拟正在执行）
-    if start_time is None:
-        start_time = int(time.time()) - 30  # 假设 30 秒前开始
-    
-    elapsed = int(time.time()) - start_time
-    # 限制最大显示时间（避免显示过大的数字）
-    elapsed = min(elapsed, 300)  # 最多显示 300 秒
-    
-    # 模拟进度（假设总时长 120 秒）
-    estimated_total = 120
-    progress = min(95, int((elapsed / estimated_total) * 100)) if elapsed < estimated_total else 95
-    remaining = max(0, estimated_total - elapsed)
-    
-    # 根据进度推断当前步骤
-    steps = [
-        ("数据获取", "正在从 BaoStock 获取股票历史数据和财务指标"),
-        ("技术分析", "正在计算技术指标：RSI, MACD, VWMA, 布林带"),
-        ("基本面分析", "正在分析财务报表和估值指标"),
-        ("新闻分析", "正在分析相关新闻和舆情"),
-        ("综合决策", "正在整合各分析师观点生成最终决策")
-    ]
-    step_index = min(len(steps) - 1, int(progress / 20))
-    current_step_name, current_step_desc = steps[step_index]
-    
-    return {
-        "success": True,
-        "data": {
-            "status": "running",
-            "progress": progress,
-            "elapsed_time": elapsed,
-            "remaining_time": remaining,
-            "estimated_total_time": estimated_total,
-            "current_step_name": current_step_name,
-            "current_step_description": current_step_desc,
-            "message": f"正在执行{current_step_name}..."
-        }
-    }
+        return {"success": True, "data": {"status": "completed", "progress": 100}}
+    return {"success": True, "data": {"status": "pending", "progress": 0}}
 
 @app.get("/api/analysis/tasks/{task_id}/result")
 async def analysis_task_result(task_id: str, username: str = Depends(verify_token)):
@@ -1847,78 +1433,10 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             first_line = lines[0].strip("# ").strip() if lines else ""
 
             # 提取 recommendation（买入/卖出/持有）
-            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
-            action = rec_match.group(1) if rec_match else "—"
+            rec_match = re.search(r"\* \*\*最终交易建议\*\*[：:]*\s*\*\*(买入|卖出|持有|观望)\*\*", content)
+            recommendation = rec_match.group(1) if rec_match else "—"
 
-            # 提取一句话逻辑作为 reasoning
-            logic_match = re.search(r"\*\*一句话逻辑[：:]*\*\*([^\n]+)", content)
-            reasoning = logic_match.group(1).strip() if logic_match else ""
-
-            # 提取目标价（参考价格）- 优先级：入场价格 > 目标价 > 当前价格
-            target_price = "—"
-            
-            # 1. 尝试从"入场"提取（最优先，因为这是实际入场价格）
-            # 匹配 "入场 当前1.01附近" 或 "入场: 1.01"
-            entry_match = re.search(r"入场[^0-9]*([0-9]+\.[0-9]+)", content)
-            if entry_match:
-                target_price = entry_match.group(1)
-            else:
-                # 2. 尝试"目标价"或"目标位"
-                price_match = re.search(r"目标[位价]?[：:]?\s*[¥￥$]?\s*([0-9]+\.[0-9]+)", content)
-                if price_match:
-                    target_price = price_match.group(1)
-                else:
-                    # 3. 尝试"当前"后面跟着的价格（更精确的匹配）
-                    current_match = re.search(r"当前[^0-9]*([0-9]+\.[0-9]+)", content)
-                    if current_match:
-                        target_price = current_match.group(1)
-                    else:
-                        # 4. 尝试"第一止盈"或"扩展目标"
-                        tp_match = re.search(r"(?:第一止盈|扩展目标)[^0-9]*([0-9]+\.[0-9]+)", content)
-                        if tp_match:
-                            target_price = tp_match.group(1)
-                        else:
-                            # 5. 尝试"参考"后面的价格
-                            ref_match = re.search(r"参考[^0-9]*([0-9]+\.[0-9]+)", content)
-                            if ref_match:
-                                target_price = ref_match.group(1)
-                            else:
-                                # 6. 尝试"止损.*([0-9]+\.[0-9]+)" 止损位
-                                stop_match = re.search(r"止损[^0-9]*([0-9]+\.[0-9]+)", content)
-                                if stop_match:
-                                    target_price = stop_match.group(1)
-
-            # 提取置信度（默认0.75）
-            confidence = 0.75
-            conf_match = re.search(r"置信[度]?[：:]?\s*([0-9.]+)%", content)
-            if not conf_match:
-                conf_match = re.search(r"confidence[：:]?\s*([0-9.]+)%", content, re.IGNORECASE)
-            if conf_match:
-                try:
-                    confidence = float(conf_match.group(1)) / 100
-                except:
-                    pass
-
-            # 提取风险评分（默认0.5）
-            risk_score = 0.5
-            risk_match = re.search(r"风险[评分]?[：:]?\s*([0-9.]+)%", content)
-            if not risk_match:
-                risk_match = re.search(r"风险[评分]?[：:]?\s*(低|中|高)", content)
-            if risk_match:
-                risk_text = risk_match.group(1)
-                if risk_text == "低":
-                    risk_score = 0.3
-                elif risk_text == "中":
-                    risk_score = 0.5
-                elif risk_text == "高":
-                    risk_score = 0.7
-                else:
-                    try:
-                        risk_score = float(risk_text) / 100
-                    except:
-                        pass
-
-            # 提取各分析模块
+            # 提取各分析模块（简化：取第一个 ### 标题到下一个 ## 之间的内容）
             sections = re.split(r"(?=##\s)", content)
             tech_section = ""
             fund_section = ""
@@ -1932,45 +1450,19 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
                 elif any(k in sec_title for k in ["舆情", "情绪", "社媒", "新闻"]):
                     sent_section = sec[:500]
 
-            # 提取股票名称和代码
-            name_match = re.search(r"#\s*📊\s*([^\(\"]+)", content)
+            # 提取股票名称
+            name_match = re.search(r"#\s*📊\s*([^\(]+)", content)
             stock_name = name_match.group(1).strip() if name_match else task_id.split("_")[0]
-
-            symbol_match = re.search(r"\(([0-9A-Z]+)\)", content)
-            symbol = symbol_match.group(1) if symbol_match else task_id.split("_")[0]
 
             return {
                 "success": True,
                 "data": {
-                    "reports": {
-                        "market_report": content if "##" in content else "",
-                        "sentiment_report": "",
-                        "news_report": "",
-                        "fundamentals_report": "",
-                        "bull_researcher": "",
-                        "bear_researcher": "",
-                        "research_team_decision": "",
-                        "trader_investment_plan": "",
-                        "risky_analyst": "",
-                        "safe_analyst": "",
-                        "neutral_analyst": "",
-                        "risk_management_decision": "",
-                        "final_trade_decision": content
-                    },
-                    # 决策对象（供前端直接使用）
-                    "decision": {
-                        "action": action,
-                        "target_price": target_price,
-                        "confidence": confidence,
-                        "risk_score": risk_score,
-                        "reasoning": reasoning or first_line[:200]
-                    },
-                    # 兼容字段（供旧版前端使用）
+                    "reports": {"trading_decision": {"content": content}},
+                    "decision": content[:500],
                     "summary": first_line or content[:200],
-                    "recommendation": action,
                     # 额外结构化字段
                     "stock_name": stock_name,
-                    "symbol": symbol,
+                    "recommendation": recommendation,
                     "technical_analysis": tech_section,
                     "fundamental_analysis": fund_section,
                     "sentiment_analysis": sent_section,
@@ -1982,7 +1474,7 @@ async def analysis_task_result(task_id: str, username: str = Depends(verify_toke
             }
         except Exception as e:
             sys_logger.error(f"[Tasks] read report error: {e}")
-    return {"success": True, "data": {"reports": {}, "decision": {"action": "—", "target_price": "—", "confidence": 0, "risk_score": 0.5, "reasoning": ""}, "summary": ""}}
+    return {"success": True, "data": {"reports": {}, "decision": "", "summary": ""}}
 
 @app.post("/api/analysis/tasks/{task_id}/mark-failed")
 async def analysis_mark_failed(task_id: str, username: str = Depends(verify_token)):
@@ -1997,27 +1489,20 @@ async def analysis_delete_task(task_id: str, username: str = Depends(verify_toke
             return {"success": True, "message": "删除成功"}
         except Exception as e:
             sys_logger.error(f"[Tasks] delete error: {e}")
-            return {"success": False, "message": "操作失败，请稍后重试"}
+            return {"success": False, "message": str(e)}
     return {"success": True, "message": "任务不存在"}
 
 @app.post("/api/analysis/{analysis_id}/stop")
 async def analysis_stop(analysis_id: str, username: str = Depends(verify_token)):
-    return {"success": True, "message": "停止分析成功"}
+    return {"success": True, "message": "停止分析成功（该实现为占位）"}
 
 @app.post("/api/analysis/{analysis_id}/share")
 async def analysis_share(analysis_id: str, password: str = None, username: str = Depends(verify_token)):
     return {"success": True, "data": {"share_url": f"/reports/{analysis_id}", "share_code": analysis_id[:8]}}
 
 @app.get("/api/analysis/user/history")
-async def analysis_user_history(
-    symbol: str = None,
-    page: int = 1,
-    page_size: int = 10,
-    sort: str = "created_at",  # 排序字段
-    order: str = "desc",         # 排序方向：asc 或 desc
-    username: str = Depends(verify_token)
-):
-    """从报告目录读取当前用户的分析历史（支持排序和分页）"""
+async def analysis_user_history(username: str = Depends(verify_token)):
+    """从报告目录读取当前用户的分析历史（按用户名区分）"""
     reports_dir = "/root/stock-analyzer/reports"
     items = []
     if os.path.exists(reports_dir):
@@ -2027,9 +1512,6 @@ async def analysis_user_history(
             fpath = os.path.join(reports_dir, fname)
             parts = fname.replace(".md", "").split("_")
             if len(parts) >= 2:
-                # 可选：按股票代码筛选
-                if symbol and parts[0] != symbol:
-                    continue
                 try:
                     stat = os.stat(fpath)
                     items.append({
@@ -2042,24 +1524,8 @@ async def analysis_user_history(
                     })
                 except Exception:
                     pass
-    
-    # 排序（支持多字段）
-    def get_sort_key(item):
-        val = item.get(sort, "")
-        # 日期字段特殊处理
-        if sort == "created_at":
-            return datetime.fromisoformat(val) if val else datetime.min
-        return val
-    
-    reverse = (order == "desc")
-    items.sort(key=get_sort_key, reverse=reverse)
-    
-    total = len(items)
-    # 分页
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated = items[start:end]
-    return {"success": True, "data": {"items": paginated, "total": total, "page": page, "page_size": page_size, "sort": sort, "order": order}}
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"success": True, "data": {"items": items, "total": len(items)}}
 
 @app.get("/api/stock-data/basic-info/{code}")
 async def stock_basic_info(code: str, market: str = "A股", username: str = Depends(verify_token)):
@@ -2157,50 +1623,16 @@ async def analysis_stats(username: str = Depends(verify_token)):
     return {"success": True, "data": {"total_analyses": total, "today_analyses": today, "total": total, "today": today}}
 
 # ==================== 报告辅助函数 ====================
-async def _get_stock_name(symbol: str) -> str:
-    """根据代码动态查询股票/ETF 名称（使用 BaoStock 接口）"""
-    if not symbol or not isinstance(symbol, str):
-        return symbol
-    
-    # 先尝试从 Redis 缓存获取
-    if False and redis_client:
-        try:
-            cached_name = await redis_client.get(f"stock_name:{symbol}")
-            if cached_name:
-                return cached_name
-        except Exception:
-            pass
-    
-    # 动态查询：A 股/ETF（sh./sz. 前缀）
-    name = None
-    for prefix in ["sh.", "sz."]:
-        try:
-            lg = bs.login()
-            rs = bs.query_stock_basic(code=prefix + symbol)
-            if rs.error_code == "0" and rs.next():
-                row = rs.get_row_data()
-                if row and len(row) > 1 and row[1]:
-                    name = row[1]
-                    break
-            bs.logout()
-        except Exception:
-            try:
-                bs.logout()
-            except:
-                pass
-            continue
-    
-    # 查询失败时返回代码本身
-    result = name if name else symbol
-    
-    # 缓存到 Redis（TTL 7 天）
-    if redis_client and name:
-        try:
-            await redis_client.set(f"stock_name:{symbol}", name, ex=7*24*3600)
-        except Exception:
-            pass
-    
-    return result
+def _get_stock_name(symbol: str) -> str:
+    """根据代码返回股票/ETF 名称（仅使用本地缓存，避免网络阻塞）"""
+    KNOWN_NAMES = {
+        "600519": "贵州茅台", "000001": "平安银行", "000002": "万科A",
+        "000858": "五粮液", "600036": "招商银行", "601318": "中国平安",
+        "600016": "民生银行", "601166": "兴业银行", "600000": "浦发银行",
+        "510300": "沪深300ETF", "512170": "医疗ETF", "588000": "科创50ETF",
+        "159995": "芯片ETF", "159919": "300ETF", "510500": "500ETF",
+    }
+    return KNOWN_NAMES.get(symbol, symbol)  # 直接返回，无网络调用
 
 def _guess_report_type(content: str) -> str:
     """根据内容猜测报告类型"""
@@ -2221,11 +1653,9 @@ async def reports_list(
     market_filter: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    sort: str = "created_at",  # 排序字段: created_at, date, symbol, market
-    order: str = "desc",       # 排序方向: asc, desc
     username: str = Depends(verify_token)
 ):
-    """返回历史分析报告列表（支持排序和分页）"""
+    """返回历史分析报告列表"""
     import os, glob
     reports_dir = "/root/stock-analyzer/reports"
     if not os.path.exists(reports_dir):
@@ -2259,7 +1689,7 @@ async def reports_list(
                     title = content.split("\n")[0].strip("# ").strip() or symbol
                     # 提取交易建议（查找 **买入/卖出/持有**）
                     import re
-                    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
+                    decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
                     decision = decision_match.group(1) if decision_match else "—"
             except Exception:
                 title = symbol
@@ -2274,7 +1704,7 @@ async def reports_list(
 
             # 判断市场
             if symbol.isdigit() and len(symbol) == 6:
-                market = "A 股"
+                market = "A股"
             elif symbol.upper().startswith("HK"):
                 market = "港股"
             elif symbol.isalpha() and symbol.isupper():
@@ -2290,7 +1720,7 @@ async def reports_list(
                 "id": fname.replace(".md", "").replace(".txt", ""),
                 "symbol": symbol,
                 "stock_code": symbol,
-                "stock_name": await _get_stock_name(symbol),  # 股票名称查询
+                "stock_name": _get_stock_name(symbol),  # 股票名称查询
                 "market": market,
                 "title": title,
                 "type": _guess_report_type(content),  # 报告类型
@@ -2303,26 +1733,8 @@ async def reports_list(
                 "created_at": created_at,
             })
 
-    # 排序（支持多字段排序）
-    def get_sort_key(item):
-        if sort == "date":
-            return item.get("date", "")
-        elif sort == "symbol":
-            return item.get("symbol", "")
-        elif sort == "market":
-            return item.get("market", "")
-        elif sort == "created_at":
-            # 日期时间格式支持排序
-            try:
-                return dt.datetime.fromisoformat(item.get("created_at", ""))
-            except:
-                return dt.datetime.min
-        else:
-            return item.get(sort, "")
-    
-    reverse = (order == "desc")
-    reports.sort(key=get_sort_key, reverse=reverse)
-    
+    # 按日期倒序
+    reports.sort(key=lambda x: x["date"], reverse=True)
     total = len(reports)
 
     # 分页
@@ -2330,23 +1742,45 @@ async def reports_list(
     end = start + page_size
     paginated = reports[start:end]
 
-    return {"success": True, "data": {"reports": paginated, "total": total, "sort": sort, "order": order}}
+    return {"success": True, "data": {"reports": paginated, "total": total}}
 
 # ==================== 报告详情与下载 ====================
 @app.get("/api/reports/{report_id}/detail")
 async def report_detail(report_id: str, username: str = Depends(verify_token)):
     """返回指定报告的完整内容"""
-    # 使用 _find_report_file 查找报告（支持 cached_ 前缀匹配 symbol_date 格式）
-    report_file = _find_report_file(report_id)
-    content = None
-    if report_file and os.path.exists(report_file):
-        with open(report_file, "r", encoding="utf-8") as f:
-            content = f.read()
+    import os
+    reports_dir = "/root/stock-analyzer/reports"
+    # 尝试直接拼接路径
+    candidates = [
+        os.path.join(reports_dir, f"{report_id}.md"),
+        os.path.join(reports_dir, f"{report_id}.txt"),
+    ]
+    # 也尝试 symbol_date 格式
+    if "_" in report_id:
+        parts = report_id.split("_")
+        if len(parts) >= 2:
+            date_part = parts[1]
+            if len(date_part) == 8:
+                date_formatted = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"
+                cache_key = f"report:{parts[0]}:{date_formatted}"
+            else:
+                cache_key = None
+        else:
+            cache_key = None
+    else:
+        cache_key = None
 
-    # 尝试从 Redis 缓存读取（仅当文件不存在时）
-    if not content and redis_client:
+    content = None
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as f:
+                content = f.read()
+            break
+
+    # 尝试从 Redis 缓存读取
+    if not content and cache_key and redis_client:
         try:
-            cached = await redis_client.get(f"report:{report_id}")
+            cached = await redis_client.get(cache_key)
             if cached:
                 content = cached
         except Exception:
@@ -2361,7 +1795,7 @@ async def report_detail(report_id: str, username: str = Depends(verify_token)):
     # 支持 "**买入**"、"**买入（Buy）**"、"**买入(Buy)**" 等格式
     decision_match = re.search(r"\*\*(买入|卖出|持有|观望)[（(]?(?:Buy)?[）)]?\*\*", content)
     if not decision_match:
-        decision_match = re.search(r"\*\*(买入|卖出|持有|观望)(?:[^(]*\([^)]*\))?[\s\*]*", content)
+        decision_match = re.search(r"\*\*(买入|卖出|持有|观望)\*\*", content)
     decision = decision_match.group(1) if decision_match else "—"
 
     # 提取 recommendation
@@ -2410,7 +1844,7 @@ async def report_detail(report_id: str, username: str = Depends(verify_token)):
         "data": {
             "id": report_id,
             "symbol": symbol,
-            "stock_name": await _get_stock_name(symbol),
+            "stock_name": _get_stock_name(symbol),
             "title": title,
             "decision": decision,
             "recommendation": recommendation,
@@ -2436,12 +1870,17 @@ async def report_download(
     import markdown
     import pdfkit
     from fastapi.responses import Response
-    # 使用 _find_report_file 查找报告（支持 cached_ 前缀匹配）
-    report_file = _find_report_file(report_id)
+    reports_dir = "/root/stock-analyzer/reports"
+    candidates = [
+        os.path.join(reports_dir, f"{report_id}.md"),
+        os.path.join(reports_dir, f"{report_id}.txt"),
+    ]
     content = None
-    if report_file and os.path.exists(report_file):
-        with open(report_file, "r", encoding="utf-8") as f:
-            content = f.read()
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as f:
+                content = f.read()
+            break
 
     if not content:
         raise HTTPException(status_code=404, detail="报告不存在")
@@ -2676,8 +2115,7 @@ async def stocks_quote(symbol: str, username: str = Depends(verify_token)):
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] quote error: {e}")
-        # 隐藏数据库结构信息
-        return {"success": False, "message": "查询失败，请稍后重试"}
+        return {"success": False, "message": str(e)}
 
 @app.get("/api/stocks/{symbol}/kline")
 async def stocks_kline(
@@ -2732,7 +2170,7 @@ async def stocks_kline(
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] kline error: {e}")
-        return {"success": False, "message": "操作失败，请稍后重试"}
+        return {"success": False, "message": str(e)}
 
 @app.get("/api/stocks/{symbol}/fundamentals")
 async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)):
@@ -2765,7 +2203,7 @@ async def stocks_fundamentals(symbol: str, username: str = Depends(verify_token)
         }
     except Exception as e:
         sys_logger.error(f"[Stocks] fundamentals error: {e}")
-        return {"success": False, "message": "操作失败，请稍后重试"}
+        return {"success": False, "message": str(e)}
 
 @app.get("/api/stocks/{symbol}/news")
 async def stocks_news(symbol: str, days: int = 30, limit: int = 50, username: str = Depends(verify_token)):
@@ -2952,251 +2390,15 @@ async def usage_cost_by_provider(days: int = 7, username: str = Depends(verify_t
 # ==================== 纸带交易 (Paper Trading) ====================
 @app.get("/api/paper/positions")
 async def paper_positions(username: str = Depends(verify_token)):
-    """获取模拟持仓"""
-    try:
-        positions = redis_client.hgetall("paper_positions")
-        result = []
-        for symbol, data in positions.items():
-            if isinstance(data, bytes):
-                data = json.loads(data)
-            if isinstance(data, dict):
-                qty = data.get("quantity", 0)
-                cost = data.get("avg_cost", 0)
-                # 获取当前价格
-                try:
-                    prefix = _stock_prefix(symbol)
-                    lg = bs.login()
-                    rs = bs.query_history_k_data_plus(prefix, "close", "2026-04-08")
-                    current_price = 0
-                    if rs.error_code == "0" and rs.next():
-                        current_price = float(rs.get_row_data()[0])
-                    bs.logout()
-                except:
-                    current_price = cost
-                pnl = (current_price - cost) * qty if qty > 0 else 0
-                result.append({
-                    "symbol": symbol,
-                    "quantity": qty,
-                    "avg_cost": cost,
-                    "current_price": current_price,
-                    "market_value": current_price * qty,
-                    "pnl": pnl,
-                    "pnl_percent": round(pnl / (cost * qty) * 100, 2) if cost * qty > 0 else 0
-                })
-        return {"success": True, "data": {"positions": result}}
-    except Exception as e:
-        sys_logger.error(f"[Paper Positions] error: {e}")
-        return {"success": True, "data": {"positions": []}}
+    return {"success": True, "data": {"positions": []}}
 
 @app.get("/api/paper/account")
 async def paper_account(username: str = Depends(verify_token)):
-    """获取模拟账户信息"""
-    try:
-        account = redis_client.hget("paper_account", username)
-        if account:
-            if isinstance(account, bytes):
-                account = json.loads(account)
-        else:
-            account = {"cash": 100000, "initial_cash": 100000}
-            redis_client.hset("paper_account", username, json.dumps(account))
-        
-        # 计算持仓市值
-        positions = redis_client.hgetall("paper_positions")
-        positions_value = 0
-        for symbol, data in positions.items():
-            if isinstance(data, bytes):
-                data = json.loads(data)
-            if isinstance(data, dict):
-                qty = data.get("quantity", 0)
-                cost = data.get("avg_cost", 0)
-                positions_value += cost * qty
-        
-        equity = account.get("cash", 100000) + positions_value
-        return {"success": True, "data": {"account": {
-            "cash": account.get("cash", 100000),
-            "positions_value": positions_value,
-            "equity": equity,
-            "initial_cash": account.get("initial_cash", 100000),
-            "total_pnl": equity - account.get("initial_cash", 100000),
-            "currency": "CNY"
-        }}}
-    except Exception as e:
-        sys_logger.error(f"[Paper Account] error: {e}")
-        return {"success": True, "data": {"account": {"cash": 100000, "positions_value": 0, "equity": 100000, "currency": "CNY"}}}
+    return {"success": True, "data": {"account": {"cash": 100000, "positions_value": 0, "equity": 100000, "currency": "CNY"}}}
 
 @app.get("/api/paper/order")
 async def paper_order(username: str = Depends(verify_token)):
-    """获取模拟订单历史"""
-    try:
-        orders = redis_client.lrange("paper_orders", 0, -1)
-        result = []
-        for order in orders:
-            if isinstance(order, bytes):
-                order = json.loads(order)
-            if isinstance(order, dict):
-                result.append(order)
-        return {"success": True, "data": {"orders": result[:50]}}  # 最近 50 条
-    except Exception as e:
-        sys_logger.error(f"[Paper Order] error: {e}")
-        return {"success": True, "data": {"orders": []}}
-
-@app.post("/api/paper/order")
-async def paper_place_order(req: dict, username: str = Depends(verify_token)):
-    """下达模拟订单"""
-    try:
-        symbol = req.get("symbol")
-        quantity = int(req.get("quantity", 0))
-        price = float(req.get("price", 0))
-        action = req.get("action", "buy")  # buy or sell
-        
-        if not symbol or quantity <= 0 or price <= 0:
-            return {"success": False, "message": "参数错误"}
-        
-        # 获取账户
-        account = redis_client.hget("paper_account", username)
-        if account:
-            if isinstance(account, bytes):
-                account = json.loads(account)
-        else:
-            account = {"cash": 100000}
-        
-        if action == "buy":
-            cost = quantity * price
-            if account.get("cash", 0) < cost:
-                return {"success": False, "message": "现金不足"}
-            
-            # 更新持仓
-            pos = redis_client.hget("paper_positions", symbol)
-            if pos:
-                if isinstance(pos, bytes):
-                    pos = json.loads(pos)
-            else:
-                pos = {"quantity": 0, "avg_cost": 0}
-            
-            old_qty = pos.get("quantity", 0)
-            old_cost = pos.get("avg_cost", 0)
-            new_qty = old_qty + quantity
-            new_cost = (old_qty * old_cost + quantity * price) / new_qty if new_qty > 0 else 0
-            
-            pos["quantity"] = new_qty
-            pos["avg_cost"] = new_cost
-            redis_client.hset("paper_positions", symbol, json.dumps(pos))
-            
-            # 扣减现金
-            account["cash"] = account.get("cash", 100000) - cost
-            redis_client.hset("paper_account", username, json.dumps(account))
-            
-        elif action == "sell":
-            pos = redis_client.hget("paper_positions", symbol)
-            if not pos:
-                return {"success": False, "message": "无持仓"}
-            if isinstance(pos, bytes):
-                pos = json.loads(pos)
-            
-            old_qty = pos.get("quantity", 0)
-            if old_qty < quantity:
-                return {"success": False, "message": "持仓不足"}
-            
-            # 更新持仓
-            new_qty = old_qty - quantity
-            if new_qty == 0:
-                redis_client.hdel("paper_positions", symbol)
-            else:
-                pos["quantity"] = new_qty
-                redis_client.hset("paper_positions", symbol, json.dumps(pos))
-            
-            # 增加现金
-            proceeds = quantity * price
-            account["cash"] = account.get("cash", 100000) + proceeds
-            redis_client.hset("paper_account", username, json.dumps(account))
-        
-        # 记录订单
-        order = {
-            "symbol": symbol,
-            "quantity": quantity,
-            "price": price,
-            "action": action,
-            "timestamp": datetime.now().isoformat(),
-            "username": username
-        }
-        redis_client.lpush("paper_orders", json.dumps(order))
-        redis_client.ltrim("paper_orders", 0, 999)  # 保留最近 1000 条
-        
-        return {"success": True, "message": f"{action.upper()} {quantity} {symbol} @ {price}", "data": order}
-    except Exception as e:
-        sys_logger.error(f"[Paper Place Order] error: {e}")
-        return {"success": False, "message": "操作失败，请稍后重试"}
-
-# ==================== 持仓管理 (Trade/Positions) ====================
-@app.get("/api/trade/positions")
-async def trade_positions(username: str = Depends(verify_token)):
-    """获取实际持仓（与 paper_positions 共用数据）"""
-    try:
-        positions = redis_client.hgetall("paper_positions")
-        result = []
-        for symbol, data in positions.items():
-            if isinstance(data, bytes):
-                data = json.loads(data)
-            if isinstance(data, dict):
-                qty = data.get("quantity", 0)
-                cost = data.get("avg_cost", 0)
-                # 获取当前价格
-                try:
-                    prefix = _stock_prefix(symbol)
-                    lg = bs.login()
-                    rs = bs.query_history_k_data_plus(prefix, "close", "2026-04-08")
-                    current_price = 0
-                    if rs.error_code == "0" and rs.next():
-                        current_price = float(rs.get_row_data()[0])
-                    bs.logout()
-                except:
-                    current_price = cost
-                pnl = (current_price - cost) * qty if qty > 0 else 0
-                result.append({
-                    "symbol": symbol,
-                    "quantity": qty,
-                    "avg_cost": cost,
-                    "current_price": current_price,
-                    "market_value": current_price * qty,
-                    "pnl": pnl,
-                    "pnl_percent": round(pnl / (cost * qty) * 100, 2) if cost * qty > 0 else 0,
-                    "cost_basis": cost * qty
-                })
-        return {"success": True, "data": {"positions": result}}
-    except Exception as e:
-        sys_logger.error(f"[Trade Positions] error: {e}")
-        return {"success": True, "data": {"positions": []}}
-
-@app.post("/api/trade/buy")
-async def trade_buy(req: dict, username: str = Depends(verify_token)):
-    """买入（调用 paper_order）"""
-    return await paper_place_order({**req, "action": "buy"}, username)
-
-@app.post("/api/trade/sell")
-async def trade_sell(req: dict, username: str = Depends(verify_token)):
-    """卖出（调用 paper_order）"""
-    return await paper_place_order({**req, "action": "sell"}, username)
-
-# ==================== 模拟交易 (Simulated Trading) ====================
-@app.get("/api/simulated-trading/account")
-async def simulated_account(username: str = Depends(verify_token)):
-    """模拟交易账户（与 paper_account 共用）"""
-    return await paper_account(username)
-
-@app.get("/api/simulated-trading/positions")
-async def simulated_positions(username: str = Depends(verify_token)):
-    """模拟交易持仓（与 paper_positions 共用）"""
-    return await trade_positions(username)
-
-@app.post("/api/simulated-trading/order")
-async def simulated_order(req: dict, username: str = Depends(verify_token)):
-    """模拟交易下单（与 paper_order 共用）"""
-    return await paper_place_order(req, username)
-
-@app.get("/api/simulated-trading/orders")
-async def simulated_orders(username: str = Depends(verify_token)):
-    """模拟交易订单历史（与 paper_order 共用）"""
-    return await paper_order(username)
+    return {"success": True, "data": {"orders": []}}
 
 # ==================== 系统信息 (System Info) ====================
 

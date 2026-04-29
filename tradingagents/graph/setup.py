@@ -142,8 +142,18 @@ class GraphSetup:
             last_clear = f"Msg Clear {selected_analysts[-1].capitalize()}"
             workflow.add_edge(last_clear, "Bull Researcher")
         
+
+        # 中文到英文的分析师名称映射
+        analyst_name_map = {
+            '市场分析师': 'market',
+            '基本面分析师': 'fundamentals',
+            '新闻分析师': 'news',
+            '社媒分析师': 'social'
+        }
+
         # Each analyst has its own tool loop
-        for analyst_type in selected_analysts:
+        for analyst_name in selected_analysts:
+            analyst_type = analyst_name_map.get(analyst_name, analyst_name)
             current_analyst = f"{analyst_type.capitalize()} Analyst"
             current_tools = f"tools_{analyst_type}"
             current_clear = f"Msg Clear {analyst_type.capitalize()}"
