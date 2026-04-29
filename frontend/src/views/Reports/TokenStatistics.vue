@@ -268,8 +268,7 @@ import {
   Search
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import { usageApi } from '@/api/usage'
-import { getDailyCost, getCostByProvider, getCostByModel } from '@/api/usage'
+import { getUsageStatistics, getCostByProvider, getCostByModel, getDailyCost } from '@/api/usage'
 
 // 响应式数据
 const loading = ref(false)
@@ -353,7 +352,7 @@ const loadStatistics = async () => {
   try {
     const days = timeRangeDays(timeRange.value)
     const [statsRes, dailyRes, providerRes, modelRes] = await Promise.all([
-      usageApi.getUsageStatistics({ days, provider: providerFilter.value || undefined }),
+      getUsageStatistics({ days, provider: providerFilter.value || undefined }),
       getDailyCost(days),
       getCostByProvider(days),
       getCostByModel(days)
