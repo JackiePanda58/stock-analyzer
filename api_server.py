@@ -132,7 +132,7 @@ def _run_trading_graph_stream(ta, symbol, target_date, user_context, risk_level,
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout=1200)  # 10 minute timeout
+    t.join(timeout=1800)  # 10 minute timeout
 
     if not result_queue.empty():
         return result_queue.get()
@@ -218,7 +218,7 @@ async def _analysis_background_task(
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
 
-    _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='analysis_worker')
+    _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix='analysis_worker')
 
     loop = asyncio.get_running_loop()
     try:
@@ -478,15 +478,29 @@ async def analyze_stock(req: AnalyzeReq, username: str = Depends(verify_token), 
     if not symbol:
         raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
     
+    # 验证分析日期不能是未来日期
+    from datetime import datetime, date
+    analysis_date_str = (req.parameters or {}).get("analysis_date", "")
+    if analysis_date_str:
+        try:
+            analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d").date()
+            if analysis_date > date.today():
+                raise HTTPException(status_code=400, detail=f"分析日期不能是未来日期: {analysis_date_str}")
+        except ValueError:
+            pass  # 日期格式错误会在其他地方处理
+    
     # A股：6位数字
     if market_type == "A股" and not (len(symbol) == 6 and symbol.isdigit()):
         raise HTTPException(status_code=400, detail=f"A股代码格式错误，应为6位数字: {symbol}")
     # 港股：5-6位数字 或 5-6位数字.HK
     elif market_type == "港股" and not (symbol.isdigit() and 5 <= len(symbol) <= 6 or (".HK" in symbol.upper() and len(symbol.replace(".HK", "").replace(".hk", "")) >= 4)):
         pass  # 港股格式较灵活，暂不严格校验
-    # 美股：1-5个字母
-    elif market_type == "美股" and not (symbol.isalpha() and 1 <= len(symbol) <= 5):
-        raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母: {symbol}")
+    # 美股：1-5个字母，或带点号如BRK.A
+    elif market_type == "美股":
+        # 支持格式：AAPL, BRK.A, BF.B等
+        import re
+        if not (re.match(r'^[A-Z]{1,5}$', symbol) or re.match(r'^[A-Z]{1,4}\.[A-Z]$', symbol)):
+            raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母或带点号如BRK.A: {symbol}")
 
     sys_logger.info(f"[API] 👉 收到分析请求，目标代码: {symbol} | 日期: {target_date} | 用户: {username}")
 
@@ -1594,15 +1608,29 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
     if not symbol:
         raise HTTPException(status_code=400, detail=f"无效的股票代码: {symbol}")
     
+    # 验证分析日期不能是未来日期
+    from datetime import datetime, date
+    analysis_date_str = (req.parameters or {}).get("analysis_date", "")
+    if analysis_date_str:
+        try:
+            analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d").date()
+            if analysis_date > date.today():
+                raise HTTPException(status_code=400, detail=f"分析日期不能是未来日期: {analysis_date_str}")
+        except ValueError:
+            pass  # 日期格式错误会在其他地方处理
+    
     # A股：6位数字
     if market_type == "A股" and not (len(symbol) == 6 and symbol.isdigit()):
         raise HTTPException(status_code=400, detail=f"A股代码格式错误，应为6位数字: {symbol}")
     # 港股：5-6位数字 或 5-6位数字.HK
     elif market_type == "港股" and not (symbol.isdigit() and 5 <= len(symbol) <= 6 or (".HK" in symbol.upper() and len(symbol.replace(".HK", "").replace(".hk", "")) >= 4)):
         pass  # 港股格式较灵活，暂不严格校验
-    # 美股：1-5个字母
-    elif market_type == "美股" and not (symbol.isalpha() and 1 <= len(symbol) <= 5):
-        raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母: {symbol}")
+    # 美股：1-5个字母，或带点号如BRK.A
+    elif market_type == "美股":
+        # 支持格式：AAPL, BRK.A, BF.B等
+        import re
+        if not (re.match(r'^[A-Z]{1,5}$', symbol) or re.match(r'^[A-Z]{1,4}\.[A-Z]$', symbol)):
+            raise HTTPException(status_code=400, detail=f"美股代码格式错误，应为1-5个字母或带点号如BRK.A: {symbol}")
 
     # research_depth 参数校验
     research_depth = (req.parameters or {}).get("research_depth")
@@ -1643,7 +1671,8 @@ async def analysis_single(req: AnalyzeReq, background_tasks: BackgroundTasks, us
             pass
 
     # 生成 task_id 并立即返回，后台执行分析
-    task_id = f"{symbol}_{int(time.time())}"
+    import uuid
+    task_id = f"{symbol}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
     # 中文到英文的分析师名称映射
     analyst_name_map = {
         '市场分析师': 'market',

@@ -24,8 +24,8 @@ TRADING_CONFIG = {
     # 模型选择（均为 M2.7 系列）
     # deep_think_llm：用于基本面分析、多空辩论等复杂推理任务
     # quick_think_llm：用于数据整理、简单判断等快速任务
-    "deep_think_llm": "MiniMax-M2.7",
-    "quick_think_llm": "MiniMax-M2.7",
+    "deep_think_llm": "qwen-plus",
+    "quick_think_llm": "qwen-turbo",
 
     # 资源限制（2核2G 服务器保守配置）
     "max_debate_rounds": 1,
